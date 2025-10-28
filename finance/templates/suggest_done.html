@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Done · MoneyCoach{% endblock %}
+{% block content %}
+<h2>Changes applied</h2>
+<p>Updated <strong>{{ updated|default:"0" }}</strong> transactions.</p>
+
+<p style="margin-top:1rem">
+  <a href="/review/low/">Back to Low-confidence</a> ·
+  <a href="/">Back to Upload</a>
+</p>
+{% endblock %}

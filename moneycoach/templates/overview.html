@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Overview · MoneyCoach{% endblock %}
+{% block content %}
+<h2>Overview</h2>
+
+<!-- Balance card -->
+<div style="margin:1rem 0; padding:0.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div>
+    <strong>Total balance (all accounts):</strong>
+    {{ total_accounts_balance|floatformat:2 }} EUR
+
+  </div>
+
+  {% if accounts_with_balances %}
+    <div style="margin-top:.5rem; font-size:.95em; color:#444;">
+      {% for acc in accounts_with_balances %}
+        <div style="display:flex; justify-content:space-between; gap:1rem; padding:.15rem 0; border-bottom:1px dashed #eee;">
+          <span>
+            {{ acc.name }}
+            <span style="color:#888;">({{ acc.get_type_display }})</span>
+          </span>
+          <span>
+            {% if acc.current_balance is not None %}
+              {{ acc.current_balance|floatformat:2 }} EUR
+              {% if acc.balance_updated_at %}
+                <span style="color:#999; font-size:.85em;">· {{ acc.balance_updated_at|date:"Y-m-d H:i" }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:#999;">not set</span>
+            {% endif %}
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="margin-top:.5rem; color:#777; font-size:.95em;">
+      No active accounts yet.
+    </div>
+  {% endif %}
+</div>
+
+
+<!-- Modal dialog for adding/updating balance -->
+<dialog id="balanceDialog" style="border:none; border-radius:12px; padding:0;">
+  <form method="post" style="padding:1rem 1.2rem; min-width:320px;">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="balance">
+    <h3 style="margin:.2rem 0 1rem 0;">{% if latest_snap %}Update balance{% else %}Add balance{% endif %}</h3>
+
+    <label style="display:block; margin:.5rem 0 .25rem;">Amount (EUR)</label>
+    <input type="number" step="0.01" name="amount" required style="width:100%" {% if latest_snap %}value="{{ latest_snap.amount }}"{% endif %}>
+
+    <label style="display:block; margin:.75rem 0 .25rem;">Timestamp</label>
+    <input type="datetime-local" name="timestamp" style="width:100%"
+           value="{% if latest_snap %}{{ latest_snap.timestamp|date:'Y-m-d\\TH:i' }}{% else %}{{ now_val }}{% endif %}">
+
+    <label style="display:block; margin:.75rem 0 .25rem;">Note (optional)</label>
+    <input type="text" name="note" maxlength="180" style="width:100%"
+           {% if latest_snap and latest_snap.note %}value="{{ latest_snap.note }}"{% endif %}>
+
+    <div style="display:flex; gap:.5rem; margin-top:1rem;">
+      <button type="submit">Save</button>
+      <button type="button" onclick="document.getElementById('balanceDialog').close()">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+{% if latest_snap and balance_labels_json and balance_values_json %}
+  <h3 style="margin-top:1rem;">Balance over time (monthly)</h3>
+  <div style="max-width:1000px; margin: 0 auto 1.5rem;">
+    <canvas id="balanceChart"></canvas>
+  </div>
+{% endif %}
+
+
+<!-- Income vs Spending per month -->
+<div style="max-width:1000px; margin: 0 auto 1.5rem;">
+  <canvas id="incomeSpending"></canvas>
+</div>
+
+<!-- Net by month (compact table) -->
+<h3>Net by month (Income − Spending)</h3>
+<table>
+  <tr>
+    <th>Month</th>
+    <th>Net</th>
+  </tr>
+  {% for r in net_rows %}
+    <tr>
+      <td>{{ r.month }}</td>
+      <td>
+        {% if r.net >= 0 %}
+          <span style="color:#2e7d32">{{ r.net }}</span>
+        {% else %}
+          <span style="color:#b00020">{{ r.net }}</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top:1.5rem;">Spending per category</h3>
+
+{% if cat_names %}
+  <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 1rem;">
+    <div style="display:flex; gap:.4rem; flex-wrap: wrap;">
+      {% for cname in cat_names %}
+        <button class="cat-btn" data-cat="{{ cname }}"
+                style="padding:.35rem .6rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;">
+          {{ cname }}
+        </button>
+      {% endfor %}
+    </div>
+    <div style="margin-left:auto;">
+      <label style="font-size:.9em; color:#555; margin-right:.3rem;">Chart</label>
+      <select id="catChartType">
+        <option value="bar">Bar</option>
+        <option value="line">Line</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="max-width:1000px; margin: 0 auto 1.5rem;">
+    <canvas id="catChart"></canvas>
+  </div>
+{% else %}
+  <p style="opacity:.7">No categorized spending yet.</p>
+{% endif %}
+
+
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const labels   = {{ labels_json|safe }};
+  const income   = {{ income_json|safe }};
+  const spending = {{ spending_json|safe }};
+
+  const ctx = document.getElementById('incomeSpending').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Income',   data: income },
+        { label: 'Spending', data: spending }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      stacked: false,
+      plugins: { legend: { position: 'top' } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  {% if latest_snap and balance_labels_json and balance_values_json %}
+  const balLabels = {{ balance_labels_json|safe }};
+  const balValues = {{ balance_values_json|safe }};
+  const bctx = document.getElementById('balanceChart').getContext('2d');
+  new Chart(bctx, {
+    type: 'line',
+    data: {
+      labels: balLabels,
+      datasets: [
+        { label: 'Balance', data: balValues }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top' } },
+      scales: { y: { beginAtZero: false } }
+    }
+  });
+{% endif %}
+// ---- Category chart data from server ----
+  const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
+  const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
+
+  // Guard: only init if data exists
+  if (catMonths.length && Object.keys(seriesByCat).length) {
+    const catCanvas = document.getElementById('catChart').getContext('2d');
+    const typeSelect = document.getElementById('catChartType');
+    const buttons = Array.from(document.querySelectorAll('.cat-btn'));
+
+    // Pick a default category
+    let currentCat = buttons.length ? buttons[0].dataset.cat : null;
+    let currentType = typeSelect.value;
+
+    function datasetFor(cat) {
+      return {
+        label: cat,
+        data: seriesByCat[cat] || [],
+      };
+    }
+
+    // init chart
+    let catChart = new Chart(catCanvas, {
+      type: currentType,
+      data: {
+        labels: catMonths,
+        datasets: [ datasetFor(currentCat) ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Button click -> switch category
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        currentCat = cat;
+        catChart.data.datasets = [ datasetFor(currentCat) ];
+        catChart.update();
+        // simple visual cue
+        buttons.forEach(b => b.style.background = '#f7f7f7');
+        btn.style.background = '#e6f0ff';
+      });
+    });
+    // Press first button style on load
+    if (buttons.length) buttons[0].style.background = '#e6f0ff';
+
+    // Type switch (bar/line)
+    typeSelect.addEventListener('change', () => {
+      currentType = typeSelect.value;
+      const cfg = catChart.config;
+      catChart.destroy();
+      catChart = new Chart(catCanvas, {
+        type: currentType,
+        data: {
+          labels: catMonths,
+          datasets: [ datasetFor(currentCat) ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'top' } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    });
+  }
+
+</script>
+{% endblock %}

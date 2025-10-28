@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Deleted transactions · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:50px;">Deleted transactions</h2>
+
+{% if page_obj and page_obj.object_list %}
+  <p class="meta">Total deleted: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+
+  <table>
+    <tr>
+      <th>deleted_at</th>
+      <th>date</th>
+      <th>merchant</th>
+      <th>amount</th>
+      <th>in_out</th>
+      <th>note</th>
+      <th>restore</th>
+    </tr>
+    {% for t in page_obj.object_list %}
+      <tr>
+        <td>{{ t.deleted_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ t.date|date:"Y-m-d" }}</td>
+        <td>{{ t.merchant }}</td>
+        <td>{{ t.amount }} {{ t.currency }}</td>
+        <td>{{ t.in_out }}</td>
+        <td>{{ t.deleted_note }}</td>
+        <td>
+          <form method="post" action="/tx/{{ t.id }}/restore/" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button>Restore</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p class="pager">
+    {% if page_obj.has_previous %}
+      <a href="?page=1">« first</a>
+      <a href="?page={{ page_obj.previous_page_number }}">‹ prev</a>
+    {% endif %}
+    <strong>Page {{ page_obj.number }}</strong>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">next ›</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}">last »</a>
+    {% endif %}
+  </p>
+{% else %}
+  <p style="opacity:.7">No deleted transactions.</p>
+{% endif %}
+
+{% endblock %}

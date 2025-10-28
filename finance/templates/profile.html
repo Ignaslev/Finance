@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Profile · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:50px;">Profile</h2>
+
+{% if messages %}
+  <ul style="padding:0; list-style:none; margin:.5rem 0;">
+    {% for m in messages %}
+      <li style="margin:.25rem 0; padding:.4rem .6rem; border-radius:6px;
+                 {% if m.tags == 'success' %}background:#e8f5e9; color:#2e7d32;
+                 {% elif m.tags == 'error' %}background:#fdecea; color:#b71c1c;
+                 {% else %}background:#eef5ff; color:#0d47a1;{% endif %}">
+        {{ m }}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<div style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
+  <strong>User:</strong> {{ request.user.username }}
+</div>
+
+<h3 style="margin-top:1.5rem;">Accounts</h3>
+
+<form method="post" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="add">
+  <div style="display:flex; gap:.5rem; align-items:end; flex-wrap:wrap;">
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Name</label>
+      <input type="text" name="name" required placeholder="e.g. Revolut, SEB, Cash">
+    </div>
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Type</label>
+      <select name="type" required>
+        {% for val, label in type_choices %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit">Add account</button>
+    </div>
+  </div>
+</form>
+
+<table>
+  <tr>
+    <th>Account</th>
+    <th>Type</th>
+    <th>Status</th>
+    <th>Default import</th>
+    <th style="min-width:14rem;">Balance (EUR)</th> <!-- 👈 NEW -->
+    <th>Actions</th>
+  </tr>
+  {% for a in accounts %}
+    <tr>
+      <td>{{ a.name }}</td>
+      <td>{{ a.get_type_display }}</td>
+      <td>
+        {% if a.is_active %}
+          <span style="padding:.1rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32;">Active</span>
+        {% else %}
+          <span style="padding:.1rem .4rem; border-radius:10px; background:#eee; color:#666;">Inactive</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if default_id == a.id %}
+          <strong>Default</strong>
+        {% elif a.is_active %}
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="setdefault">
+            <input type="hidden" name="id" value="{{ a.id }}">
+            <button type="submit">Make default</button>
+          </form>
+        {% else %}
+          <span style="opacity:.6">—</span>
+        {% endif %}
+      </td>
+      <td>
+        <form method="post" style="display:flex; gap:.4rem; align-items:center;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="setbalance">
+          <input type="hidden" name="id" value="{{ a.id }}">
+          <input type="number" step="0.01" name="amount" value="{{ a.current_balance }}" placeholder="e.g. 1234.56" style="width:8rem;">
+          <button type="submit">Save</button>
+        </form>
+        {% if a.balance_updated_at %}
+          <div style="font-size:.8em; color:#666; margin-top:.25rem;">
+            updated {{ a.balance_updated_at|date:"Y-m-d H:i" }}
+          </div>
+        {% endif %}
+      </td>
+      <td>
+        <!-- rename -->
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="rename">
+          <input type="hidden" name="id" value="{{ a.id }}">
+          <input type="text" name="name" value="{{ a.name }}" style="width:12rem;">
+          <button type="submit">Rename</button>
+        </form>
+
+        <!-- toggle -->
+        <form method="post" style="display:inline; margin-left:.5rem;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle">
+          <input type="hidden" name="id" value="{{ a.id }}">
+          <button type="submit">
+            {% if a.is_active %}Deactivate{% else %}Activate{% endif %}
+          </button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" style="opacity:.7">No accounts yet.</td></tr>
+  {% endfor %}
+</table>
+
+{% endblock %}
