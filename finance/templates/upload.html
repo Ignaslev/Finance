@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Upload transactions · MoneyCoach{% endblock %}
+{% block content %}
+
+<!-- Controls -->
+<div style="margin: .5rem 0 1rem; margin-top: 50px;">
+  <a href="/ai/full/?limit=200"
+     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none;">
+    Auto-categorize
+  </a>
+  <a href="/ai/full/?mode=uncat&limit=200"
+     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; margin-right:.5rem;">
+    Auto-categorize (Uncategorized only)
+  </a>
+  <a href="/ai/full/?mode=all&limit=200"
+     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none;">
+    Recheck categories (learn from my edits)
+  </a>
+</div>
+
+<div style="margin:.5rem 0 1rem;">
+  <a href="/review/ai/" style="margin-right:.75rem">AI-categorized (recent)</a>
+  <a href="/review/low/" style="margin-right:.75rem">
+    Low-confidence review{% if low_conf_count %} ({{ low_conf_count }}){% endif %}
+  </a>
+</div>
+
+<div style="margin:.5rem 0 1rem;">
+  <a href="/uncategorized/" style="margin-right:.75rem">
+    Uncategorized{% if uncat_count %} ({{ uncat_count }}){% endif %}
+  </a>
+  <a href="/categories/" style="margin-right:.75rem">Categories</a>
+  <a href="/deleted/">Deleted</a>
+</div>
+
+<!-- Account filter (viewing) -->
+<form method="get" style="margin:.75rem 0 1rem; padding:.5rem .75rem; border:1px solid #e8e8e8; border-radius:8px; background:#fafafa; display:flex; gap:.5rem; align-items:center;">
+  <label for="src"><strong>Viewing account:</strong></label>
+  <select name="src" id="src" onchange="this.form.submit()">
+    <option value="all" {% if src_param == 'all' %}selected{% endif %}>All accounts</option>
+    {% for s in sources %}
+      <option value="{{ s.id }}" {% if active_src and active_src.id == s.id %}selected{% endif %}>
+        {{ s.name }} ({{ s.get_type_display }})
+      </option>
+    {% endfor %}
+  </select>
+  <!-- If you want to keep other filters when switching account, add them as hidden inputs here -->
+</form>
+
+<h2>Upload transactions</h2>
+
+<!-- Upload form with account picker (import target) -->
+<form method="post" enctype="multipart/form-data" class="upload" action="{% url 'upload' %}">
+  {% csrf_token %}
+  <label for="import_src" style="margin-right:.5rem;">Import into:</label>
+  <select name="import_src" id="import_src" required style="margin-right:.75rem;">
+    {% for s in sources %}
+      <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+    {% endfor %}
+  </select>
+  <input type="file" name="file" required>
+  <button>Upload</button>
+</form>
+
+{% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+{% if notice %}<p style="color:green">{{ notice }}</p>{% endif %}
+
+<!-- FILTERS -->
+<h2>Filter</h2>
+<form method="get" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
+  <!-- preserve account selection when filtering -->
+  {% if active_src %}
+    <input type="hidden" name="src" value="{{ active_src.id }}">
+  {% elif src_param == 'all' %}
+    <input type="hidden" name="src" value="all">
+  {% endif %}
+
+  <div style="display:grid; grid-template-columns: repeat(6, minmax(120px,1fr)); gap:.5rem; align-items:end;">
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Search (merchant)</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="e.g. Maxima" style="width:100%">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">From (date)</label>
+      <input type="date" name="from" value="{{ from }}" style="width:100%">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">To (date)</label>
+      <input type="date" name="to" value="{{ to }}" style="width:100%">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Min amount</label>
+      <input type="number" step="0.01" name="amin" value="{{ amin }}" style="width:100%">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Max amount</label>
+      <input type="number" step="0.01" name="amax" value="{{ amax }}" style="width:100%">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Flow</label>
+      <select name="flow" style="width:100%">
+        <option value="" {% if not flow %}selected{% endif %}>All</option>
+        <option value="in" {% if flow == "in" %}selected{% endif %}>Income</option>
+        <option value="out" {% if flow == "out" %}selected{% endif %}>Spending</option>
+      </select>
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.85em; color:#555;">Category</label>
+      <select name="cat" style="width:100%">
+        <option value="" {% if not cat %}selected{% endif %}>All</option>
+        {% for c in categories %}
+          <option value="{{ c.id }}" {% if cat == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="grid-column: span 2;">
+      <button type="submit" style="margin-right:.5rem;">Apply</button>
+      <a href="{% if active_src %}/?src={{ active_src.id }}{% elif src_param == 'all' %}/?src=all{% else %}/{% endif %}" style="text-decoration:none;">Reset</a>
+    </div>
+  </div>
+</form>
+
+<!-- Page size picker -->
+{% if page_obj and page_obj.object_list %}
+  <form method="get" style="margin:.5rem 0;">
+    <!-- keep current filters when changing per -->
+    {% if active_src %}
+      <input type="hidden" name="src" value="{{ active_src.id }}">
+    {% elif src_param == 'all' %}
+      <input type="hidden" name="src" value="all">
+    {% endif %}
+
+    <input type="hidden" name="q" value="{{ q }}">
+    <input type="hidden" name="from" value="{{ from }}">
+    <input type="hidden" name="to" value="{{ to }}">
+    <input type="hidden" name="amin" value="{{ amin }}">
+    <input type="hidden" name="amax" value="{{ amax }}">
+    <input type="hidden" name="flow" value="{{ flow }}">
+    <input type="hidden" name="cat" value="{{ cat }}">
+    <input type="hidden" name="page" value="{{ page_obj.number }}">
+
+    <label>Rows per page:
+      <select name="per" onchange="this.form.submit()">
+        {% for n in per_options %}
+          <option value="{{ n }}" {% if per_value == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+{% endif %}
+
+{% if page_obj and page_obj.object_list %}
+  <p class="meta">
+    Total rows: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    {% if active_src %}
+      · Viewing: <strong>{{ active_src.name }}</strong>
+    {% elif src_param == 'all' %}
+      · Viewing: <strong>All accounts</strong>
+    {% endif %}
+  </p>
+
+  <!-- Optional Notes toggle -->
+  <label style="display:inline-flex; align-items:center; gap:.4rem; margin:.25rem 0 1rem;">
+    <input type="checkbox" id="toggleNotes">
+    <span>Show notes</span>
+  </label>
+
+  <table>
+    <tr>
+      <th>date</th>
+      <th>merchant</th>
+      <th>amount</th>
+      <th>currency</th>
+      <th>in_out</th>
+      <th class="col-notes" style="display:none">notes</th>
+      <th>account</th>
+      <th>category</th>
+      <th>source</th>
+      <th>user_note</th>
+      <th>edit</th>
+    </tr>
+    {% for t in page_obj.object_list %}
+      <tr>
+        <td>{{ t.date|date:"Y-m-d" }}</td>
+        <td>{{ t.merchant }}</td>
+        <td>{{ t.amount }}</td>
+        <td>{{ t.currency }}</td>
+        <td>{{ t.in_out }}</td>
+
+        <td class="col-notes" style="display:none">{{ t.notes }}</td>
+
+        <td>
+          {% if t.money_source %}
+            {{ t.money_source.name }}
+          {% else %}
+            <span style="opacity:.6">—</span>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if t.category_fk %}{{ t.category_fk.name }}{% else %}{{ t.category }}{% endif %}
+        </td>
+
+        <td>
+          {% if t.category_source == "user" %}
+            <span style="padding:.15rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32; font-size:.85em;">
+              user
+            </span>
+          {% elif t.category_source == "ai" %}
+            {% if t.ai_confidence and t.ai_confidence < 0.80 %}
+              <a href="/review/low/" title="{{ t.ai_reason|default_if_none:'' }}"
+                 style="padding:.15rem .4rem; border-radius:10px; background:#fff3cd; color:#7a5d00; font-size:.85em; text-decoration:none;">
+                AI • {{ t.ai_confidence|floatformat:2 }}
+              </a>
+            {% else %}
+              <span title="{{ t.ai_reason|default_if_none:'' }}"
+                    style="padding:.15rem .4rem; border-radius:10px; background:#e3f2fd; color:#0d47a1; font-size:.85em;">
+                AI • {{ t.ai_confidence|default_if_none:"" |floatformat:2 }}
+              </span>
+            {% endif %}
+          {% elif t.category_source == "rule" %}
+            <span style="padding:.15rem .4rem; border-radius:10px; background:#eef; color:#334; font-size:.85em;">
+              rule
+            </span>
+          {% else %}
+            <span style="padding:.15rem .4rem; border-radius:10px; background:#eee; color:#666; font-size:.85em;">
+              —
+            </span>
+          {% endif %}
+        </td>
+
+        <td>{{ t.user_note }}</td>
+        <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}">Edit</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p class="pager">
+    {% if page_obj.has_previous %}
+      <a href="?page=1&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">« first</a>
+      <a href="?page={{ page_obj.previous_page_number }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">‹ prev</a>
+    {% endif %}
+    <strong>Page {{ page_obj.number }}</strong>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">next ›</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">last »</a>
+    {% endif %}
+  </p>
+{% else %}
+  <p style="opacity:.7">Upload a CSV/Excel to see transactions here.</p>
+{% endif %}
+
+<script>
+  // Notes toggle behavior
+  const cb = document.getElementById('toggleNotes');
+  const cells = document.querySelectorAll('.col-notes');
+  cb?.addEventListener('change', () => {
+    const show = cb.checked ? '' : 'none';
+    cells.forEach(el => el.style.display = show);
+  });
+</script>
+
+{% endblock %}

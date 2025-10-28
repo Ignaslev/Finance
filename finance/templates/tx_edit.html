@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Edit transaction · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2>Edit transaction</h2>
+
+<div class="row" style="margin:.75rem 0;">
+  <strong>{{ tx.date|date:"Y-m-d" }}</strong> — {{ tx.merchant }} — {{ tx.amount }} {{ tx.currency }} — {{ tx.in_out }}
+  <div style="color:#666">{{ tx.notes }}</div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+
+  <div class="row" style="margin:.75rem 0;">
+  <label>Category
+  <select name="category_fk" style="width:100%;">
+    <option value="">— none —</option>
+    {% for c in categories %}
+      <option value="{{ c.id }}" {% if tx.category_fk and tx.category_fk.id == c.id %}selected{% endif %}>
+        {{ c.name }}
+      </option>
+    {% endfor %}
+  </select>
+</label>
+
+  </div>
+
+  <div class="row" style="margin:.75rem 0;">
+    <label>User note
+      <textarea name="user_note" rows="4" style="width:100%;" placeholder="Add context…">{{ tx.user_note }}</textarea>
+    </label>
+  </div>
+
+  <div class="row" style="margin:.75rem 0;">
+    <button>Save</button>
+    <a href="{{ next }}" style="margin-left:.5rem">Cancel</a>
+  </div>
+</form>
+  <div>
+    <h3 style="margin:0 0 .5rem;">Delete this transaction</h3>
+    <p style="color:#666; margin:.25rem 0 .75rem;">
+      Deleting hides it from lists and charts, and prevents re-importing the same row. You can restore it later from <a href="/deleted/">Deleted</a>.
+    </p>
+
+    <form method="post" action="{% url 'tx_delete' tx.id %}" onsubmit="return confirm('Delete this transaction?');" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next|default:'/' }}">
+      <input type="text" name="note" placeholder="Optional reason (e.g., pass-through transfer)" maxlength="200" style="flex:1; min-width:260px; padding:.4rem;">
+      <button type="submit" style="background:#c62828; color:#fff; border:1px solid #b71c1c;">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

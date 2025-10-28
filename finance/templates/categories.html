@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Categories · MoneyCoach{% endblock %}
+{% block content %}
+<h2>Categories</h2>
+
+<form method="post" style="margin:1rem 0; display:flex; gap:.5rem; align-items:center;">
+  {% csrf_token %}
+  <input name="name" placeholder="New category name" required>
+  <input name="color" placeholder="#RRGGBB (optional)" style="width:10rem">
+  <button>Add</button>
+</form>
+
+<table>
+  <tr><th>Name</th><th>Color</th><th>Actions</th></tr>
+  {% for c in categories %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>
+        {% if c.color %}
+          <span style="display:inline-block;width:14px;height:14px;background:{{ c.color }};border:1px solid #ccc;vertical-align:middle"></span>
+          <span style="margin-left:.5rem">{{ c.color }}</span>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>
+        <a href="/categories/{{ c.id }}/edit/">Edit</a>
+        {% if c.name != "Other" %}
+          <form method="post" action="/categories/{{ c.id }}/delete/" style="display:inline" onsubmit="return confirm('Reassign to Other and delete this category?');">
+            {% csrf_token %}
+            <button>Delete</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}

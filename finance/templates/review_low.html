@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Low-confidence review · MoneyCoach{% endblock %}
+{% block content %}
+<h2>Low-confidence (needs your decision)</h2>
+
+{% if page_obj and page_obj.object_list %}
+  <p class="meta">Total: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+  <form method="post" action="/review/low/apply/">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path|urlencode }}">
+    <table>
+      <tr>
+        <th>date</th><th>merchant</th><th>amount</th><th>in_out</th>
+        <th>notes</th><th>AI suggested</th><th>confidence</th><th>choose</th>
+      </tr>
+      {% for t in page_obj.object_list %}
+        <tr>
+          <td>{{ t.date|date:"Y-m-d" }}</td>
+          <td>{{ t.merchant }}</td>
+          <td>{{ t.amount }} {{ t.currency }}</td>
+          <td>{{ t.in_out }}</td>
+          <td>{{ t.notes }}</td>
+          <td>{% if t.ai_suggested_fk %}{{ t.ai_suggested_fk.name }}{% else %}—{% endif %}</td>
+          <td>{% if t.ai_confidence %}{{ t.ai_confidence|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td>
+            <input type="hidden" name="tx_id" value="{{ t.id }}">
+            <select name="cat_id">
+              {% for c in categories %}
+                <option value="{{ c.id }}"
+                  {% if t.ai_suggested_fk and t.ai_suggested_fk.id == c.id %}selected{% endif %}>
+                  {{ c.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+    <p class="pager">
+      {% if page_obj.has_previous %}
+        <a href="?page=1">« first</a>
+        <a href="?page={{ page_obj.previous_page_number }}">‹ prev</a>
+      {% endif %}
+      <strong>Page {{ page_obj.number }}</strong>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">last »</a>
+      {% endif %}
+    </p>
+    <p><button>Apply selected</button></p>
+  </form>
+{% else %}
+  <p style="opacity:.7">No low-confidence items 🎉</p>
+{% endif %}
+{% endblock %}

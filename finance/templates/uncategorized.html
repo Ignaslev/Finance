@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Uncategorized · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2>Uncategorized</h2>
+
+{% if page_obj and page_obj.object_list %}
+  <p class="meta">Total: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+  <table>
+    <tr>
+      <th>date</th><th>merchant</th><th>amount</th>
+      <th>currency</th><th>in_out</th><th>notes</th><th>edit</th>
+    </tr>
+    {% for t in page_obj.object_list %}
+      <tr>
+        <td>{{ t.date|date:"Y-m-d" }}</td>
+        <td>{{ t.merchant }}</td>
+        <td>{{ t.amount }}</td>
+        <td>{{ t.currency }}</td>
+        <td>{{ t.in_out }}</td>
+        <td>{{ t.notes }}</td>
+        <td><a href="/tx/{{ t.id }}/edit/?next=/uncategorized/?page={{ page_obj.number }}">Edit</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p class="pager">
+    {% if page_obj.has_previous %}
+      <a href="?page=1">« first</a>
+      <a href="?page={{ page_obj.previous_page_number }}">‹ prev</a>
+    {% endif %}
+    <strong>Page {{ page_obj.number }}</strong>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">next ›</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}">last »</a>
+    {% endif %}
+  </p>
+{% else %}
+  <p style="opacity:.7">Nothing uncategorized 🎉</p>
+{% endif %}
+
+{% endblock %}
