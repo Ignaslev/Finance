@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Add transaction · MoneyCoach{% endblock %}
+
+{% block content %}
+<h2 style="margin-top:50px;">Add transaction</h2>
+
+{% if messages %}
+  <ul style="padding:0; list-style:none; margin:.5rem 0;">
+    {% for m in messages %}
+      <li style="margin:.25rem 0; padding:.4rem .6rem; border-radius:6px;
+                 {% if m.tags == 'success' %}background:#e8f5e9; color:#2e7d32;
+                 {% elif m.tags == 'error' %}background:#fdecea; color:#b71c1c;
+                 {% else %}background:#eef5ff; color:#0d47a1;{% endif %}">
+        {{ m }}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" style="max-width:560px; padding:1rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.6rem;">
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Date</label>
+      <input type="date" name="date" value="{{ today }}" required style="width:100%;">
+    </div>
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Account</label>
+      <select name="money_source" required style="width:100%;">
+        {% for s in sources %}
+          <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="grid-column: span 2;">
+      <label style="display:block; font-size:.9em; color:#555;">Merchant</label>
+      <input type="text" name="merchant" maxlength="255" placeholder="e.g., Maxima, Lidl…" style="width:100%;">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Amount</label>
+      <input type="number" step="0.01" name="amount" required placeholder="e.g., 23.45" style="width:100%;">
+    </div>
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Currency</label>
+      <input type="text" name="currency" value="{{ default_currency }}" maxlength="8" style="width:100%;">
+    </div>
+
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Flow</label>
+      <select name="in_out" required style="width:100%;">
+        <option value="out" selected>Spending</option>
+        <option value="in">Income</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block; font-size:.9em; color:#555;">Category</label>
+      <select name="category" style="width:100%;">
+        <option value="">— none —</option>
+        {% for c in categories %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="grid-column: span 2;">
+      <label style="display:block; font-size:.9em; color:#555;">Notes (bank description etc.)</label>
+      <textarea name="notes" rows="2" style="width:100%;" placeholder="Optional"></textarea>
+    </div>
+
+    <div style="grid-column: span 2;">
+      <label style="display:block; font-size:.9em; color:#555;">Your note</label>
+      <textarea name="user_note" rows="2" style="width:100%;" placeholder="Optional"></textarea>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
+    <button type="submit">Add</button>
+    <a href="{{ next }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -33,21 +33,10 @@
   <a href="/deleted/">Deleted</a>
 </div>
 
-<!-- Account filter (viewing) -->
-<form method="get" style="margin:.75rem 0 1rem; padding:.5rem .75rem; border:1px solid #e8e8e8; border-radius:8px; background:#fafafa; display:flex; gap:.5rem; align-items:center;">
-  <label for="src"><strong>Viewing account:</strong></label>
-  <select name="src" id="src" onchange="this.form.submit()">
-    <option value="all" {% if src_param == 'all' %}selected{% endif %}>All accounts</option>
-    {% for s in sources %}
-      <option value="{{ s.id }}" {% if active_src and active_src.id == s.id %}selected{% endif %}>
-        {{ s.name }} ({{ s.get_type_display }})
-      </option>
-    {% endfor %}
-  </select>
-  <!-- If you want to keep other filters when switching account, add them as hidden inputs here -->
-</form>
+
 
 <h2>Upload transactions</h2>
+<a href="{% url 'tx_add' %}">Add transaction</a>
 
 <!-- Upload form with account picker (import target) -->
 <form method="post" enctype="multipart/form-data" class="upload" action="{% url 'upload' %}">
@@ -62,13 +51,22 @@
   <button>Upload</button>
 </form>
 
-{% if error %}<p style="color:red">{{ error }}</p>{% endif %}
-{% if notice %}<p style="color:green">{{ notice }}</p>{% endif %}
 
 <!-- FILTERS -->
 <h2>Filter</h2>
+<!-- Account filter (viewing) -->
+<form method="get" style="margin:.75rem 0 1rem; padding:.5rem .75rem; border:1px solid #e8e8e8; border-radius:8px; background:#fafafa; display:flex; gap:.5rem; align-items:center;">
+  <label for="src"><strong>Viewing account:</strong></label>
+  <select name="src" id="src" onchange="this.form.submit()">
+    <option value="all" {% if src_param == 'all' %}selected{% endif %}>All accounts</option>
+    {% for s in sources %}
+      <option value="{{ s.id }}" {% if active_src and active_src.id == s.id %}selected{% endif %}>
+        {{ s.name }} ({{ s.get_type_display }})
+      </option>
+    {% endfor %}
+  </select>
+</form>
 <form method="get" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  <!-- preserve account selection when filtering -->
   {% if active_src %}
     <input type="hidden" name="src" value="{{ active_src.id }}">
   {% elif src_param == 'all' %}
@@ -130,7 +128,6 @@
 <!-- Page size picker -->
 {% if page_obj and page_obj.object_list %}
   <form method="get" style="margin:.5rem 0;">
-    <!-- keep current filters when changing per -->
     {% if active_src %}
       <input type="hidden" name="src" value="{{ active_src.id }}">
     {% elif src_param == 'all' %}
@@ -140,7 +137,7 @@
     <input type="hidden" name="q" value="{{ q }}">
     <input type="hidden" name="from" value="{{ from }}">
     <input type="hidden" name="to" value="{{ to }}">
-    <input type="hidden" name="amin" value="{{ amin }}">
+    <input type="hidden" name="amin" value="{{ amax }}">
     <input type="hidden" name="amax" value="{{ amax }}">
     <input type="hidden" name="flow" value="{{ flow }}">
     <input type="hidden" name="cat" value="{{ cat }}">
@@ -172,75 +169,102 @@
     <span>Show notes</span>
   </label>
 
-  <table>
-    <tr>
-      <th>date</th>
-      <th>merchant</th>
-      <th>amount</th>
-      <th>currency</th>
-      <th>in_out</th>
-      <th class="col-notes" style="display:none">notes</th>
-      <th>account</th>
-      <th>category</th>
-      <th>source</th>
-      <th>user_note</th>
-      <th>edit</th>
-    </tr>
-    {% for t in page_obj.object_list %}
+  <!-- === PER-ROW CATEGORY EDIT FORM (for submission only) === -->
+  <form method="post" action="{% url 'tx_bulk_category_apply' %}" id="bulkApplyForm">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="changes_json" id="changes_json">
+
+    <table>
       <tr>
-        <td>{{ t.date|date:"Y-m-d" }}</td>
-        <td>{{ t.merchant }}</td>
-        <td>{{ t.amount }}</td>
-        <td>{{ t.currency }}</td>
-        <td>{{ t.in_out }}</td>
+        <th>date</th>
+        <th>merchant</th>
+        <th>amount</th>
+        <th>currency</th>
+        <th>in_out</th>
+        <th class="col-notes" style="display:none">notes</th>
+        <th>account</th>
+        <th>category</th>
+        <th>source</th>
+        <th>user_note</th>
+        <th>edit</th>
+      </tr>
+      {% for t in page_obj.object_list %}
+        <tr data-row="{{ t.id }}">
+          <td>{{ t.date|date:"Y-m-d" }}</td>
+          <td>{{ t.merchant }}</td>
+          <td>{{ t.amount }}</td>
+          <td>{{ t.currency }}</td>
+          <td>{{ t.in_out }}</td>
 
-        <td class="col-notes" style="display:none">{{ t.notes }}</td>
+          <td class="col-notes" style="display:none">{{ t.notes }}</td>
 
-        <td>
-          {% if t.money_source %}
-            {{ t.money_source.name }}
-          {% else %}
-            <span style="opacity:.6">—</span>
-          {% endif %}
-        </td>
-
-        <td>
-          {% if t.category_fk %}{{ t.category_fk.name }}{% else %}{{ t.category }}{% endif %}
-        </td>
-
-        <td>
-          {% if t.category_source == "user" %}
-            <span style="padding:.15rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32; font-size:.85em;">
-              user
-            </span>
-          {% elif t.category_source == "ai" %}
-            {% if t.ai_confidence and t.ai_confidence < 0.80 %}
-              <a href="/review/low/" title="{{ t.ai_reason|default_if_none:'' }}"
-                 style="padding:.15rem .4rem; border-radius:10px; background:#fff3cd; color:#7a5d00; font-size:.85em; text-decoration:none;">
-                AI • {{ t.ai_confidence|floatformat:2 }}
-              </a>
+          <td>
+            {% if t.money_source %}
+              {{ t.money_source.name }}
             {% else %}
-              <span title="{{ t.ai_reason|default_if_none:'' }}"
-                    style="padding:.15rem .4rem; border-radius:10px; background:#e3f2fd; color:#0d47a1; font-size:.85em;">
-                AI • {{ t.ai_confidence|default_if_none:"" |floatformat:2 }}
+              <span style="opacity:.6">—</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <select class="cat-select"
+                    data-tx="{{ t.id }}"
+                    data-initial="{% if t.category_fk %}{{ t.category_fk.id }}{% else %}{{ '' }}{% endif %}">
+              <option value="">— none —</option>
+              {% for c in categories %}
+                {% if t.category_fk and t.category_fk.id == c.id %}
+                  <option value="{{ c.id }}" selected>{{ c.name }}</option>
+                {% else %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            <span class="pending-dot" style="display:none; margin-left:.35rem; font-size:.85em; color:#0d47a1;">• pending</span>
+          </td>
+
+          <td>
+            {% if t.category_source == "user" %}
+              <span style="padding:.15rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32; font-size:.85em;">
+                user
+              </span>
+            {% elif t.category_source == "ai" %}
+              {% if t.ai_confidence and t.ai_confidence < 0.80 %}
+                <a href="/review/low/" title="{{ t.ai_reason|default_if_none:'' }}"
+                   style="padding:.15rem .4rem; border-radius:10px; background:#fff3cd; color:#7a5d00; font-size:.85em; text-decoration:none;">
+                  AI • {{ t.ai_confidence|floatformat:2 }}
+                </a>
+              {% else %}
+                <span title="{{ t.ai_reason|default_if_none:'' }}"
+                      style="padding:.15rem .4rem; border-radius:10px; background:#e3f2fd; color:#0d47a1; font-size:.85em;">
+                  AI • {{ t.ai_confidence|default_if_none:"" |floatformat:2 }}
+                </span>
+              {% endif %}
+            {% elif t.category_source == "rule" %}
+              <span style="padding:.15rem .4rem; border-radius:10px; background:#eef; color:#334; font-size:.85em;">
+                rule
+              </span>
+            {% else %}
+              <span style="padding:.15rem .4rem; border-radius:10px; background:#eee; color:#666; font-size:.85em;">
+                —
               </span>
             {% endif %}
-          {% elif t.category_source == "rule" %}
-            <span style="padding:.15rem .4rem; border-radius:10px; background:#eef; color:#334; font-size:.85em;">
-              rule
-            </span>
-          {% else %}
-            <span style="padding:.15rem .4rem; border-radius:10px; background:#eee; color:#666; font-size:.85em;">
-              —
-            </span>
-          {% endif %}
-        </td>
+          </td>
 
-        <td>{{ t.user_note }}</td>
-        <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}">Edit</a></td>
-      </tr>
-    {% endfor %}
-  </table>
+          <td>{{ t.user_note }}</td>
+          <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}">Edit</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <!-- Sticky bulk bar -->
+    <div style="position:sticky; bottom:0; background:#fff; border-top:1px solid #eee; padding:.6rem .4rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+      <strong id="pendingCount">0 pending</strong>
+      <span style="color:#666;">· You can change categories in multiple pages. Click “Apply changes” to save all.</span>
+      <button type="submit" id="applyBtn" disabled>Apply changes</button>
+      <button type="button" id="clearBtn" style="margin-left:auto;">Discard pending</button>
+    </div>
+  </form>
 
   <p class="pager">
     {% if page_obj.has_previous %}
@@ -258,13 +282,124 @@
 {% endif %}
 
 <script>
-  // Notes toggle behavior
+  // --- Notes toggle ---
   const cb = document.getElementById('toggleNotes');
   const cells = document.querySelectorAll('.col-notes');
   cb?.addEventListener('change', () => {
     const show = cb.checked ? '' : 'none';
     cells.forEach(el => el.style.display = show);
   });
+
+  // --- Local storage key (per-user) ---
+  const userKey = 'mc_cat_changes_u{{ request.user.id }}';
+  function loadChanges(){
+    try { return JSON.parse(localStorage.getItem(userKey) || '{}'); } catch(e){ return {}; }
+  }
+  function saveChanges(obj){
+    localStorage.setItem(userKey, JSON.stringify(obj || {}));
+  }
+  function clearChanges(){
+    localStorage.removeItem(userKey);
+  }
+
+  // If URL has ?clear_local=1, wipe local draft (after a successful apply)
+  if (new URLSearchParams(window.location.search).get('clear_local') === '1'){
+    clearChanges();
+  }
+
+  const pendingCountEl = document.getElementById('pendingCount');
+  const applyBtn = document.getElementById('applyBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const changesField = document.getElementById('changes_json');
+
+  function refreshUI(){
+    const changes = loadChanges();
+    const ids = Object.keys(changes);
+    const n = ids.length;
+    pendingCountEl.textContent = n + ' pending';
+    applyBtn.disabled = n === 0;
+
+    // Reflect pending state in current page rows
+    document.querySelectorAll('tr[data-row]').forEach(tr => {
+      const tx = tr.getAttribute('data-row');
+      const dot = tr.querySelector('.pending-dot');
+      const select = tr.querySelector('.cat-select');
+      const initial = (select?.dataset?.initial || '');
+      if (changes[tx]) {
+        // Set dropdown to pending value if it differs from initial
+        if (select && select.value !== String(changes[tx])) {
+          select.value = String(changes[tx]);
+        }
+        dot && (dot.style.display = (String(changes[tx]) !== String(initial) ? '' : 'none'));
+        tr.style.background = '#f6faff';
+      } else {
+        dot && (dot.style.display = 'none');
+        // Keep user's current selection; but if it equals initial, no highlight
+        if (select && String(select.value) === String(initial)) {
+          tr.style.background = '';
+        } else {
+          // User might have changed but not stored — do nothing special.
+          tr.style.background = '';
+        }
+      }
+    });
+  }
+
+  // Initialize selects with any pending draft
+  function bootstrapSelects(){
+    const changes = loadChanges();
+    document.querySelectorAll('.cat-select').forEach(sel => {
+      const tx = sel.dataset.tx;
+      const initial = sel.dataset.initial || '';
+      // If a pending change exists, show it
+      if (changes[tx]) {
+        sel.value = String(changes[tx]);
+      }
+      // Visual dot
+      const dot = sel.parentElement.querySelector('.pending-dot');
+      dot && (dot.style.display = (changes[tx] && String(changes[tx]) !== String(initial)) ? '' : 'none');
+
+      sel.addEventListener('change', () => {
+        const val = sel.value;
+        const all = loadChanges();
+        if (val && val !== initial) {
+          all[tx] = val;
+        } else {
+          // if equal to initial or empty, remove from pending
+          delete all[tx];
+        }
+        saveChanges(all);
+        refreshUI();
+      });
+    });
+  }
+
+  // Prepare payload on submit
+  const form = document.getElementById('bulkApplyForm');
+  form?.addEventListener('submit', (e) => {
+    const changes = loadChanges();
+    if (!Object.keys(changes).length) {
+      e.preventDefault();
+      alert('No changes to apply.');
+      return;
+    }
+    changesField.value = JSON.stringify(changes);
+    // Let the request proceed; server will redirect with ?clear_local=1
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    if (confirm('Discard all pending category changes?')) {
+      clearChanges();
+      // Reset visible selects to their initial value
+      document.querySelectorAll('.cat-select').forEach(sel => {
+        sel.value = sel.dataset.initial || '';
+      });
+      refreshUI();
+    }
+  });
+
+  bootstrapSelects();
+  refreshUI();
 </script>
 
 {% endblock %}

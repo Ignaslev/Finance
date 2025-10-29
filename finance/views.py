@@ -1,57 +1,60 @@
 from django.http import HttpResponse
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
-import hashlib, pandas as pd
-from io import StringIO
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404
 from django.db import transaction as dbtx
-import os, json, re
+from django.db.models import Q, Sum, Case, When, DecimalField, F
+from django.db.models.functions import TruncMonth
+from django.shortcuts import get_object_or_404, render, redirect
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+import csv, io, os, json, re, hashlib
+import pandas as pd
 from openai import OpenAI
 from datetime import datetime, date as _date
-
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Case, When, DecimalField, F
-from django.db.models.functions import TruncMonth
-from django.shortcuts import render, redirect
-from django.utils import timezone
-
-from .models import Transaction, Category, BalanceSnapshot
-
-import csv, io
-from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
-
-from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.shortcuts import render
-from django.utils import timezone
-
-from .models import Transaction, Category
-from .models import Transaction, Category, MoneySource
-from django.db.models import Sum  # 👈 add this
-import json
-from decimal import Decimal, InvalidOperation
-from datetime import datetime
 from collections import defaultdict
-
-from django.db.models import Sum
-from django.db.models.functions import TruncMonth
+from calendar import monthrange
+from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+import json
 
-from .models import Transaction, Category, BalanceSnapshot, MoneySource
+from .models import (
+    Transaction,
+    Category,
+    BalanceSnapshot,
+    MoneySource,
+)
 
-
-
+# ---------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------
 
 AUTO_APPLY_THRESHOLD   = 0.80  # >= this → apply directly
 AUTO_CHANGE_THRESHOLD  = 0.90  # when changing an existing AI/rule category
 BATCH_SIZE             = 50
+
+# --- Tunables at the top of views.py (near your other constants) ---
+EXAMPLE_LOOKBACK_MONTHS = 12       # only learn from the last N months of edits
+EXAMPLES_TOTAL_CAP       = 48      # overall example cap per batch
+EXAMPLES_PER_CATEGORY    = 4       # soft cap per category to ensure diversity
+EXAMPLES_MIN_USER        = 1       # always prefer user-labeled where possible
+
+
+DEFAULT_CATEGORIES = [
+    "Cash","Dining","Fitness & Health","Groceries","Shopping","Crypto","Utilities","Other"
+]
+
+# ---------------------------------------------------------------------
+# Small helpers
+# ---------------------------------------------------------------------
 
 def env_check(request):
     ok = bool(os.getenv("OPENAI_API_KEY"))
@@ -60,109 +63,13 @@ def env_check(request):
 def home(request):
     return HttpResponse("It works")
 
-DEFAULT_CATEGORIES = ["Cash","Dining","Fitness & Health","Groceries","Shopping","Crypto","Utilities","Other"]
-
 def ensure_default_categories(user):
-    from .models import Category
     if not Category.objects.filter(user=user).exists():
         Category.objects.bulk_create([Category(user=user, name=n) for n in DEFAULT_CATEGORIES])
 
-
-def _fp(user_id, date, merchant, amount, currency, in_out, notes) -> str:
-    """Stable hash to skip duplicates per user."""
-    key = "|".join([
-        str(user_id or ""),
-        str(date or ""),
-        (merchant or "").strip().lower(),
-        f"{float(amount):.2f}" if amount not in (None, "") else "",
-        (currency or "").strip().upper(),
-        (in_out or "").strip().lower(),
-        (notes or "").strip().lower(),
-    ])
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
-@login_required
-def tx_edit(request, pk):
-    tx = get_object_or_404(Transaction, id=pk, user=request.user, is_deleted=False)
-    categories = Category.objects.filter(user=request.user).order_by("name")
-
-    if request.method == "POST":
-        cat_id = request.POST.get("category_id")
-        user_note = (request.POST.get("user_note") or "").strip()[:500]
-        try:
-            if cat_id:
-                cat = Category.objects.get(id=int(cat_id), user=request.user)
-                tx.category_fk = cat
-                tx.category = cat.name
-                tx.category_source = "user"
-            tx.user_note = user_note
-            tx.save(update_fields=["category_fk", "category", "category_source", "user_note"])
-            messages.success(request, "Saved.")
-        except Exception as e:
-            messages.error(request, f"Error: {e}")
-        return redirect(request.GET.get("next") or "upload")
-
-    return render(request, "tx_edit.html", {"tx": tx, "categories": categories})
-
-
-
-@login_required
-def uncategorized(request):
-    """
-    List transactions missing a category (or explicitly 'Other'),
-    excluding soft-deleted rows.
-    """
-    qs = (Transaction.objects
-          .filter(user=request.user, is_deleted=False)
-          .filter(
-              Q(category_fk__isnull=True) |
-              Q(category__isnull=True) |
-              Q(category="") |
-              Q(category="Other")
-          )
-          .order_by("-date", "-id"))
-
-    per = request.GET.get("per")
-    try:
-        per = max(5, min(200, int(per)))
-    except (TypeError, ValueError):
-        per = 20
-
-    paginator = Paginator(qs, per)
-    page_obj = paginator.get_page(request.GET.get("page"))
-    return render(request, "uncategorized.html", {
-        "page_obj": page_obj,
-        "total": paginator.count,
-        "per_value": per,
-    })
-
-def _read_df(fileobj):
-    # Excel
-    try:
-        if fileobj.name.lower().endswith((".xlsx",".xls")):
-            return pd.read_excel(fileobj)
-    except Exception:
-        pass
-    # CSV (Lithuanian bank style)
-    raw = fileobj.read()
-    try:
-        txt = raw.decode("utf-8-sig", errors="replace")
-    except Exception:
-        txt = raw.decode("utf-8", errors="replace")
-    try:
-        return pd.read_csv(StringIO(txt), engine="python", sep=";", quotechar='"', skiprows=1, on_bad_lines="skip")
-    except Exception:
-        try:
-            return pd.read_csv(StringIO(txt), engine="python", sep=",", on_bad_lines="skip")
-        except Exception:
-            return None
-
-
-def fingerprint(row, source_id: int):
+def fingerprint(row, source_id: int) -> str:
     """Stable dedupe key per user+source: date|merchant|amount|currency|in_out|source"""
     return f"{row['date']}|{row['merchant']}|{row['amount']}|{row['currency']}|{row['in_out']}|{source_id}"
-
-
 
 def parse_amount(raw):
     if raw is None:
@@ -172,7 +79,6 @@ def parse_amount(raw):
         return Decimal(s)
     except InvalidOperation:
         return Decimal("0")
-
 
 def parse_in_out(debcred_value=None, trans_type=None):
     """
@@ -193,11 +99,9 @@ def parse_in_out(debcred_value=None, trans_type=None):
         return "out"
     return "out"
 
-
 def normalize_currency(s):
     s = (s or "").strip().upper()
     return "EUR" if s in ("", "€", "EURO", "EUR") else s
-
 
 def parse_date(val):
     """Try common bank formats."""
@@ -207,7 +111,6 @@ def parse_date(val):
         except Exception:
             continue
     return timezone.now().date()
-
 
 def parse_date_filter(s):
     s = (s or "").strip()
@@ -220,7 +123,6 @@ def parse_date_filter(s):
             pass
     return None
 
-
 def parse_decimal_filter(s):
     s = (s or "").strip().replace("€", "").replace(",", ".")
     if not s:
@@ -230,6 +132,473 @@ def parse_decimal_filter(s):
     except InvalidOperation:
         return None
 
+def _normalize_merchant(name: str) -> str:
+    if not name:
+        return ""
+    s = name.upper()
+    s = re.sub(r"\s+", " ", s).strip()
+    s = re.sub(r"[#,/ ]?X[- ]?\d+$", "", s)
+    s = re.sub(r"\s+\d{3,}$", "", s)
+    return s
+
+def _pick_examples(user, limit=EXAMPLES_TOTAL_CAP):
+    """
+    Returns up to `limit` high-quality, diverse examples:
+      - Prefer user > rule > ai sources
+      - Look back last EXAMPLE_LOOKBACK_MONTHS months
+      - Dedupe by normalized merchant + short text gist
+      - Try to balance across categories (soft cap per category)
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+
+    lookback_start = timezone.now().date() - timedelta(days=EXAMPLE_LOOKBACK_MONTHS * 30)
+
+    # Pull a reasonably large pool first
+    qs = (
+        Transaction.objects
+        .filter(user=user, date__gte=lookback_start, category_fk__isnull=False)
+        .filter(category_source__in=["user","rule","ai"])
+        .select_related("category_fk")
+        .order_by("-date","-id")
+        .only("merchant","notes","user_note","amount","in_out","category_source","date","category_fk__name")
+    )[:1500]
+
+    # Helper: tiny gist to help dedupe near-duplicates
+    def gist(t):
+        base = f"{(t.notes or '')} {(t.user_note or '')}".strip()
+        return (base[:80] if base else "")
+
+    # Partition by source preference
+    src_order = ["user", "rule", "ai"]
+    pool = []
+    for s in src_order:
+        pool.extend([t for t in qs if t.category_source == s])
+
+    # Soft per-category cap to maintain diversity
+    per_cat_counts = {}
+    seen_keys = set()   # dedupe by normalized merchant + gist bucket
+    examples = []
+
+    for t in pool:
+        cat = t.category_fk.name if t.category_fk else None
+        if not cat:
+            continue
+
+        # Soft cap per category
+        if per_cat_counts.get(cat, 0) >= EXAMPLES_PER_CATEGORY and len(examples) < limit // 2:
+            # Allow overflow later if we are under limit overall, but early pass enforces diversity
+            continue
+
+        # Deduplicate: merchant normalized + gist bucket
+        mnorm = _normalize_merchant(t.merchant or "")
+        key = (mnorm, gist(t))
+        if key in seen_keys:
+            continue
+
+        examples.append({
+            "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}"[:240],
+            "amount": float(t.amount or 0),
+            "in_out": t.in_out or "",
+            "category": cat,
+            "source": t.category_source,
+        })
+        seen_keys.add(key)
+        per_cat_counts[cat] = per_cat_counts.get(cat, 0) + 1
+
+        if len(examples) >= limit:
+            break
+
+    # If we didn't hit `limit` due to per-cat caps, do a second pass without the cap
+    if len(examples) < limit:
+        for t in pool:
+            if len(examples) >= limit:
+                break
+            cat = t.category_fk.name if t.category_fk else None
+            if not cat:
+                continue
+            mnorm = _normalize_merchant(t.merchant or "")
+            key = (mnorm, gist(t))
+            if key in seen_keys:
+                continue
+            examples.append({
+                "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}"[:240],
+                "amount": float(t.amount or 0),
+                "in_out": t.in_out or "",
+                "category": cat,
+                "source": t.category_source,
+            })
+            seen_keys.add(key)
+
+    return examples
+
+
+
+def _call_openai_rows(user, rows, examples, cats):
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY not set")
+
+    client = OpenAI(api_key=api_key)
+
+    schema = {
+        "type":"object",
+        "properties":{
+            "results":{
+                "type":"array",
+                "items":{
+                    "type":"object",
+                    "properties":{
+                        "id":{"type":"integer"},
+                        "category":{"type":"string","enum":cats},
+                        "confidence":{"type":"number","minimum":0,"maximum":1},
+                        "reason":{"type":"string"}
+                    },
+                    "required":["id","category","confidence"]
+                }
+            }
+        },
+        "required":["results"]
+    }
+
+    # Lightly annotate examples in the message so the model understands “don’t change user-labeled”
+    user_locked = [e for e in examples if e.get("source") == "user"][:EXAMPLES_MIN_USER]
+    example_lines = []
+    if user_locked:
+        # Show at least one explicit DO-NOT-CHANGE exemplar
+        e = user_locked[0]
+        example_lines.append(
+            f"- (LOCKED) text='{e['text']}', amount={e['amount']}, in_out={e['in_out']} => {e['category']} (source=user)"
+        )
+    # Then the rest (mixed)
+    for e in examples:
+        example_lines.append(
+            f"- text='{e['text']}', amount={e['amount']}, in_out={e['in_out']} => {e['category']} (source={e.get('source','')})"
+        )
+
+    msg = (
+        "You are a strict finance transaction categorizer.\n"
+        "Rules:\n"
+        "1) Choose exactly ONE category from the provided list. Do NOT invent categories.\n"
+        "2) If current_category_source == 'user', RETURN THE SAME category (do NOT change it).\n"
+        "3) Use amount/in_out and text cues (merchant | notes | user_note). Prefer precision over guessing.\n"
+        "4) If unsure, choose the most reasonable broad bucket from the list (e.g., 'Other').\n\n"
+        f"Allowed categories: {', '.join(cats)}\n\n"
+        "My labeled examples (treat these as ground truth; '(LOCKED)' rows demonstrate that user-labeled must not change):\n"
+        + "\n".join(example_lines)
+    )
+
+    rows_text = "\n".join([
+        f"- id={r['id']}, text='{(r.get('text') or '')[:240]}', amount={r.get('amount',0)}, in_out='{r.get('in_out','')}', current_category='{r.get('current_category','')}', current_category_source='{r.get('current_source','')}'"
+        for r in rows
+    ])
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        response_format={"type":"json_schema","json_schema":{"name":"tx_categorizer","schema":schema}},
+        temperature=0,
+        messages=[
+            {"role":"system","content":"JSON-only finance categorizer. Reply with VALID JSON matching the schema, nothing else."},
+            {"role":"user","content": msg + "\n\nRows:\n" + rows_text},
+        ],
+    )
+
+    # Robust JSON parse
+    try:
+        data = json.loads(resp.choices[0].message.content)
+    except Exception:
+        txt = resp.choices[0].message.content
+        start = txt.find("{"); end = txt.rfind("}")
+        data = json.loads(txt[start:end+1]) if start>=0 and end>=0 else {"results":[]}
+
+    out = {}
+    for r in data.get("results", []):
+        out[int(r.get("id"))] = {
+            "category": r.get("category") or "Other",
+            "confidence": float(r.get("confidence") or 0),
+            "reason": (r.get("reason") or "")[:500]
+        }
+    return out
+
+
+
+def _month_key(val):
+    """
+    Normalize TruncMonth results across DBs to a date(YYYY-MM-01).
+    - If val is datetime -> return val.date().replace(day=1)
+    - If val is date     -> return val.replace(day=1)
+    - Else               -> return None
+    """
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        d = val.date()
+        return d.replace(day=1)
+    if isinstance(val, _date):
+        return val.replace(day=1)
+    return None
+
+def _ledger_balance_by_source(user):
+    """
+    Returns: dict { money_source_id: Decimal(net balance) } computed from transactions
+    (income positive, spending negative), excluding soft-deleted.
+    """
+    qs = (
+        Transaction.objects
+        .filter(user=user, is_deleted=False)
+        .values("money_source_id")
+        .annotate(
+            net=Sum(
+                Case(
+                    When(in_out=Transaction.IN, then=F("amount")),
+                    When(in_out=Transaction.OUT, then=F("amount") * Decimal("-1")),
+                    default=Decimal("0"),
+                    output_field=DecimalField(max_digits=12, decimal_places=2),
+                )
+            )
+        )
+    )
+    return {row["money_source_id"]: (row["net"] or Decimal("0")) for row in qs}
+
+# ---------------------------------------------------------------------
+# Views
+# ---------------------------------------------------------------------
+
+@login_required
+def tx_edit(request, pk):
+    tx = get_object_or_404(Transaction, id=pk, user=request.user, is_deleted=False)
+    categories = Category.objects.filter(user=request.user).order_by("name")
+
+    if request.method == "POST":
+        # form field name is "category_fk"
+        cat_id = request.POST.get("category_fk")
+        user_note = (request.POST.get("user_note") or "").strip()[:500]
+        try:
+            if cat_id:
+                cat = Category.objects.get(id=int(cat_id), user=request.user)
+                tx.category_fk = cat
+                tx.category = cat.name
+                tx.category_source = "user"
+            tx.user_note = user_note
+            tx.save(update_fields=["category_fk", "category", "category_source", "user_note"])
+            messages.success(request, "Saved.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+        return redirect(request.GET.get("next") or "upload")
+
+    return render(request, "tx_edit.html", {"tx": tx, "categories": categories})
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def tx_add(request):
+    """
+    Add a transaction manually.
+
+    Fields:
+      - date (default today)
+      - merchant
+      - amount (decimal, required)
+      - currency (default EUR)
+      - in_out (in/out)
+      - account (MoneySource)
+      - category (Category)
+      - notes (optional)
+      - user_note (optional)
+
+    Dedupe: uses same account-aware fingerprint as upload (includes money_source_id).
+    """
+    # Ensure user has at least one account & categories
+    sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
+    if not sources:
+        primary_src = MoneySource.objects.create(user=request.user, name="Primary account", type="bank", is_active=True)
+        sources = [primary_src]
+    categories = Category.objects.filter(user=request.user).order_by("name")
+    if not categories.exists():
+        ensure_default_categories(request.user)
+        categories = Category.objects.filter(user=request.user).order_by("name")
+
+    if request.method == "POST":
+        # Read fields
+        date_str   = (request.POST.get("date") or "").strip()
+        merchant   = (request.POST.get("merchant") or "").strip()[:255]
+        amount_str = (request.POST.get("amount") or "").strip().replace(",", ".")
+        currency   = (request.POST.get("currency") or "EUR").strip().upper()[:8] or "EUR"
+        in_out     = (request.POST.get("in_out") or "out").strip()
+        notes      = (request.POST.get("notes") or "").strip()[:2000]
+        user_note  = (request.POST.get("user_note") or "").strip()[:2000]
+        src_id     = request.POST.get("money_source") or ""
+        cat_id     = request.POST.get("category") or ""
+        next_url   = request.POST.get("next") or "upload"
+
+        # Validate/parse
+        try:
+            d = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except Exception:
+            d = timezone.localdate()
+
+        try:
+            amount = Decimal(amount_str)
+        except (InvalidOperation, TypeError):
+            messages.error(request, "Enter a valid amount (e.g., 12.34).")
+            return redirect("tx_add")
+
+        try:
+            src = MoneySource.objects.get(id=int(src_id), user=request.user, is_active=True)
+        except Exception:
+            src = sources[0]
+
+        cat = None
+        if cat_id:
+            try:
+                cat = Category.objects.get(id=int(cat_id), user=request.user)
+            except Category.DoesNotExist:
+                cat = None
+
+        # Build the fingerprint (date|merchant|amount|currency|in_out|source_id)
+        fp = f"{d.isoformat()}|{merchant}|{str(amount)}|{currency}|{in_out}|{src.id}"
+
+        # Skip if duplicate for this user
+        if Transaction.objects.filter(user=request.user, fingerprint=fp).exists():
+            messages.info(request, "This transaction already exists (duplicate skipped).")
+            return redirect(next_url)
+
+        # Create
+        tx = Transaction.objects.create(
+            user=request.user,
+            money_source=src,
+            date=d,
+            merchant=merchant,
+            amount=amount,
+            currency=currency,
+            in_out=in_out,
+            notes=notes,
+            user_note=user_note,
+            fingerprint=fp,
+            category_source="user" if cat else "unknown",
+            category_fk=cat,
+            category=(cat.name if cat else None),
+        )
+        messages.success(request, "Transaction added.")
+        return redirect(next_url)
+
+    # GET
+    ctx = {
+        "today": timezone.localdate().strftime("%Y-%m-%d"),
+        "sources": sources,
+        "categories": categories,
+        "next": request.GET.get("next") or request.META.get("HTTP_REFERER") or "/",
+        "default_currency": "EUR",
+    }
+    return render(request, "tx_add.html", ctx)
+
+@login_required
+def tx_bulk_category_apply(request):
+    """
+    Apply many per-row category changes in one go.
+
+    POST:
+      - changes_json: JSON object { "<tx_id>": "<cat_id>", ... }
+      - next: where to return (include your filters); we’ll add clear_local=1
+    """
+    if request.method != "POST":
+        return redirect("upload")
+
+    next_url = request.POST.get("next") or "/"
+    changes_raw = request.POST.get("changes_json")
+    if not changes_raw:
+        messages.info(request, "No changes to apply.")
+        return redirect(next_url)
+
+    try:
+        mapping = json.loads(changes_raw)
+        if not isinstance(mapping, dict):
+            mapping = {}
+    except Exception:
+        mapping = {}
+
+    if not mapping:
+        messages.info(request, "No changes to apply.")
+        return redirect(next_url)
+
+    # Validate all category ids first (per user) to avoid half-applies
+    # Build {cat_id: Category}
+    cat_ids = set()
+    tx_ids = []
+    for tx_id, cat_id in mapping.items():
+        try:
+            tx_ids.append(int(tx_id))
+            cat_ids.add(int(cat_id))
+        except Exception:
+            continue
+
+    cats = {c.id: c for c in Category.objects.filter(user=request.user, id__in=cat_ids)}
+    applied = 0
+
+    # Apply
+    for tx_id, cat_id in mapping.items():
+        try:
+            tx_id = int(tx_id)
+            cat_id = int(cat_id)
+        except Exception:
+            continue
+
+        cat = cats.get(cat_id)
+        if not cat:
+            continue
+
+        try:
+            tx = Transaction.objects.get(id=tx_id, user=request.user, is_deleted=False)
+        except Transaction.DoesNotExist:
+            continue
+
+        tx.category_fk = cat
+        tx.category = cat.name
+        tx.category_source = "user"
+        tx.ai_suggested_fk = None
+        tx.ai_confidence = None
+        tx.save(update_fields=["category_fk", "category", "category_source", "ai_suggested_fk", "ai_confidence"])
+        applied += 1
+
+    if applied:
+        messages.success(request, f"Applied changes to {applied} transaction(s).")
+    else:
+        messages.info(request, "Nothing changed.")
+
+    # Ask client to clear its local draft
+    sep = "&" if "?" in next_url else "?"
+    return redirect(f"{next_url}{sep}clear_local=1")
+
+@login_required
+def uncategorized(request):
+    """
+    List transactions missing a category (or explicitly 'Other'),
+    excluding soft-deleted rows.
+    """
+    qs = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False)
+        .filter(
+            Q(category_fk__isnull=True) |
+            Q(category__isnull=True) |
+            Q(category="") |
+            Q(category="Other")
+        )
+        .order_by("-date", "-id")
+    )
+
+    per = request.GET.get("per")
+    try:
+        per = max(5, min(200, int(per)))
+    except (TypeError, ValueError):
+        per = 20
+
+    paginator = Paginator(qs, per)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    return render(request, "uncategorized.html", {
+        "page_obj": page_obj,
+        "total": paginator.count,
+        "per_value": per,
+    })
 
 @login_required
 def upload(request):
@@ -446,20 +815,40 @@ def upload(request):
             if added:
                 Transaction.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
 
+            # ---- Quick badges for next steps (computed AFTER insert) ----
+            uncat_count = (Transaction.objects
+                           .filter(user=request.user, is_deleted=False)
+                           .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") | Q(category="Other"))
+                           .count())
+            low_conf_count = Transaction.objects.filter(
+                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+            ).count()
+
             # messages + redirect (PRG)
+            link_uncat = f'<a href="/uncategorized/">Uncategorized ({uncat_count})</a>'
+            link_low   = f'<a href="/review/low/">Low-confidence ({low_conf_count})</a>'
+
             if added == 0:
                 messages.info(
                     request,
-                    f"Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. "
-                    f"No new transactions. Duplicates in DB: {len(existing_set)} (blocked by deleted: {blocked_deleted}), "
-                    f"duplicates in file: {duplicates_file}."
+                    (
+                        f'Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. '
+                        f'No new transactions. Duplicates in DB: {len(existing_set)} '
+                        f'(blocked by deleted: {blocked_deleted}), duplicates in file: {duplicates_file}. '
+                        f'Next: {link_uncat} · {link_low}'
+                    ),
+                    extra_tags="safe"
                 )
             else:
                 messages.success(
                     request,
-                    f"Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. "
-                    f"Added {added} new transaction{'s' if added != 1 else ''}. "
-                    f"(DB dups: {len(existing_set)}, file dups: {duplicates_file}, blocked by deleted: {blocked_deleted}.)"
+                    (
+                        f'Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. '
+                        f'Added {added} new transaction{"s" if added != 1 else ""}. '
+                        f'(DB dups: {len(existing_set)}, file dups: {duplicates_file}, blocked by deleted: {blocked_deleted}.) '
+                        f'Next: {link_uncat} · {link_low}'
+                    ),
+                    extra_tags="safe"
                 )
 
             # keep account/account-type filter on redirect
@@ -563,7 +952,6 @@ def upload(request):
     return render(request, "upload.html", ctx)
 
 
-
 def register(request):
     if request.method == "POST":
         form = UserCreationForm(request.POST)
@@ -575,34 +963,13 @@ def register(request):
         form = UserCreationForm()
     return render(request, "register.html", {"form": form})
 
-@login_required
-def uncategorized(request):
-    qs = (Transaction.objects
-          .filter(user=request.user, is_deleted=False)
-          .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") | Q(category="Other"))
-          .order_by("-date", "-id"))
-
-    per = request.GET.get("per")
-    try:
-        per = max(5, min(200, int(per)))
-    except (TypeError, ValueError):
-        per = 50
-    paginator = Paginator(qs, per)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    return render(request, "uncategorized.html", {
-        "page_obj": page_obj,
-        "total": paginator.count,
-        "per_value": per,
-    })
-
+# ----------------------------- Categories CRUD -----------------------------
 
 @login_required
 def category_list(request):
-    # Seed defaults for the user (once)
-    defaults = ["Cash", "Dining", "Fitness & Health", "Groceries", "Shopping", "Crypto", "Utilities", "Other"]
+    # Seed defaults once per user
     if not Category.objects.filter(user=request.user).exists():
-        Category.objects.bulk_create([Category(user=request.user, name=n) for n in defaults])
+        Category.objects.bulk_create([Category(user=request.user, name=n) for n in DEFAULT_CATEGORIES])
 
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()
@@ -613,7 +980,6 @@ def category_list(request):
 
     cats = Category.objects.filter(user=request.user).order_by("name")
     return render(request, "categories.html", {"categories": cats})
-
 
 @login_required
 def category_edit(request, pk):
@@ -641,105 +1007,9 @@ def category_delete(request, pk):
             Transaction.objects.filter(user=request.user, category_fk=cat).update(category_fk=other)
             cat.delete()
         return redirect("category_list")
-    # simple confirm page inline in list; but if called directly:
+    # if called with GET, just go back to list
     return redirect("category_list")
 
-def _normalize_merchant(name: str) -> str:
-    if not name: return ""
-    s = name.upper()
-    s = re.sub(r"\s+", " ", s).strip()
-    s = re.sub(r"[#,/ ]?X[- ]?\d+$", "", s)
-    s = re.sub(r"\s+\d{3,}$", "", s)
-    return s
-
-def _pick_examples(user, limit=10):
-    qs = (Transaction.objects
-          .filter(user=user)
-          .exclude(category_fk__isnull=True)
-          .filter(category_source__in=["user","rule","ai"])
-          .order_by("-date","-id")
-          .select_related("category_fk"))[:500]
-    ex, seen = [], set()
-    for t in qs:
-        m = _normalize_merchant(t.merchant)
-        if m in seen:
-            continue
-        seen.add(m)
-        ex.append({
-            "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}"[:240],
-            "amount": float(t.amount or 0),
-            "in_out": t.in_out or "",
-            "category": t.category_fk.name if t.category_fk else (t.category or "Other"),
-        })
-        if len(ex) >= limit:
-            break
-    return ex
-
-def _call_openai_rows(user, rows, examples, cats):
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set")
-
-    client = OpenAI(api_key=api_key)
-    schema = {
-        "type":"object",
-        "properties":{
-            "results":{
-                "type":"array",
-                "items":{
-                    "type":"object",
-                    "properties":{
-                        "id":{"type":"integer"},
-                        "category":{"type":"string","enum":cats},
-                        "confidence":{"type":"number","minimum":0,"maximum":1},
-                        "reason":{"type":"string"}
-                    },
-                    "required":["id","category","confidence"]
-                }
-            }
-        },
-        "required":["results"]
-    }
-
-    msg = (
-        "You classify transactions into exactly one category from this list.\n"
-        f"Categories: {', '.join(cats)}\n\n"
-        "My labeled examples (treat these as ground truth):\n" +
-        "\n".join([f"- text='{e['text']}', amount={e['amount']}, in_out={e['in_out']} => {e['category']}" for e in examples]) +
-        "\n\nIf current_category_source=='user', output the SAME category (do not change it).\n"
-        "Return strict JSON matching the schema."
-    )
-
-    rows_text = "\n".join([
-        f"- id={r['id']}, text='{(r.get('text') or '')[:240]}', amount={r.get('amount',0)}, in_out='{r.get('in_out','')}', current_category='{r.get('current_category','')}', current_category_source='{r.get('current_source','')}'"
-        for r in rows
-    ])
-
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        response_format={"type":"json_schema","json_schema":{"name":"tx_categorizer","schema":schema}},
-        messages=[
-            {"role":"system","content":"JSON-only finance categorizer."},
-            {"role":"user","content": msg + "\n\nRows:\n" + rows_text},
-        ],
-        temperature=0,
-    )
-
-    try:
-        data = json.loads(resp.choices[0].message.content)
-    except Exception:
-        txt = resp.choices[0].message.content
-        start = txt.find("{"); end = txt.rfind("}")
-        data = json.loads(txt[start:end+1]) if start>=0 and end>=0 else {"results":[]}
-
-    out = {}
-    for r in data.get("results", []):
-        out[int(r.get("id"))] = {
-            "category": r.get("category") or "Other",
-            "confidence": float(r.get("confidence") or 0),
-            "reason": r.get("reason") or ""
-        }
-    return out
 
 @login_required
 def ai_full_categorize(request):
@@ -747,78 +1017,77 @@ def ai_full_categorize(request):
     Modes:
       - mode=uncat (default): only uncategorized / 'Other'
       - mode=ai:     only previously AI-labeled
-      - mode=all:    everything EXCEPT user-labeled (we never override user)
+      - mode=all:    everything EXCEPT user-labeled
     Behavior:
       - If row has no category: apply when confidence >= AUTO_APPLY_THRESHOLD, else park (ai_suggested_fk).
       - If row has AI/rule category and AI proposes a DIFFERENT one:
           * if confidence >= AUTO_CHANGE_THRESHOLD -> auto-change
-          * elif confidence >= AUTO_APPLY_THRESHOLD -> park as change suggestion (ai_suggested_fk)
-          * else ignore (keep current)
+          * elif confidence >= AUTO_APPLY_THRESHOLD -> park as change suggestion
+          * else ignore
+    Always excludes is_deleted=True.
     """
-    # ensure categories exist
+    # Seed defaults for the user (once)
     if not Category.objects.filter(user=request.user).exists():
-        from .views import ensure_default_categories
         ensure_default_categories(request.user)
 
-    key_present = bool(os.getenv("OPENAI_API_KEY"))
-    if not key_present:
+    if not os.getenv("OPENAI_API_KEY"):
         return render(request, "ai_summary.html", {
-            "key_present": False,
-            "total_candidates": 0,
-            "applied": 0,
-            "parked": 0,
+            "key_present": False, "total_candidates": 0, "applied": 0, "parked": 0,
             "left_for_review": 0,
         })
 
     mode = request.GET.get("mode", "uncat")
+    try:
+        hard_limit = int(request.GET.get("limit", "0"))
+        hard_limit = max(0, min(2000, hard_limit))  # safety cap
+    except ValueError:
+        hard_limit = 0
 
     # ---------- Candidate pool (EXCLUDE deleted) ----------
     if mode == "uncat":
-        qs = (Transaction.objects
-              .filter(user=request.user, is_deleted=False)  # NEW
-              .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") | Q(category="Other")))
+        base = (Transaction.objects
+                .filter(user=request.user, is_deleted=False)
+                .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") | Q(category="Other")))
     elif mode == "ai":
-        qs = Transaction.objects.filter(user=request.user, is_deleted=False, category_source="ai")  # NEW
+        base = Transaction.objects.filter(user=request.user, is_deleted=False, category_source="ai")
     elif mode == "all":
-        qs = Transaction.objects.filter(user=request.user, is_deleted=False).exclude(category_source="user")  # NEW
+        base = Transaction.objects.filter(user=request.user, is_deleted=False).exclude(category_source="user")
     else:
-        qs = Transaction.objects.none()
+        base = Transaction.objects.none()
 
-    qs = qs.order_by("date", "id")
+    qs = base.order_by("date", "id").select_related("category_fk")
+    if hard_limit:
+        qs = qs[:hard_limit]
+
     total_candidates = qs.count()
     if total_candidates == 0:
         return render(request, "ai_summary.html", {
-            "key_present": True,
-            "total_candidates": 0,
-            "applied": 0,
-            "parked": 0,
+            "key_present": True, "total_candidates": 0, "applied": 0, "parked": 0,
             "left_for_review": Transaction.objects.filter(
-                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False  # NEW
+                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
             ).count(),
         })
 
     cats_map = {c.name: c for c in Category.objects.filter(user=request.user)}
-    applied = 0
-    parked  = 0
-
-    # Build payload once
-    rows = []
-    for t in qs.select_related("category_fk"):
-        rows.append({
-            "id": t.id,
-            "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}",
-            "amount": float(t.amount or 0),
-            "in_out": t.in_out or "",
-            "current_category": (t.category_fk.name if t.category_fk else (t.category or "")) or "",
-            "current_source": t.category_source or "",
-        })
-
-    # Process in batches; refresh examples per batch so it learns as you go
     cats_list = sorted(cats_map.keys())
+
+    # Build request rows upfront
+    rows = [{
+        "id": t.id,
+        "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}",
+        "amount": float(t.amount or 0),
+        "in_out": t.in_out or "",
+        "current_category": (t.category_fk.name if t.category_fk else (t.category or "")) or "",
+        "current_source": t.category_source or "",
+    } for t in qs]
+
+    applied = 0
+    parked = 0
+
+    # Process in batches, refreshing examples per batch (learn from new edits)
     for i in range(0, len(rows), BATCH_SIZE):
         batch = rows[i:i+BATCH_SIZE]
-        examples = _pick_examples(request.user, limit=10)
-
+        examples = _pick_examples(request.user, limit=12)
         try:
             results = _call_openai_rows(request.user, batch, examples, cats_list)
         except Exception as e:
@@ -826,10 +1095,13 @@ def ai_full_categorize(request):
 
         for r in batch:
             t_id = r["id"]
-            # Guard against operating on deleted rows (or others’ rows)
             try:
-                t = Transaction.objects.get(pk=t_id, user=request.user, is_deleted=False)  # NEW
+                t = Transaction.objects.get(pk=t_id, user=request.user, is_deleted=False)
             except Transaction.DoesNotExist:
+                continue
+
+            # Never override user-labeled
+            if t.category_source == "user":
                 continue
 
             res = results.get(t_id)
@@ -843,14 +1115,9 @@ def ai_full_categorize(request):
             if not suggested_fk:
                 continue
 
-            # Never override user-labeled
-            if t.category_source == "user":
-                continue
+            current_name = (t.category_fk.name if t.category_fk else (t.category or "")).strip() or ""
 
-            current_name = (t.category_fk.name if t.category_fk else (t.category or "")).strip()
-
-            if not current_name or current_name == "" or current_name == "Other":
-                # fresh assignment
+            if not current_name or current_name == "Other":
                 if conf >= AUTO_APPLY_THRESHOLD:
                     t.category_fk = suggested_fk
                     t.category = suggested_fk.name
@@ -858,49 +1125,52 @@ def ai_full_categorize(request):
                     t.ai_confidence = conf
                     t.ai_reason = reason
                     t.ai_suggested_fk = None
-                    t.save(update_fields=["category_fk","category","category_source","ai_confidence","ai_reason","ai_suggested_fk"])
+                    t.save(update_fields=[
+                        "category_fk","category","category_source","ai_confidence","ai_reason","ai_suggested_fk","updated_at"
+                    ])
                     applied += 1
                 else:
                     t.ai_suggested_fk = suggested_fk
                     t.ai_confidence = conf
                     t.ai_reason = reason
-                    t.save(update_fields=["ai_suggested_fk","ai_confidence","ai_reason"])
+                    t.save(update_fields=["ai_suggested_fk","ai_confidence","ai_reason","updated_at"])
                     parked += 1
-            else:
-                # row already has AI/rule category; check for change
-                if suggested_name == current_name:
-                    # optional: refresh confidence/reason
-                    if t.category_source == "ai":
-                        t.ai_confidence = conf
-                        t.ai_reason = reason
-                        t.ai_suggested_fk = None
-                        t.save(update_fields=["ai_confidence","ai_reason","ai_suggested_fk"])
-                    continue
+                continue
 
-                # different suggestion
-                if conf >= AUTO_CHANGE_THRESHOLD:
-                    # very confident → auto-change
-                    t.category_fk = suggested_fk
-                    t.category = suggested_fk.name
-                    t.category_source = "ai"
+            # Already has AI/rule category
+            if suggested_name == current_name:
+                # refresh confidence/reason if AI
+                if t.category_source == "ai":
                     t.ai_confidence = conf
                     t.ai_reason = reason
                     t.ai_suggested_fk = None
-                    t.save(update_fields=["category_fk","category","category_source","ai_confidence","ai_reason","ai_suggested_fk"])
-                    applied += 1
-                elif conf >= AUTO_APPLY_THRESHOLD:
-                    # moderate confidence → park as change suggestion
-                    t.ai_suggested_fk = suggested_fk
-                    t.ai_confidence = conf
-                    t.ai_reason = reason
-                    t.save(update_fields=["ai_suggested_fk","ai_confidence","ai_reason"])
-                    parked += 1
-                else:
-                    # low confidence → ignore (keep current)
-                    pass
+                    t.save(update_fields=["ai_confidence","ai_reason","ai_suggested_fk","updated_at"])
+                continue
+
+            # Different suggestion
+            if conf >= AUTO_CHANGE_THRESHOLD:
+                t.category_fk = suggested_fk
+                t.category = suggested_fk.name
+                t.category_source = "ai"
+                t.ai_confidence = conf
+                t.ai_reason = reason
+                t.ai_suggested_fk = None
+                t.save(update_fields=[
+                    "category_fk","category","category_source","ai_confidence","ai_reason","ai_suggested_fk","updated_at"
+                ])
+                applied += 1
+            elif conf >= AUTO_APPLY_THRESHOLD:
+                t.ai_suggested_fk = suggested_fk
+                t.ai_confidence = conf
+                t.ai_reason = reason
+                t.save(update_fields=["ai_suggested_fk","ai_confidence","ai_reason","updated_at"])
+                parked += 1
+            else:
+                # ignore
+                pass
 
     left_for_review = Transaction.objects.filter(
-        user=request.user, is_deleted=False, ai_suggested_fk__isnull=False  # NEW
+        user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
     ).count()
 
     return render(request, "ai_summary.html", {
@@ -910,6 +1180,7 @@ def ai_full_categorize(request):
         "parked": parked,
         "left_for_review": left_for_review,
     })
+
 
 @login_required
 def tx_delete(request, tx_id):
@@ -934,7 +1205,6 @@ def tx_delete(request, tx_id):
     messages.error(request, "Invalid request method.")
     return redirect("upload")
 
-
 @login_required
 def tx_restore(request, tx_id):
     """Restore a previously deleted transaction."""
@@ -943,7 +1213,6 @@ def tx_restore(request, tx_id):
         if tx.is_deleted:
             tx.is_deleted = False
             tx.deleted_at = None
-            # keep deleted_note for audit or clear it, your call. I’ll keep it.
             tx.save(update_fields=["is_deleted", "deleted_at"])
             messages.success(request, "Transaction restored.")
         else:
@@ -951,7 +1220,6 @@ def tx_restore(request, tx_id):
         return redirect(request.POST.get("next") or "deleted_list")
     messages.error(request, "Invalid request method.")
     return redirect("deleted_list")
-
 
 @login_required
 def deleted_list(request):
@@ -999,48 +1267,51 @@ def review_low_conf(request):
         "categories": categories,
     })
 
-
 @login_required
 def review_low_apply(request):
     if request.method != "POST":
         return redirect("review_low_conf")
 
     ids = request.POST.getlist("tx_id")
-    cat_id = request.POST.get("category_id")
-    if not ids or not cat_id:
-        messages.error(request, "Select rows and a category.")
-        return redirect("review_low_conf")
+    cat_ids = request.POST.getlist("cat_id")  # one per row, same order as tx_id
 
-    try:
-        cat = Category.objects.get(id=int(cat_id), user=request.user)
-    except (Category.DoesNotExist, ValueError):
-        messages.error(request, "Category not found.")
+    if not ids or not cat_ids or len(ids) != len(cat_ids):
+        messages.error(request, "Select categories for the rows you want to change.")
         return redirect("review_low_conf")
 
     applied = 0
-    for sid in ids:
+    for sid, scatid in zip(ids, cat_ids):
         try:
             tx = Transaction.objects.get(id=int(sid), user=request.user, is_deleted=False)
         except (Transaction.DoesNotExist, ValueError):
             continue
+        try:
+            cat = Category.objects.get(id=int(scatid), user=request.user)
+        except (Category.DoesNotExist, ValueError):
+            continue
+
         tx.category_fk = cat
         tx.category = cat.name
         tx.category_source = "user"
         tx.ai_suggested_fk = None
         tx.ai_confidence = None
-        tx.save(update_fields=["category_fk", "category", "category_source", "ai_suggested_fk", "ai_confidence"])
+        tx.save(update_fields=[
+            "category_fk", "category", "category_source", "ai_suggested_fk", "ai_confidence"
+        ])
         applied += 1
 
     messages.success(request, f"Applied {applied} changes.")
     return redirect("review_low_conf")
 
+
 @login_required
 def review_ai_recent(request):
+    # Order by last mutation time you already track
     qs = Transaction.objects.filter(
         user=request.user,
         is_deleted=False,
         category_source="ai",
-    ).order_by("-ai_updated_at", "-id")
+    ).order_by("-updated_at", "-id")
 
     per = request.GET.get("per")
     try:
@@ -1057,35 +1328,16 @@ def review_ai_recent(request):
     })
 
 
-def _month_key(val):
-    """
-    Normalize TruncMonth results across DBs to a date(YYYY-MM-01).
-    - If val is datetime -> return val.date().replace(day=1)
-    - If val is date     -> return val.replace(day=1)
-    - Else               -> return None
-    """
-    if val is None:
-        return None
-    if isinstance(val, datetime):
-        d = val.date()
-        return d.replace(day=1)
-    if isinstance(val, date):
-        return val.replace(day=1)
-    return None
-
 
 @login_required
 def overview(request):
     """
-    Overview page:
-      - BalanceSnapshot add/update
-      - Total manual balances (sum of MoneySource.current_balance)
-      - Income vs Spending per month (Chart.js)
-      - Net by month table
-      - Spending per category per month (Chart.js, single-series toggle)
+    Overview:
+      - Same as before (totals, income vs spending, net, category chart)
+      - Merchant breakdown per category+month
+      - NEW: Month bounds mapping for quick "Review" links
     """
-
-    # ---------- 1) Handle BalanceSnapshot POST (modal) ----------
+    # ----- BalanceSnapshot POST (unchanged) -----
     if request.method == "POST" and request.POST.get("form") == "balance":
         raw_amount = (request.POST.get("amount") or "").strip().replace(",", ".")
         raw_ts     = (request.POST.get("timestamp") or "").strip()
@@ -1112,50 +1364,63 @@ def overview(request):
             messages.success(request, "Balance snapshot updated.")
         else:
             BalanceSnapshot.objects.create(
-                user=request.user,
-                amount=amount,
-                currency="EUR",
-                timestamp=ts,
-                note=note[:180],
+                user=request.user, amount=amount, currency="EUR", timestamp=ts, note=note[:180]
             )
             messages.success(request, "Balance snapshot added.")
-
         return redirect("overview")
 
-    # ---------- 2) Total manual balances across all accounts ----------
-    total_accounts_balance = (
-        MoneySource.objects
-        .filter(user=request.user, is_active=True, current_balance__isnull=False)
-        .aggregate(total=Sum("current_balance"))["total"]
-    ) or 0
+    # ----- Effective account balances -----
+    accounts = list(MoneySource.objects.filter(user=request.user).order_by("type", "name"))
 
-    # Active accounts for this user (show even if balance isn't set yet)
-    accounts_with_balances = (
-        MoneySource.objects
-        .filter(user=request.user, is_active=True)
-        .order_by("type", "name")
+    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False)
+
+    tx_sums = (
+        tx_base
+        .values("money_source_id", "in_out")
+        .annotate(total=Sum("amount"))
     )
+    from collections import defaultdict
+    ledger_map = defaultdict(lambda: Decimal("0"))
+    for row in tx_sums:
+        ms_id = row["money_source_id"]
+        amt = row["total"] or Decimal("0")
+        if row["in_out"] == Transaction.IN:
+            ledger_map[ms_id] += amt
+        else:
+            ledger_map[ms_id] -= amt
 
-    # ---------- 3) Income vs Spending per month ----------
-    qs = (Transaction.objects
-          .filter(user=request.user, is_deleted=False)
-          .annotate(month=TruncMonth("date")))
+    total_effective = Decimal("0")
+    for acc in accounts:
+        ledger_val = ledger_map.get(acc.id, Decimal("0"))
+        effective = getattr(acc, "manual_balance", None)
+        if effective is None:
+            effective = ledger_val
+        acc.effective_balance = effective
+        total_effective += effective if acc.is_active else Decimal("0")
 
-    by_month = qs.values("month", "in_out").annotate(total=Sum("amount"))
+    # ----- Income vs Spending per month -----
+    qs_month = tx_base.annotate(month=TruncMonth("date"))
+    by_month = qs_month.values("month", "in_out").annotate(total=Sum("amount"))
 
-    # Collect normalized months present
+    def _month_key(val):
+        if val is None:
+            return None
+        if isinstance(val, datetime):
+            d = val.date()
+            return _date(d.year, d.month, 1)
+        if isinstance(val, _date):
+            return _date(val.year, val.month, 1)
+        return None
+
     months_set = set()
     for row in by_month:
         mk = _month_key(row["month"])
-        if mk:
-            months_set.add(mk)
-
-    months = sorted(months_set)  # list of date(YYYY-MM-01)
+        if mk: months_set.add(mk)
+    months = sorted(months_set)
     labels = [m.strftime("%Y-%m") for m in months]
 
     totals_in = {m: Decimal("0") for m in months}
     totals_out = {m: Decimal("0") for m in months}
-
     for row in by_month:
         mk = _month_key(row["month"])
         if not mk:
@@ -1168,52 +1433,122 @@ def overview(request):
 
     income_series   = [float(totals_in[m]) for m in months]
     spending_series = [float(totals_out[m]) for m in months]
-
-    # ---------- 4) Net by month table ----------
     net_rows = [{"month": m.strftime("%Y-%m"), "net": float(totals_in[m] - totals_out[m])} for m in months]
 
-    # ---------- 5) Spending per category per month (spending only) ----------
-    qs_cat = (Transaction.objects
-              .filter(user=request.user, is_deleted=False, in_out=Transaction.OUT, category_fk__isnull=False)
-              .annotate(month=TruncMonth("date"))
-              .values("month", "category_fk__name")
-              .annotate(total=Sum("amount")))
+    # ----- Category chart (spending only; FK-only) -----
+    qs_cat = (
+        tx_base
+        .filter(in_out=Transaction.OUT, category_fk__isnull=False)
+        .annotate(month=TruncMonth("date"))
+        .values("month", "category_fk__name")
+        .annotate(total=Sum("amount"))
+    )
 
-    cat_months_set = set()
-    cat_names_set = set()
+    cat_months_set, cat_names_set = set(), set()
     for row in qs_cat:
         mk = _month_key(row["month"])
-        if mk:
-            cat_months_set.add(mk)
+        if mk: cat_months_set.add(mk)
         cname = row["category_fk__name"]
-        if cname:
-            cat_names_set.add(cname)
+        if cname: cat_names_set.add(cname)
 
     cat_months = sorted(set(months) | cat_months_set)
     cat_labels = [m.strftime("%Y-%m") for m in cat_months]
     cat_names = sorted(cat_names_set)
 
-    data_map = defaultdict(lambda: {m: Decimal("0") for m in cat_months})
+    from collections import defaultdict as _dd
+    data_map = _dd(lambda: {m: Decimal("0") for m in cat_months})
     for row in qs_cat:
-        mk = _month_key(row["month"])
-        cname = row["category_fk__name"]
-        if not mk or not cname:
-            continue
-        data_map[cname][mk] += (row["total"] or Decimal("0"))
-
+        mk = _month_key(row["month"]); cname = row["category_fk__name"]
+        if mk and cname:
+            data_map[cname][mk] += (row["total"] or Decimal("0"))
     series_by_cat = {cname: [float(data_map[cname][m]) for m in cat_months] for cname in cat_names}
 
-    # ---------- 6) Balance snapshot chart helpers (placeholder single point) ----------
-    latest_snap = BalanceSnapshot.objects.filter(user=request.user).order_by("-timestamp").first()
-    balance_labels_json = "[]"
-    balance_values_json = "[]"
-    if latest_snap:
-        balance_labels_json = json.dumps([latest_snap.timestamp.strftime("%Y-%m-%d %H:%M")])
-        balance_values_json = json.dumps([float(latest_snap.amount)])
+    # ----- Merchant breakdown per category per month -----
+    from django.db.models import Count
+    qs_merchant = (
+        tx_base
+        .filter(in_out=Transaction.OUT, category_fk__isnull=False)
+        .annotate(month=TruncMonth("date"))
+        .values("month", "category_fk__name", "merchant")
+        .annotate(total=Sum("amount"), tx_count=Count("id"))
+    )
 
+    breakdown_by_cat_month = {}
+    for row in qs_merchant:
+        mk = _month_key(row["month"])
+        if not mk:
+            continue
+        month_key = mk.strftime("%Y-%m")
+        cname = row["category_fk__name"] or "Other"
+        merchant = (row["merchant"] or "").strip() or "—"
+        total = row["total"] or Decimal("0")
+        cnt = int(row["tx_count"] or 0)
+        avg = (total / cnt) if cnt else Decimal("0")
+
+        breakdown_by_cat_month.setdefault(cname, {}).setdefault(month_key, []).append({
+            "merchant": merchant[:80],
+            "total": float(total),
+            "count": cnt,
+            "avg": float(avg),
+        })
+
+    for cname, per_month in breakdown_by_cat_month.items():
+        for m in per_month:
+            per_month[m] = sorted(per_month[m], key=lambda x: (-x["total"], x["merchant"]))[:12]
+
+    # ----- Balance timeline anchor -----
+    latest_snap = BalanceSnapshot.objects.filter(user=request.user).order_by("-timestamp").first()
+    if latest_snap:
+        lt = timezone.localtime(latest_snap.timestamp)
+        anchor_month = _date(lt.year, lt.month, 1)
+        anchor_value = Decimal(latest_snap.amount)
+    else:
+        now = timezone.localtime().date()
+        anchor_month = _date(now.year, now.month, 1)
+        anchor_value = total_effective
+
+    net_delta = {m: totals_in.get(m, Decimal("0")) - totals_out.get(m, Decimal("0")) for m in months}
+
+    def _add_month(d: _date) -> _date:
+        return _date(d.year + 1, 1, 1) if d.month == 12 else _date(d.year, d.month + 1, 1)
+
+    all_months = set(months) | {anchor_month}
+    if months:
+        start = min(min(months), anchor_month); end = max(max(months), anchor_month)
+    else:
+        start = end = anchor_month
+
+    seq, cur = [], start
+    while cur <= end:
+        seq.append(cur); cur = _add_month(cur)
+    for m in seq:
+        net_delta.setdefault(m, Decimal("0"))
+
+    balances = {}
+    idx = seq.index(anchor_month)
+    for i in range(idx, len(seq)):
+        m = seq[i]
+        balances[m] = anchor_value if i == idx else balances[seq[i - 1]] + net_delta[m]
+    for i in range(idx, 0, -1):
+        curr = seq[i]; prev = seq[i - 1]
+        balances[prev] = balances[curr] - net_delta[curr]
+
+    balance_labels_json = json.dumps([m.strftime("%Y-%m") for m in seq])
+    balance_values_json = json.dumps([float(balances[m]) for m in seq])
     now_val = timezone.localtime().strftime("%Y-%m-%dT%H:%M")
 
-    # ---------- 7) Context ----------
+    # ----- NEW: Month bounds (YYYY-MM -> {start, end}) for quick filters -----
+    from calendar import monthrange
+    month_bounds = {}
+    for m in cat_months:
+        last_day = monthrange(m.year, m.month)[1]
+        month_key = m.strftime("%Y-%m")
+        month_bounds[month_key] = {
+            "start": f"{m.year:04d}-{m.month:02d}-01",
+            "end":   f"{m.year:04d}-{m.month:02d}-{last_day:02d}",
+        }
+
+    # ----- Context -----
     ctx = {
         "latest_snap": latest_snap,
         "balance_labels_json": balance_labels_json,
@@ -1223,73 +1558,361 @@ def overview(request):
         "labels_json": json.dumps(labels),
         "income_json": json.dumps(income_series),
         "spending_json": json.dumps(spending_series),
-
         "net_rows": net_rows,
 
         "cat_month_labels_json": json.dumps(cat_labels),
         "series_by_cat_json": json.dumps(series_by_cat),
         "cat_names": cat_names,
 
-        "total_accounts_balance": float(total_accounts_balance),
+        "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
+        "month_bounds_json": json.dumps(month_bounds),  # NEW
+        "total_accounts_balance": float(total_effective),
+        "accounts_with_balances": accounts,
     }
-
     return render(request, "overview.html", ctx)
+
+
 
 @login_required
 def profile(request):
     """
     Profile page:
-      - Lists active accounts
-      - Lets user add/update/delete accounts (if you already wired forms/buttons)
-      - Always supplies total_accounts_balance for the template
+      - Lists accounts
+      - Handles: add, rename, toggle, setbalance, setdefault
+      - Manual balances: MoneySource.manual_balance/manual_currency
+      - Supplies type_choices, default_id, total_accounts_balance (effective)
     """
-    # Handle simple POST actions (optional; keep your existing handlers if you have them)
-    action = request.POST.get("action") if request.method == "POST" else None
-    if action == "add_account":
-        name = (request.POST.get("name") or "").strip() or "New account"
-        atype = (request.POST.get("type") or "bank").strip()
-        MoneySource.objects.get_or_create(user=request.user, name=name, defaults={"type": atype})
-        messages.success(request, f"Account “{name}” added.")
-        return redirect("profile")
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
 
-    if action == "update_account":
-        acc_id = request.POST.get("id")
-        acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
-        acc.name = (request.POST.get("name") or acc.name).strip() or acc.name
-        new_type = (request.POST.get("type") or acc.type).strip()
-        if new_type in dict(MoneySource.TYPE_CHOICES):
-            acc.type = new_type
-        # Balance update (optional)
-        bal = request.POST.get("current_balance")
-        if bal not in (None, ""):
+        if action == "add":
+            name = (request.POST.get("name") or "").strip() or "New account"
+            atype = (request.POST.get("type") or "bank").strip()
+            if atype not in dict(MoneySource.TYPE_CHOICES):
+                atype = "bank"
+            ms, created = MoneySource.objects.get_or_create(
+                user=request.user, name=name, defaults={"type": atype, "is_active": True}
+            )
+            messages.success(request, f'Account “{name}” added.' if created else f'Account “{name}” already exists.')
+            return redirect("profile")
+
+        if action == "rename":
+            acc_id = request.POST.get("id")
+            new_name = (request.POST.get("name") or "").strip()
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+            if new_name:
+                exists = MoneySource.objects.filter(user=request.user, name=new_name).exclude(id=acc.id).exists()
+                if exists:
+                    messages.error(request, f'Another account named “{new_name}” already exists.')
+                else:
+                    acc.name = new_name
+                    acc.save(update_fields=["name", "updated_at"])
+                    messages.success(request, "Account renamed.")
+            else:
+                messages.error(request, "Name cannot be empty.")
+            return redirect("profile")
+
+        if action == "toggle":
+            acc_id = request.POST.get("id")
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+            acc.is_active = not acc.is_active
+            acc.save(update_fields=["is_active", "updated_at"])
+            messages.success(request, f'Account “{acc.name}” {"activated" if acc.is_active else "deactivated"}.')
+            return redirect("profile")
+
+        if action == "setbalance":
+            # This now updates manual_balance/manual_currency
+            acc_id = request.POST.get("id")
+            amount_raw = (request.POST.get("amount") or "").strip().replace(",", ".")
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
             try:
-                from decimal import Decimal
-                acc.current_balance = Decimal(str(bal).replace(",", "."))
-            except Exception:
-                messages.error(request, "Invalid balance value; not saved.")
-        acc.save()
-        messages.success(request, "Account updated.")
+                acc.manual_balance = Decimal(amount_raw) if amount_raw != "" else None
+                # keep a timestamp using the existing field
+                acc.balance_updated_at = timezone.now() if acc.manual_balance is not None else None
+                # currency: stick to EUR for MVP; if you add a <select>, read it here
+                acc.manual_currency = "EUR"
+                acc.save(update_fields=["manual_balance", "manual_currency", "balance_updated_at", "updated_at"])
+                messages.success(request, f'Manual balance saved for “{acc.name}”.')
+            except (InvalidOperation, TypeError):
+                messages.error(request, "Invalid balance value.")
+            return redirect("profile")
+
+        if action == "setdefault":
+            acc_id = request.POST.get("id")
+            try:
+                acc = MoneySource.objects.get(id=int(acc_id), user=request.user, is_active=True)
+                request.session["default_src_id"] = acc.id
+                messages.success(request, f'“{acc.name}” set as default import account.')
+            except (MoneySource.DoesNotExist, ValueError):
+                messages.error(request, "Account not found or inactive.")
+            return redirect("profile")
+
+        messages.info(request, "No changes made.")
         return redirect("profile")
 
-    if action == "delete_account":
-        acc_id = request.POST.get("id")
-        acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
-        acc.is_active = False  # soft delete
-        acc.save(update_fields=["is_active"])
-        messages.success(request, f"Account “{acc.name}” archived.")
-        return redirect("profile")
+    # ----- GET -----
+    accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
 
-    # ---- GET: build page ----
-    accounts = MoneySource.objects.filter(user=request.user, is_active=True).order_by("type", "name")
-
-    # Compute total_accounts_balance SAFELY (always defined)
-    total_accounts_balance = (
-        accounts.aggregate(total=Sum("current_balance"))["total"] or 0
+    # Effective per-account balance: manual if present, else ledger (sum of tx)
+    # Build ledger sums per account in a single query
+    tx_sums = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False)
+        .values("money_source_id", "in_out")
+        .annotate(total=Sum("amount"))
     )
+    from collections import defaultdict
+    ledger_map = defaultdict(lambda: Decimal("0"))
+    for row in tx_sums:
+        ms_id = row["money_source_id"]
+        amt = row["total"] or Decimal("0")
+        if row["in_out"] == Transaction.IN:
+            ledger_map[ms_id] += amt
+        else:
+            ledger_map[ms_id] -= amt
+
+    # Compute total effective balance across active accounts
+    total_effective = Decimal("0")
+    for acc in accounts:
+        ledger_val = ledger_map.get(acc.id, Decimal("0"))
+        effective = acc.manual_balance if acc.manual_balance is not None else ledger_val
+        # attach for template usage
+        acc.effective_balance = effective
+        total_effective += effective if acc.is_active else Decimal("0")
 
     ctx = {
         "accounts": accounts,
-        "total_accounts_balance": float(total_accounts_balance),  # used by your template
-        # add any other context keys your template expects...
+        "total_accounts_balance": float(total_effective),
+        "type_choices": MoneySource.TYPE_CHOICES,
+        "default_id": request.session.get("default_src_id"),
     }
     return render(request, "profile.html", ctx)
+
+
+@login_required
+def statistics(request):
+    """
+    Statistics dashboard (no savings rate):
+      - Lifetime stats (totals, averages, best/worst, largest purchase, merchant stats, coverage)
+      - Category share (pie) with month/range picker (defaults to last *full* month)
+      - Weekday mix (last 90 days)
+      - Per-category totals, #tx, avg/tx, avg/month for the selected period
+    """
+    # Local imports to keep this a clean drop-in
+    from calendar import monthrange
+    from datetime import timedelta
+    import re
+    import json
+    from decimal import Decimal
+    from datetime import datetime, date as _date
+    from django.db.models import Sum, Count
+    from django.db.models.functions import TruncMonth
+    from django.utils import timezone
+
+    from .models import Transaction
+
+    user = request.user
+    today = timezone.localtime().date()
+    base = Transaction.objects.filter(user=user, is_deleted=False)
+
+    # ---------- Lifetime stats ----------
+    total_in = base.filter(in_out=Transaction.IN).aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    total_out = base.filter(in_out=Transaction.OUT).aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    lifetime_net = total_in - total_out
+    total_tx = base.count()
+
+    # Monthly aggregates for averages + best/worst month (by net)
+    by_month = (
+        base.annotate(m=TruncMonth("date"))
+            .values("m", "in_out")
+            .annotate(total=Sum("amount"))
+    )
+
+    def _mk(val):
+        if isinstance(val, datetime):
+            d = val.date()
+            return _date(d.year, d.month, 1)
+        if isinstance(val, _date):
+            return _date(val.year, val.month, 1)
+        return None
+
+    month_map_in, month_map_out = {}, {}
+    months_set = set()
+    for r in by_month:
+        mk = _mk(r["m"])
+        if not mk:
+            continue
+        months_set.add(mk)
+        if r["in_out"] == Transaction.IN:
+            month_map_in[mk] = (month_map_in.get(mk, Decimal("0")) + (r["total"] or Decimal("0")))
+        else:
+            month_map_out[mk] = (month_map_out.get(mk, Decimal("0")) + (r["total"] or Decimal("0")))
+
+    months_sorted = sorted(months_set)
+    months_count = len(months_sorted) or 1
+    avg_month_in = sum(month_map_in.get(m, Decimal("0")) for m in months_sorted) / months_count
+    avg_month_out = sum(month_map_out.get(m, Decimal("0")) for m in months_sorted) / months_count
+
+    month_nets = []
+    for m in months_sorted:
+        net = (month_map_in.get(m, Decimal("0")) - month_map_out.get(m, Decimal("0")))
+        month_nets.append((m, net))
+    best_month = max(month_nets, key=lambda x: x[1]) if month_nets else None
+    worst_month = min(month_nets, key=lambda x: x[1]) if month_nets else None
+
+    largest_tx = (
+        base.filter(in_out=Transaction.OUT)
+            .order_by("-amount")
+            .values("id", "date", "merchant", "amount", "currency")
+            .first()
+    )
+
+    distinct_merchants = base.exclude(merchant="").values("merchant").distinct().count()
+    most_freq = (
+        base.exclude(merchant="")
+            .values("merchant")
+            .annotate(cnt=Count("id"))
+            .order_by("-cnt")
+            .first()
+    )
+
+    total_categorizable = base.count()
+    categorized = base.filter(category_fk__isnull=False).count()
+    coverage_pct = (categorized / total_categorizable * 100.0) if total_categorizable else 0.0
+
+    # ---------- Category share (pie) with month/range picker ----------
+    all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
+
+    def key_from_date(d: _date) -> str:
+        return d.strftime("%Y-%m")
+
+    def month_start_from_key(k: str) -> _date:
+        y, m = map(int, k.split("-"))
+        return _date(y, m, 1)
+
+    def month_end_from_key(k: str) -> _date:
+        y, m = map(int, k.split("-"))
+        return _date(y, m, monthrange(y, m)[1])
+
+    this_month_key = key_from_date(_date(today.year, today.month, 1))
+    months_keys = [key_from_date(m) for m in all_months]
+
+    # default range = last full month
+    default_end_key = None
+    for k in reversed(months_keys):
+        if k != this_month_key:
+            default_end_key = k
+            break
+    if not default_end_key and months_keys:
+        default_end_key = months_keys[-1]
+    default_start_key = default_end_key
+
+    start_key = (request.GET.get("start_month") or default_start_key)
+    end_key = (request.GET.get("end_month") or default_end_key)
+
+    def is_valid_key(k):
+        return isinstance(k, str) and re.match(r"^\d{4}-\d{2}$", k)
+    if not is_valid_key(start_key):
+        start_key = default_start_key
+    if not is_valid_key(end_key):
+        end_key = default_end_key
+
+    start_date = month_start_from_key(start_key)
+    end_date = month_end_from_key(end_key)
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+        start_key, end_key = end_key, start_key
+
+    # Inclusive number of months in the selected range (for Avg/Month)
+    months_in_range = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
+    if months_in_range < 1:
+        months_in_range = 1
+
+    # One query to get totals and counts per category in the selected period (spending only; FK-only)
+    per_cat = (
+        base.filter(
+            in_out=Transaction.OUT,
+            category_fk__isnull=False,
+            date__gte=start_date,
+            date__lte=end_date,
+        )
+        .values("category_fk", "category_fk__name")
+        .annotate(total=Sum("amount"), cnt=Count("id"))
+        .order_by("-total")
+    )
+
+    share_total = sum((r["total"] or Decimal("0")) for r in per_cat) or Decimal("0")
+    cat_labels = [r["category_fk__name"] for r in per_cat]
+    cat_values = [
+        float((r["total"] or Decimal("0")) / share_total) if share_total else 0.0 for r in per_cat
+    ]
+
+    # Build rows for the summary table (includes Avg/Month)
+    cat_summary_rows = []
+    for r in per_cat:
+        total = r["total"] or Decimal("0")
+        cnt = int(r["cnt"] or 0)
+        avg = (total / cnt) if cnt else Decimal("0")
+        avg_month = (total / months_in_range) if months_in_range else Decimal("0")
+        cat_summary_rows.append(
+            {
+                "cat_id": r["category_fk"],
+                "cat_name": r["category_fk__name"],
+                "total": float(total),
+                "count": cnt,
+                "avg": float(avg),
+                "avg_month": float(avg_month),
+            }
+        )
+
+    # ---------- Weekday mix (last 90 days, spending only) ----------
+    last90_start = today - timedelta(days=89)
+    wday_totals = [Decimal("0")] * 7  # Mon..Sun
+    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).only("date", "amount")
+    for t in qs_wday:
+        wday_totals[t.date.weekday()] += (t.amount or Decimal("0"))
+    weekday_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekday_values = [float(x) for x in wday_totals]
+
+    ctx = {
+        # Lifetime cards
+        "total_in": float(total_in),
+        "total_out": float(total_out),
+        "lifetime_net": float(lifetime_net),
+        "avg_month_in": float(avg_month_in),
+        "avg_month_out": float(avg_month_out),
+        "best_month": best_month[0].strftime("%Y-%m") if best_month else None,
+        "best_month_net": float(best_month[1]) if best_month else None,
+        "worst_month": worst_month[0].strftime("%Y-%m") if worst_month else None,
+        "worst_month_net": float(worst_month[1]) if worst_month else None,
+        "largest_tx": largest_tx,
+        "total_tx": total_tx,
+        "distinct_merchants": distinct_merchants,
+        "most_freq_merchant": most_freq["merchant"] if most_freq else None,
+        "most_freq_merchant_cnt": int(most_freq["cnt"]) if most_freq else None,
+        "coverage_pct": round(coverage_pct, 1),
+
+        # Month picker
+        "available_month_keys": months_keys,
+        "start_key": start_key,
+        "end_key": end_key,
+
+        # Category share pie
+        "cat_labels_json": json.dumps(cat_labels),
+        "cat_values_json": json.dumps(cat_values),
+        "share_note": f"Share of total spending from {start_key} to {end_key}.",
+
+        # Per-category summary (includes Avg/Month)
+        "cat_summary_rows": cat_summary_rows,
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": end_date.strftime("%Y-%m-%d"),
+
+        # Weekday mix
+        "weekday_labels_json": json.dumps(weekday_labels),
+        "weekday_values_json": json.dumps(weekday_values),
+
+        # For other links
+        "last90_from": last90_start.strftime("%Y-%m-%d"),
+        "last90_to": today.strftime("%Y-%m-%d"),
+    }
+    return render(request, "statistics.html", ctx)

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}AI Error · MoneyCoach{% endblock %}
+{% block content %}
+<h2>Auto-categorize error</h2>
+<p style="color:#b00020; margin:.5rem 0 1rem;">{{ error }}</p>
+{% if batch_index is not None %}
+  <p>While processing batch #{{ batch_index }}.</p>
+{% endif %}
+<p style="margin-top:1rem;">
+  <a href="/ai/full/">Try again</a> · <a href="/">Back to Upload</a>
+</p>
+{% endblock %}

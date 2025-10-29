@@ -8,7 +8,6 @@
   <div>
     <strong>Total balance (all accounts):</strong>
     {{ total_accounts_balance|floatformat:2 }} EUR
-
   </div>
 
   {% if accounts_with_balances %}
@@ -20,8 +19,13 @@
             <span style="color:#888;">({{ acc.get_type_display }})</span>
           </span>
           <span>
-            {% if acc.current_balance is not None %}
-              {{ acc.current_balance|floatformat:2 }} EUR
+            {% if acc.effective_balance is not None %}
+              {{ acc.effective_balance|floatformat:2 }} EUR
+              {% if acc.manual_balance is not None %}
+                <span style="color:#999; font-size:.85em;">· manual</span>
+              {% else %}
+                <span style="color:#999; font-size:.85em;">· computed</span>
+              {% endif %}
               {% if acc.balance_updated_at %}
                 <span style="color:#999; font-size:.85em;">· {{ acc.balance_updated_at|date:"Y-m-d H:i" }}</span>
               {% endif %}
@@ -38,7 +42,6 @@
     </div>
   {% endif %}
 </div>
-
 
 <!-- Modal dialog for adding/updating balance -->
 <dialog id="balanceDialog" style="border:none; border-radius:12px; padding:0;">
@@ -65,13 +68,12 @@
   </form>
 </dialog>
 
-{% if latest_snap and balance_labels_json and balance_values_json %}
+{% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
   <h3 style="margin-top:1rem;">Balance over time (monthly)</h3>
   <div style="max-width:1000px; margin: 0 auto 1.5rem;">
     <canvas id="balanceChart"></canvas>
   </div>
 {% endif %}
-
 
 <!-- Income vs Spending per month -->
 <div style="max-width:1000px; margin: 0 auto 1.5rem;">
@@ -123,11 +125,19 @@
   <div style="max-width:1000px; margin: 0 auto 1.5rem;">
     <canvas id="catChart"></canvas>
   </div>
+
+  <!-- Per-month merchant breakdown -->
+  <div id="catBreakdown" style="max-width:1000px; margin: 0 auto 1.5rem;">
+    <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 0.5rem;">
+      <label style="font-size:.9em; color:#555;">Month:</label>
+      <div id="catMonthButtons" style="display:flex; gap:.35rem; flex-wrap: wrap;"></div>
+    </div>
+    <div id="catMonthTableWrap"></div>
+  </div>
+
 {% else %}
   <p style="opacity:.7">No categorized spending yet.</p>
 {% endif %}
-
-
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -155,7 +165,7 @@
     }
   });
 
-  {% if latest_snap and balance_labels_json and balance_values_json %}
+  {% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
   const balLabels = {{ balance_labels_json|safe }};
   const balValues = {{ balance_values_json|safe }};
   const bctx = document.getElementById('balanceChart').getContext('2d');
@@ -174,76 +184,111 @@
       scales: { y: { beginAtZero: false } }
     }
   });
-{% endif %}
-// ---- Category chart data from server ----
-  const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
+  {% endif %}
+
+  // ---- Category chart + breakdown data from server ----
+  const catMonths   = {{ cat_month_labels_json|default:"[]"|safe }};
   const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
+  const breakdownByCatMonth = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
+  const monthBounds = {{ month_bounds_json|default:"{}"|safe }};
 
-  // Guard: only init if data exists
   if (catMonths.length && Object.keys(seriesByCat).length) {
-    const catCanvas = document.getElementById('catChart').getContext('2d');
+    const catCanvas  = document.getElementById('catChart').getContext('2d');
     const typeSelect = document.getElementById('catChartType');
-    const buttons = Array.from(document.querySelectorAll('.cat-btn'));
+    const buttons    = Array.from(document.querySelectorAll('.cat-btn'));
 
-    // Pick a default category
     let currentCat = buttons.length ? buttons[0].dataset.cat : null;
     let currentType = typeSelect.value;
 
     function datasetFor(cat) {
-      return {
-        label: cat,
-        data: seriesByCat[cat] || [],
-      };
+      return { label: cat, data: seriesByCat[cat] || [] };
     }
 
-    // init chart
     let catChart = new Chart(catCanvas, {
       type: currentType,
-      data: {
-        labels: catMonths,
-        datasets: [ datasetFor(currentCat) ]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: true } }
-      }
+      data: { labels: catMonths, datasets: [ datasetFor(currentCat) ] },
+      options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // Button click -> switch category
+    function highlightButton(activeBtn) {
+      buttons.forEach(b => b.style.background = '#f7f7f7');
+      if (activeBtn) activeBtn.style.background = '#e6f0ff';
+    }
+    if (buttons.length) highlightButton(buttons[0]);
+
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
-        const cat = btn.dataset.cat;
-        currentCat = cat;
+        currentCat = btn.dataset.cat;
         catChart.data.datasets = [ datasetFor(currentCat) ];
         catChart.update();
-        // simple visual cue
-        buttons.forEach(b => b.style.background = '#f7f7f7');
-        btn.style.background = '#e6f0ff';
+        highlightButton(btn);
+        renderMonthButtons(catMonths, currentMonth);
+        renderBreakdown(currentCat, currentMonth);
       });
     });
-    // Press first button style on load
-    if (buttons.length) buttons[0].style.background = '#e6f0ff';
 
-    // Type switch (bar/line)
     typeSelect.addEventListener('change', () => {
       currentType = typeSelect.value;
-      const cfg = catChart.config;
       catChart.destroy();
       catChart = new Chart(catCanvas, {
         type: currentType,
-        data: {
-          labels: catMonths,
-          datasets: [ datasetFor(currentCat) ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: 'top' } },
-          scales: { y: { beginAtZero: true } }
-        }
+        data: { labels: catMonths, datasets: [ datasetFor(currentCat) ] },
+        options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
       });
     });
-  }
 
+    const monthBtnWrap  = document.getElementById('catMonthButtons');
+    const monthTableWrap = document.getElementById('catMonthTableWrap');
+
+    function renderMonthButtons(months, current) {
+      monthBtnWrap.innerHTML = '';
+      months.forEach(m => {
+        const b = document.createElement('button');
+        b.textContent = m;
+        b.className = 'month-btn';
+        b.style.cssText = 'padding:.25rem .5rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
+        if (m === current) b.style.background = '#e6f0ff';
+        b.addEventListener('click', () => {
+          currentMonth = m;
+          renderMonthButtons(months, currentMonth);
+          renderBreakdown(currentCat, currentMonth);
+        });
+        monthBtnWrap.appendChild(b);
+      });
+    }
+
+    function renderBreakdown(cat, month) {
+      const rows = (breakdownByCatMonth[cat] && breakdownByCatMonth[cat][month]) ? breakdownByCatMonth[cat][month] : [];
+      const bounds = monthBounds[month] || {};
+      if (!rows.length) {
+        monthTableWrap.innerHTML = '<p style="opacity:.7">No merchant breakdown for this month.</p>';
+        return;
+      }
+      let html = '<table><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg/Tx</th><th>Review</th></tr>';
+      rows.forEach(r => {
+        const total = (typeof r.total === 'number') ? r.total.toFixed(2) : r.total;
+        const avg   = (typeof r.avg === 'number') ? r.avg.toFixed(2) : r.avg;
+        const q     = encodeURIComponent(r.merchant);
+        const start = encodeURIComponent(bounds.start || '');
+        const end   = encodeURIComponent(bounds.end || '');
+        const href  = `/?q=${q}&from=${start}&to=${end}`;
+        html += `<tr>
+          <td>${r.merchant}</td>
+          <td>${total} EUR</td>
+          <td>${r.count}</td>
+          <td>${avg} EUR</td>
+          <td><a href="${href}">Review</a></td>
+        </tr>`;
+      });
+      html += '</table>';
+      monthTableWrap.innerHTML = html;
+    }
+
+    let currentMonth = catMonths.length ? catMonths[catMonths.length - 1] : null;
+    if (currentCat && currentMonth) {
+      renderMonthButtons(catMonths, currentMonth);
+      renderBreakdown(currentCat, currentMonth);
+    }
+  }
 </script>
 {% endblock %}

@@ -10,8 +10,15 @@
     <input type="hidden" name="next" value="{{ request.get_full_path|urlencode }}">
     <table>
       <tr>
-        <th>date</th><th>merchant</th><th>amount</th><th>in_out</th>
-        <th>notes</th><th>AI suggested</th><th>confidence</th><th>choose</th>
+        <th>date</th>
+        <th>merchant</th>
+        <th>amount</th>
+        <th>in_out</th>
+        <th>notes</th>
+        <th>current</th>
+        <th>AI suggested</th>
+        <th>confidence</th>
+        <th>choose</th>
       </tr>
       {% for t in page_obj.object_list %}
         <tr>
@@ -20,6 +27,9 @@
           <td>{{ t.amount }} {{ t.currency }}</td>
           <td>{{ t.in_out }}</td>
           <td>{{ t.notes }}</td>
+          <td>
+            {% if t.category_fk %}{{ t.category_fk.name }}{% else %}{{ t.category|default:"—" }}{% endif %}
+          </td>
           <td>{% if t.ai_suggested_fk %}{{ t.ai_suggested_fk.name }}{% else %}—{% endif %}</td>
           <td>{% if t.ai_confidence %}{{ t.ai_confidence|floatformat:2 }}{% else %}—{% endif %}</td>
           <td>

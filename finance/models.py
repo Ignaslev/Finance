@@ -45,7 +45,8 @@ class MoneySource(models.Model):
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="bank")
     is_active = models.BooleanField(default=True)
-    # 👇 NEW
+    manual_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    manual_currency = models.CharField(max_length=8, default="EUR")
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     balance_updated_at = models.DateTimeField(null=True, blank=True)
 

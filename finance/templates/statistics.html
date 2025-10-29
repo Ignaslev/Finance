@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Statistics · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:50px;">Statistics</h2>
+
+<!-- ===== Lifetime summary cards ===== -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; margin:1rem 0;">
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">All-time earned</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ total_in|floatformat:2 }} EUR</div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">All-time spent</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ total_out|floatformat:2 }} EUR</div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Lifetime net</div>
+    <div style="font-weight:700; font-size:1.2em;">
+      {% if lifetime_net >= 0 %}
+        <span style="color:#2e7d32">{{ lifetime_net|floatformat:2 }} EUR</span>
+      {% else %}
+        <span style="color:#b00020">{{ lifetime_net|floatformat:2 }} EUR</span>
+      {% endif %}
+    </div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Avg / month (Income)</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ avg_month_in|floatformat:2 }} EUR</div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Avg / month (Spending)</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ avg_month_out|floatformat:2 }} EUR</div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Transactions</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ total_tx }}</div>
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Merchants</div>
+    <div><strong>{{ distinct_merchants }}</strong> total</div>
+    {% if most_freq_merchant %}
+      <div style="color:#555">Top: {{ most_freq_merchant }} ({{ most_freq_merchant_cnt }})</div>
+    {% endif %}
+  </div>
+  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+    <div style="color:#666; font-size:.9em;">Categorization coverage</div>
+    <div><strong>{{ coverage_pct }}%</strong></div>
+  </div>
+</div>
+
+<!-- ===== Category share (pie) + month picker ===== -->
+<div style="margin:1.25rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+    <strong>Category share</strong>
+    <form method="get" style="display:flex; gap:.5rem; align-items:center;">
+      <label style="font-size:.9em; color:#555;">From</label>
+      <select name="start_month">
+        {% for m in available_month_keys %}
+          <option value="{{ m }}" {% if m == start_key %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <label style="font-size:.9em; color:#555;">To</label>
+      <select name="end_month">
+        {% for m in available_month_keys %}
+          <option value="{{ m }}" {% if m == end_key %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Apply</button>
+    </form>
+  </div>
+
+  <div style="max-width:480px; margin:.75rem auto 0;">
+    {% if cat_labels_json and cat_labels_json != "[]" %}
+      <canvas id="catSharePie" width="360" height="360"></canvas>
+      <div style="color:#666; font-size:.9em; margin-top:.5rem; text-align:center;">{{ share_note }}</div>
+    {% else %}
+      <p style="opacity:.7; margin-top:.5rem;">No spending in the selected period.</p>
+    {% endif %}
+  </div>
+
+  {% if cat_summary_rows %}
+    <div style="margin-top:.85rem;">
+      <h3 style="margin:.25rem 0;">Category spending summary</h3>
+      <table>
+        <tr>
+          <th>Category</th>
+          <th>Total (EUR)</th>
+          <th>#Tx</th>
+          <th>Avg/Tx</th>
+          <th>Avg/Month</th>
+          <th>Review</th>
+        </tr>
+        {% for row in cat_summary_rows %}
+          <tr>
+            <td>{{ row.cat_name }}</td>
+            <td>{{ row.total|floatformat:2 }}</td>
+            <td>{{ row.count }}</td>
+            <td>{{ row.avg|floatformat:2 }}</td>
+            <td>{{ row.avg_month|floatformat:2 }}</td>
+            <td><a href="/?cat={{ row.cat_id }}&from={{ start_date }}&to={{ end_date }}">Open</a></td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ===== Weekday mix (last 90 days) ===== -->
+<div style="margin:1.25rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <strong>Weekday mix (last 90 days)</strong>
+  <div style="max-width:1000px; margin:.75rem auto 0;">
+    <canvas id="weekdayChart"></canvas>
+  </div>
+  <div style="color:#666; font-size:.9em; margin-top:.4rem;">
+    Tip: Big Sundays? Click <a href="/?from={{ last90_from }}&to={{ last90_to }}">here</a> to review and adjust categories.
+  </div>
+</div>
+
+
+<!-- ===== Charts ===== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Category share pie (compact)
+  {% if cat_labels_json and cat_labels_json != "[]" %}
+    const catLabels = {{ cat_labels_json|safe }};
+    const catValues = {{ cat_values_json|safe }};
+    const pieCtx = document.getElementById('catSharePie').getContext('2d');
+    new Chart(pieCtx, {
+      type: 'pie',
+      data: {
+        labels: catLabels,
+        datasets: [{ data: catValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const pct = (ctx.raw * 100).toFixed(1) + '%';
+                return ctx.label + ': ' + pct;
+              }
+            }
+          }
+        },
+        layout: { padding: 0 }
+      }
+    });
+  {% endif %}
+
+  // Weekday mix
+  const wdLabels = {{ weekday_labels_json|safe }};
+  const wdValues = {{ weekday_values_json|safe }};
+  const wdCtx = document.getElementById('weekdayChart').getContext('2d');
+  new Chart(wdCtx, {
+    type: 'bar',
+    data: { labels: wdLabels, datasets: [{ label: 'Spending (EUR)', data: wdValues }] },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+</script>
+{% endblock %}

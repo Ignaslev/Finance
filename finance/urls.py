@@ -6,11 +6,14 @@ urlpatterns = [
     path("", f.upload, name="upload"),
     path("overview/", f.overview, name="overview"),
     path("upload/", f.upload, name="upload"),
-
+    path("statistics/", f.statistics, name="statistics"),
     path("env-check/", f.env_check, name="env_check"),
+    path("tx/bulk-apply/", f.tx_bulk_category_apply, name="tx_bulk_category_apply"),
+
 
     path("uncategorized/", f.uncategorized, name="uncategorized"),
     path("tx/<int:pk>/edit/", f.tx_edit, name="tx_edit"),
+    path("tx/add/", f.tx_add, name="tx_add"),
 
 # NEW: auto-categorize endpoint (runs only when you click)
     path("ai/full/", f.ai_full_categorize, name="ai_full_categorize"),
