@@ -25,12 +25,15 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 import json
+from django.views.decorators.http import require_POST, require_http_methods
+import uuid
 
 from .models import (
     Transaction,
     Category,
     BalanceSnapshot,
     MoneySource,
+    SavingsGoal,
 )
 
 # ---------------------------------------------------------------------
@@ -43,8 +46,8 @@ BATCH_SIZE             = 50
 
 # --- Tunables at the top of views.py (near your other constants) ---
 EXAMPLE_LOOKBACK_MONTHS = 12       # only learn from the last N months of edits
-EXAMPLES_TOTAL_CAP       = 48      # overall example cap per batch
-EXAMPLES_PER_CATEGORY    = 4       # soft cap per category to ensure diversity
+EXAMPLES_TOTAL_CAP       = 60      # overall example cap per batch
+EXAMPLES_PER_CATEGORY    = 5       # soft cap per category to ensure diversity
 EXAMPLES_MIN_USER        = 1       # always prefer user-labeled where possible
 
 
@@ -949,6 +952,12 @@ def upload(request):
         "type_choices": MoneySource.TYPE_CHOICES,   # ('bank','cash','savings') with labels
         "default_account_name": default_src.name,
     }
+
+    # One-shot "last AI run" card (pre-run numbers).
+    last_ai_pre = request.session.pop("last_ai_pre", None)
+    if last_ai_pre:
+        ctx["last_ai_pre"] = last_ai_pre
+
     return render(request, "upload.html", ctx)
 
 
@@ -1047,7 +1056,9 @@ def ai_full_categorize(request):
     if mode == "uncat":
         base = (Transaction.objects
                 .filter(user=request.user, is_deleted=False)
-                .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") | Q(category="Other")))
+                .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category="") )
+                .exclude(category_source="user")
+                 )
     elif mode == "ai":
         base = Transaction.objects.filter(user=request.user, is_deleted=False, category_source="ai")
     elif mode == "all":
@@ -1180,6 +1191,61 @@ def ai_full_categorize(request):
         "parked": parked,
         "left_for_review": left_for_review,
     })
+
+
+@login_required
+def ai_run_uncategorized(request):
+    """
+    Auto-categorize ONLY truly uncategorized rows (category_fk is NULL),
+    excluding anything user-labeled. If none, show a message and go back.
+    """
+    from django.db.models import Q
+    from django.contrib import messages
+    from django.utils import timezone
+
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+
+    # Truly uncategorized = no FK at all; and not set by user
+    eligible_qs = base.filter(category_fk__isnull=True).exclude(category_source="user")
+    n = eligible_qs.count()
+
+    if n == 0:
+        messages.info(request, "No eligible uncategorized transactions to categorize.")
+        return redirect("upload")
+
+    # Stash a lightweight pre-run summary so Upload page can show a card
+    request.session["last_ai_pre"] = {
+        "kind": "uncategorized",
+        "considered": n,
+        "started_at": timezone.now().isoformat(),
+    }
+
+    # Hand off to your existing AI endpoint; no limit => your view chooses batch size
+    return redirect("/ai/full/?mode=uncat")
+
+
+@login_required
+def ai_recheck_all(request):
+    """
+    Re-evaluate ALL AI-labeled transactions (no limit).
+    """
+    from django.utils import timezone
+
+    # Pre-run summary for the Upload page card
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    n = base.filter(category_source="ai").count()
+    if n == 0:
+        messages.info(request, "No AI-labeled transactions to recheck.")
+        return redirect("upload")
+
+    request.session["last_ai_pre"] = {
+        "kind": "recheck_ai",
+        "considered": n,
+        "started_at": timezone.now().isoformat(),
+    }
+
+    # No limit => process all AI-labeled
+    return redirect("/ai/full/?mode=ai")
 
 
 @login_required
@@ -1333,11 +1399,14 @@ def review_ai_recent(request):
 def overview(request):
     """
     Overview:
-      - Same as before (totals, income vs spending, net, category chart)
-      - Merchant breakdown per category+month
-      - NEW: Month bounds mapping for quick "Review" links
+      - Balance snapshot anchor + reconstructed monthly balances
+      - Per-account effective balances (manual if set, else ledger)
+      - Savings goals (progress from selected accounts' effective balances)
+      - Income vs Spending by month + Net by month table
+      - Spending per category by month + merchant breakdown per category+month
+      - Budgets vs Spent (category caps) — separate month buttons, no page reload
     """
-    # ----- BalanceSnapshot POST (unchanged) -----
+    # ----- BalanceSnapshot POST -----
     if request.method == "POST" and request.POST.get("form") == "balance":
         raw_amount = (request.POST.get("amount") or "").strip().replace(",", ".")
         raw_ts     = (request.POST.get("timestamp") or "").strip()
@@ -1371,13 +1440,10 @@ def overview(request):
 
     # ----- Effective account balances -----
     accounts = list(MoneySource.objects.filter(user=request.user).order_by("type", "name"))
-
-    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    tx_base  = Transaction.objects.filter(user=request.user, is_deleted=False)
 
     tx_sums = (
-        tx_base
-        .values("money_source_id", "in_out")
-        .annotate(total=Sum("amount"))
+        tx_base.values("money_source_id", "in_out").annotate(total=Sum("amount"))
     )
     from collections import defaultdict
     ledger_map = defaultdict(lambda: Decimal("0"))
@@ -1390,15 +1456,46 @@ def overview(request):
             ledger_map[ms_id] -= amt
 
     total_effective = Decimal("0")
+    effective_map = {}
     for acc in accounts:
         ledger_val = ledger_map.get(acc.id, Decimal("0"))
         effective = getattr(acc, "manual_balance", None)
         if effective is None:
             effective = ledger_val
         acc.effective_balance = effective
+        effective_map[acc.id] = effective
         total_effective += effective if acc.is_active else Decimal("0")
 
-    # ----- Income vs Spending per month -----
+    # ----- Savings goals (progress from selected accounts) -----
+    try:
+        from .models import SavingsGoal
+        goals_raw = (
+            SavingsGoal.objects
+            .filter(user=request.user, is_active=True)
+            .prefetch_related("accounts")
+            .order_by("created_at", "id")
+        )
+    except Exception:
+        goals_raw = []
+
+    goals = []
+    for g in goals_raw:
+        accs = [a for a in g.accounts.all() if a.is_active]
+        current = sum((effective_map.get(a.id, Decimal("0")) for a in accs), Decimal("0"))
+        target  = g.target_amount or Decimal("0")
+        pct = float((current / target * 100) if target > 0 else 0.0)
+        pct = 0.0 if pct != pct else max(0.0, min(pct, 200.0))  # clamp + guard NaN
+        goals.append({
+            "id": g.id,
+            "name": g.name,
+            "target": float(target),
+            "current": float(current),
+            "pct": pct,
+            "eta": g.eta_date.strftime("%Y-%m-%d") if getattr(g, "eta_date", None) else None,
+            "accounts": [{"id": a.id, "name": a.name} for a in accs],
+        })
+
+    # ----- Income vs Spending by month + Net table -----
     qs_month = tx_base.annotate(month=TruncMonth("date"))
     by_month = qs_month.values("month", "in_out").annotate(total=Sum("amount"))
 
@@ -1437,11 +1534,10 @@ def overview(request):
 
     # ----- Category chart (spending only; FK-only) -----
     qs_cat = (
-        tx_base
-        .filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .annotate(month=TruncMonth("date"))
-        .values("month", "category_fk__name")
-        .annotate(total=Sum("amount"))
+        tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
+               .annotate(month=TruncMonth("date"))
+               .values("month", "category_fk__name")
+               .annotate(total=Sum("amount"))
     )
 
     cat_months_set, cat_names_set = set(), set()
@@ -1453,7 +1549,7 @@ def overview(request):
 
     cat_months = sorted(set(months) | cat_months_set)
     cat_labels = [m.strftime("%Y-%m") for m in cat_months]
-    cat_names = sorted(cat_names_set)
+    cat_names  = sorted(cat_names_set)
 
     from collections import defaultdict as _dd
     data_map = _dd(lambda: {m: Decimal("0") for m in cat_months})
@@ -1466,11 +1562,10 @@ def overview(request):
     # ----- Merchant breakdown per category per month -----
     from django.db.models import Count
     qs_merchant = (
-        tx_base
-        .filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .annotate(month=TruncMonth("date"))
-        .values("month", "category_fk__name", "merchant")
-        .annotate(total=Sum("amount"), tx_count=Count("id"))
+        tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
+               .annotate(month=TruncMonth("date"))
+               .values("month", "category_fk__name", "merchant")
+               .annotate(total=Sum("amount"), tx_count=Count("id"))
     )
 
     breakdown_by_cat_month = {}
@@ -1537,7 +1632,7 @@ def overview(request):
     balance_values_json = json.dumps([float(balances[m]) for m in seq])
     now_val = timezone.localtime().strftime("%Y-%m-%dT%H:%M")
 
-    # ----- NEW: Month bounds (YYYY-MM -> {start, end}) for quick filters -----
+    # ----- Month bounds for merchant links -----
     from calendar import monthrange
     month_bounds = {}
     for m in cat_months:
@@ -1548,26 +1643,85 @@ def overview(request):
             "end":   f"{m.year:04d}-{m.month:02d}-{last_day:02d}",
         }
 
-    # ----- Context -----
+    # ================== BUDGETS (CAPS) DATA ==================
+    # gather capped categories (ignore NULL/zero)
+    capped_qs = (
+        Category.objects
+        .filter(user=request.user, monthly_cap__isnull=False)
+        .exclude(monthly_cap=0)
+        .order_by("name")
+    )
+    budget_has_caps = capped_qs.exists()
+
+    # month keys from your tx (fallback to current month)
+    months_for_budgets = sorted({_date(d.year, d.month, 1) for d in tx_base.values_list("date", flat=True)})
+    if not months_for_budgets:
+        today = timezone.localdate()
+        months_for_budgets = [_date(today.year, today.month, 1)]
+
+    budget_month_keys = [m.strftime("%Y-%m") for m in months_for_budgets]
+
+    # per-month payload
+    budget_all = {}
+    for m in months_for_budgets:
+        start = _date(m.year, m.month, 1)
+        end   = _date(m.year, m.month, monthrange(m.year, m.month)[1])
+
+        spent_rows = (
+            tx_base.filter(
+                in_out=Transaction.OUT,
+                date__gte=start, date__lte=end,
+                category_fk__in=capped_qs
+            )
+            .values("category_fk")
+            .annotate(total=Sum("amount"))
+        )
+        spent_map = {r["category_fk"]: (r["total"] or Decimal("0")) for r in spent_rows}
+
+        labels_b, spent_b, caps_b = [], [], []
+        for c in capped_qs:
+            labels_b.append(c.name)
+            caps_b.append(float(c.monthly_cap))
+            spent_b.append(float(spent_map.get(c.id, Decimal("0"))))
+
+        key = start.strftime("%Y-%m")
+        budget_all[key] = {"labels": labels_b, "spent": spent_b, "caps": caps_b}
+
+    budget_selected_key = budget_month_keys[-1] if budget_month_keys else ""
+
+    # ================== CONTEXT ==================
     ctx = {
+        # balances
         "latest_snap": latest_snap,
         "balance_labels_json": balance_labels_json,
         "balance_values_json": balance_values_json,
         "now_val": now_val,
 
+        # income/spend + net
         "labels_json": json.dumps(labels),
         "income_json": json.dumps(income_series),
         "spending_json": json.dumps(spending_series),
         "net_rows": net_rows,
 
+        # category series + breakdown
         "cat_month_labels_json": json.dumps(cat_labels),
         "series_by_cat_json": json.dumps(series_by_cat),
         "cat_names": cat_names,
-
         "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
-        "month_bounds_json": json.dumps(month_bounds),  # NEW
+        "month_bounds_json": json.dumps(month_bounds),
+
+        # accounts card
         "total_accounts_balance": float(total_effective),
         "accounts_with_balances": accounts,
+
+        # savings goals
+        "goals": goals,
+
+        # budgets (caps)
+        "budget_all_json": json.dumps(budget_all),
+        "budget_month_keys": budget_month_keys,
+        "budget_selected_key": budget_selected_key,
+        "budget_has_caps": budget_has_caps,
     }
     return render(request, "overview.html", ctx)
 
@@ -1577,23 +1731,32 @@ def overview(request):
 def profile(request):
     """
     Profile page:
-      - Lists accounts
-      - Handles: add, rename, toggle, setbalance, setdefault
-      - Manual balances: MoneySource.manual_balance/manual_currency
-      - Supplies type_choices, default_id, total_accounts_balance (effective)
+      - Accounts management
+      - Category caps (monthly budgets) with suggested average (last 3 full months)
+      - Savings goals table (active + paused) with live progress from account effective balances
     """
+    from calendar import monthrange
+    from datetime import date as _date, timedelta
+    from decimal import Decimal, InvalidOperation
+    from django.db.models import Sum
+    from django.utils import timezone
+
+    # ---------- POST actions ----------
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
 
+        # --- Accounts (existing actions) ---
         if action == "add":
-            name = (request.POST.get("name") or "").strip() or "New account"
-            atype = (request.POST.get("type") or "bank").strip()
-            if atype not in dict(MoneySource.TYPE_CHOICES):
-                atype = "bank"
-            ms, created = MoneySource.objects.get_or_create(
-                user=request.user, name=name, defaults={"type": atype, "is_active": True}
-            )
-            messages.success(request, f'Account “{name}” added.' if created else f'Account “{name}” already exists.')
+            name = (request.POST.get("name") or "").strip()
+            typ  = (request.POST.get("type") or "").strip()
+            if not name or typ not in dict(MoneySource.TYPE_CHOICES):
+                messages.error(request, "Provide a valid name and type.")
+                return redirect("profile")
+            if MoneySource.objects.filter(user=request.user, name=name).exists():
+                messages.error(request, "Account with this name already exists.")
+                return redirect("profile")
+            MoneySource.objects.create(user=request.user, name=name, type=typ, is_active=True)
+            messages.success(request, "Account added.")
             return redirect("profile")
 
         if action == "rename":
@@ -1617,24 +1780,7 @@ def profile(request):
             acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
             acc.is_active = not acc.is_active
             acc.save(update_fields=["is_active", "updated_at"])
-            messages.success(request, f'Account “{acc.name}” {"activated" if acc.is_active else "deactivated"}.')
-            return redirect("profile")
-
-        if action == "setbalance":
-            # This now updates manual_balance/manual_currency
-            acc_id = request.POST.get("id")
-            amount_raw = (request.POST.get("amount") or "").strip().replace(",", ".")
-            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
-            try:
-                acc.manual_balance = Decimal(amount_raw) if amount_raw != "" else None
-                # keep a timestamp using the existing field
-                acc.balance_updated_at = timezone.now() if acc.manual_balance is not None else None
-                # currency: stick to EUR for MVP; if you add a <select>, read it here
-                acc.manual_currency = "EUR"
-                acc.save(update_fields=["manual_balance", "manual_currency", "balance_updated_at", "updated_at"])
-                messages.success(request, f'Manual balance saved for “{acc.name}”.')
-            except (InvalidOperation, TypeError):
-                messages.error(request, "Invalid balance value.")
+            messages.success(request, ("Activated" if acc.is_active else "Deactivated") + f' “{acc.name}”.')
             return redirect("profile")
 
         if action == "setdefault":
@@ -1647,14 +1793,86 @@ def profile(request):
                 messages.error(request, "Account not found or inactive.")
             return redirect("profile")
 
-        messages.info(request, "No changes made.")
-        return redirect("profile")
+        if action == "setbalance":
+            acc_id = request.POST.get("id")
+            raw = (request.POST.get("amount") or "").strip().replace(",", ".")
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+            if raw == "":
+                acc.manual_balance = None
+                acc.balance_updated_at = timezone.now()
+                acc.save(update_fields=["manual_balance", "balance_updated_at"])
+                messages.success(request, "Manual balance cleared.")
+            else:
+                try:
+                    val = Decimal(raw)
+                    acc.manual_balance = val
+                    acc.balance_updated_at = timezone.now()
+                    acc.save(update_fields=["manual_balance", "balance_updated_at"])
+                    messages.success(request, "Manual balance saved.")
+                except (InvalidOperation, TypeError):
+                    messages.error(request, "Enter a valid number.")
+            return redirect("profile")
 
-    # ----- GET -----
+        # --- Category caps ---
+        if action == "setcap":
+            from decimal import Decimal, InvalidOperation
+            cat_id = request.POST.get("id")
+            raw = (request.POST.get("amount") or "").strip().replace(",", ".")
+            cat = get_object_or_404(Category, id=cat_id, user=request.user)
+            if raw == "":
+                cat.monthly_cap = None
+                cat.save(update_fields=["monthly_cap"])
+                messages.success(request, f'Removed cap for “{cat.name}”.')
+            else:
+                try:
+                    val = Decimal(raw)
+                    if val < 0:
+                        raise InvalidOperation
+                    cat.monthly_cap = val
+                    cat.save(update_fields=["monthly_cap"])
+                    messages.success(request, f'Saved cap for “{cat.name}”.')
+                except (InvalidOperation, TypeError):
+                    messages.error(request, "Enter a valid non-negative number.")
+            return redirect("profile")
+
+        # --- Savings goals actions (optional: add/toggle/delete) ---
+        if action == "goal_add":
+            name = (request.POST.get("goal_name") or "").strip()
+            target_raw = (request.POST.get("goal_target") or "").strip().replace(",", ".")
+            try:
+                target = Decimal(target_raw)
+            except Exception:
+                target = Decimal("0")
+            g = SavingsGoal.objects.create(user=request.user, name=name, target_amount=target, is_active=True)
+            # accounts checkboxes
+            for aid in request.POST.getlist("goal_accounts"):
+                try:
+                    a = MoneySource.objects.get(id=int(aid), user=request.user)
+                    g.accounts.add(a)
+                except MoneySource.DoesNotExist:
+                    pass
+            messages.success(request, "Goal created.")
+            return redirect("profile")
+
+        if action == "goal_toggle":
+            gid = request.POST.get("goal_id")
+            g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
+            g.is_active = not g.is_active
+            g.save(update_fields=["is_active", "updated_at"])
+            messages.success(request, ("Activated" if g.is_active else "Paused") + f' “{g.name}”.')
+            return redirect("profile")
+
+        if action == "goal_delete":
+            gid = request.POST.get("goal_id")
+            g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
+            g.delete()
+            messages.success(request, "Goal deleted.")
+            return redirect("profile")
+
+    # ---------- GET ----------
+    # Accounts (effective balances)
     accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
 
-    # Effective per-account balance: manual if present, else ledger (sum of tx)
-    # Build ledger sums per account in a single query
     tx_sums = (
         Transaction.objects
         .filter(user=request.user, is_deleted=False)
@@ -1671,22 +1889,104 @@ def profile(request):
         else:
             ledger_map[ms_id] -= amt
 
-    # Compute total effective balance across active accounts
     total_effective = Decimal("0")
+    acc_by_id = {}
     for acc in accounts:
         ledger_val = ledger_map.get(acc.id, Decimal("0"))
         effective = acc.manual_balance if acc.manual_balance is not None else ledger_val
-        # attach for template usage
         acc.effective_balance = effective
+        acc_by_id[acc.id] = acc
         total_effective += effective if acc.is_active else Decimal("0")
 
+    # Suggested caps (avg of last 3 full months)
+    today = timezone.localdate()
+    def month_start(y, m): return _date(y, m, 1)
+    def month_end(y, m):   return _date(y, m, monthrange(y, m)[1])
+
+    prev_year = today.year if today.month > 1 else today.year - 1
+    prev_month = today.month - 1 if today.month > 1 else 12
+
+    m3 = []
+    y, m = prev_year, prev_month
+    for _ in range(3):
+        m3.append((y, m))
+        if m == 1:
+            y, m = y - 1, 12
+        else:
+            m -= 1
+    m3 = list(reversed(m3))
+
+    start_3 = month_start(m3[0][0], m3[0][1])
+    end_3   = month_end(m3[-1][0], m3[-1][1])
+
+    spend_3 = (
+        Transaction.objects
+        .filter(
+            user=request.user,
+            is_deleted=False,
+            in_out=Transaction.OUT,
+            date__gte=start_3,
+            date__lte=end_3,
+        )
+        .values("category_fk")
+        .annotate(total=Sum("amount"))
+    )
+    spend_map = {r["category_fk"]: (r["total"] or Decimal("0")) for r in spend_3}
+
+    cats = Category.objects.filter(user=request.user).order_by("name")
+    caps_rows = []
+    for c in cats:
+        tot = spend_map.get(c.id, Decimal("0"))
+        suggested = (tot / Decimal("3")) if tot is not None else Decimal("0")
+        caps_rows.append({
+            "id": c.id,
+            "name": c.name,
+            "color": c.color,
+            "cap": c.monthly_cap,      # may be None
+            "suggested": suggested,    # Decimal
+        })
+
+    # ---------- Savings goals (active + paused) ----------
+    goals_qs = (
+        SavingsGoal.objects
+        .filter(user=request.user)
+        .prefetch_related("accounts")
+        .order_by("created_at", "id")
+    )
+
+    goals = []
+    for g in goals_qs:
+        sel_accs = [acc_by_id[a.id] for a in g.accounts.all() if a.id in acc_by_id]
+        current = sum((a.effective_balance or Decimal("0") for a in sel_accs), Decimal("0"))
+        target  = g.target_amount or Decimal("0")
+        pct = float((current / target * 100) if target > 0 else 0.0)
+        pct = 0.0 if pct != pct else max(0.0, min(pct, 200.0))  # clamp & guard NaN
+        goals.append({
+            "obj": g,
+            "accounts": sel_accs,
+            "current": float(current),
+            "target": float(target),
+            "progress_pct": round(pct, 1),
+            "eta_months": None,  # optional, keep None for now
+        })
+
+    # ---------- Context ----------
     ctx = {
         "accounts": accounts,
         "total_accounts_balance": float(total_effective),
         "type_choices": MoneySource.TYPE_CHOICES,
         "default_id": request.session.get("default_src_id"),
+
+        # Caps table
+        "caps_rows": caps_rows,
+        "caps_window_note": f"Based on average spending across {m3[0][0]:04d}-{m3[0][1]:02d} to {m3[-1][0]:04d}-{m3[-1][1]:02d}.",
+
+        # Savings goals table (for profile.html)
+        "goals": goals,
     }
     return render(request, "profile.html", ctx)
+
+
 
 
 @login_required
@@ -1696,7 +1996,8 @@ def statistics(request):
       - Lifetime stats (totals, averages, best/worst, largest purchase, merchant stats, coverage)
       - Category share (pie) with month/range picker (defaults to last *full* month)
       - Weekday mix (last 90 days)
-      - Per-category totals, #tx, avg/tx, avg/month for the selected period
+      - Per-category totals, #tx, avg/tx, avg/month, and Δ vs Cap for the selected period
+      - NEW: category include filter (cats=...) + include_uncat=1 (affects pie/summary/weekday only)
     """
     # Local imports to keep this a clean drop-in
     from calendar import monthrange
@@ -1705,11 +2006,11 @@ def statistics(request):
     import json
     from decimal import Decimal
     from datetime import datetime, date as _date
-    from django.db.models import Sum, Count
+    from django.db.models import Sum, Count, Q  # NEW: Q
     from django.db.models.functions import TruncMonth
     from django.utils import timezone
 
-    from .models import Transaction
+    from .models import Transaction, Category
 
     user = request.user
     today = timezone.localtime().date()
@@ -1823,57 +2124,89 @@ def statistics(request):
         start_date, end_date = end_date, start_date
         start_key, end_key = end_key, start_key
 
-    # Inclusive number of months in the selected range (for Avg/Month)
+    # Inclusive number of months in the selected range (for Avg/Month and cap scaling)
     months_in_range = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
     if months_in_range < 1:
         months_in_range = 1
 
-    # One query to get totals and counts per category in the selected period (spending only; FK-only)
+    # ---------- NEW: category include filter (default = all selected) ----------
+    all_categories = list(Category.objects.filter(user=user).order_by("name").values("id", "name"))
+    selected_cat_ids = {int(x) for x in request.GET.getlist("cats") if str(x).isdigit()}
+    include_uncat = request.GET.get("include_uncat") == "1"
+    if not selected_cat_ids:
+        selected_cat_ids = {c["id"] for c in all_categories}  # default: all
+
+    cat_q = Q(category_fk__in=selected_cat_ids)
+    if include_uncat:
+        cat_q = cat_q | Q(category_fk__isnull=True)
+
+    # One query to get totals and counts per category in the selected period (spending only; apply cat filter)
     per_cat = (
         base.filter(
             in_out=Transaction.OUT,
-            category_fk__isnull=False,
             date__gte=start_date,
             date__lte=end_date,
         )
-        .values("category_fk", "category_fk__name")
+        .filter(cat_q)
+        .values("category_fk", "category_fk__name", "category")  # keep plain text for uncategorized
         .annotate(total=Sum("amount"), cnt=Count("id"))
         .order_by("-total")
     )
 
+    # Pie data
     share_total = sum((r["total"] or Decimal("0")) for r in per_cat) or Decimal("0")
-    cat_labels = [r["category_fk__name"] for r in per_cat]
-    cat_values = [
-        float((r["total"] or Decimal("0")) / share_total) if share_total else 0.0 for r in per_cat
-    ]
+    cat_labels = []
+    cat_values = []
+    for r in per_cat:
+        name = r["category_fk__name"] or r.get("category") or "Uncategorized"
+        cat_labels.append(name)
+        cat_values.append(float((r["total"] or Decimal("0")) / share_total) if share_total else 0.0)
 
-    # Build rows for the summary table (includes Avg/Month)
+    # ---- caps lookup (per-month caps) ----
+    caps_by_id = {c.id: (c.monthly_cap or Decimal("0")) for c in Category.objects.filter(user=user)}
+
+    # Build rows for the summary table (includes Avg/Month and Δ vs Cap across range)
     cat_summary_rows = []
     for r in per_cat:
         total = r["total"] or Decimal("0")
         cnt = int(r["cnt"] or 0)
         avg = (total / cnt) if cnt else Decimal("0")
         avg_month = (total / months_in_range) if months_in_range else Decimal("0")
+
+        cat_id = r["category_fk"]
+        cap_monthly = caps_by_id.get(cat_id, Decimal("0")) if cat_id else Decimal("0")
+        has_cap = (cat_id is not None) and (caps_by_id.get(cat_id) is not None) and (cap_monthly > 0)
+        cap_total = (cap_monthly * months_in_range) if has_cap else None
+        delta = (cap_total - total) if has_cap else None  # + = under cap (remaining), - = over
+
         cat_summary_rows.append(
             {
-                "cat_id": r["category_fk"],
-                "cat_name": r["category_fk__name"],
+                "cat_id": cat_id if cat_id is not None else "",
+                "cat_name": r["category_fk__name"] or r.get("category") or "Uncategorized",
                 "total": float(total),
                 "count": cnt,
                 "avg": float(avg),
                 "avg_month": float(avg_month),
+                "has_cap": has_cap,
+                "cap_total": float(cap_total) if has_cap else None,
+                "delta": float(delta) if has_cap else None,
             }
         )
 
-    # ---------- Weekday mix (last 90 days, spending only) ----------
+    # ---------- Weekday mix (last 90 days, spending only; apply cat filter) ----------
     last90_start = today - timedelta(days=89)
     wday_totals = [Decimal("0")] * 7  # Mon..Sun
-    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).only("date", "amount")
+    qs_wday = base.filter(
+        in_out=Transaction.OUT,
+        date__gte=last90_start,
+        date__lte=today
+    ).filter(cat_q).only("date", "amount")
     for t in qs_wday:
         wday_totals[t.date.weekday()] += (t.amount or Decimal("0"))
     weekday_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weekday_values = [float(x) for x in wday_totals]
 
+    # ---------- Context ----------
     ctx = {
         # Lifetime cards
         "total_in": float(total_in),
@@ -1902,7 +2235,7 @@ def statistics(request):
         "cat_values_json": json.dumps(cat_values),
         "share_note": f"Share of total spending from {start_key} to {end_key}.",
 
-        # Per-category summary (includes Avg/Month)
+        # Per-category summary (with Avg/Month and Δ vs Cap)
         "cat_summary_rows": cat_summary_rows,
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
@@ -1914,5 +2247,11 @@ def statistics(request):
         # For other links
         "last90_from": last90_start.strftime("%Y-%m-%d"),
         "last90_to": today.strftime("%Y-%m-%d"),
+
+        # NEW: modal state
+        "all_categories": all_categories,
+        "selected_cat_ids": list(selected_cat_ids),
+        "include_uncat": include_uncat,
     }
     return render(request, "statistics.html", ctx)
+

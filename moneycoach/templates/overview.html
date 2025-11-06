@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Overview</h2>
 
-<!-- Balance card -->
+<!-- Balance card (unchanged) -->
 <div style="margin:1rem 0; padding:0.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
   <div>
     <strong>Total balance (all accounts):</strong>
@@ -43,159 +43,203 @@
   {% endif %}
 </div>
 
-<!-- Modal dialog for adding/updating balance -->
-<dialog id="balanceDialog" style="border:none; border-radius:12px; padding:0;">
-  <form method="post" style="padding:1rem 1.2rem; min-width:320px;">
-    {% csrf_token %}
-    <input type="hidden" name="form" value="balance">
-    <h3 style="margin:.2rem 0 1rem 0;">{% if latest_snap %}Update balance{% else %}Add balance{% endif %}</h3>
-
-    <label style="display:block; margin:.5rem 0 .25rem;">Amount (EUR)</label>
-    <input type="number" step="0.01" name="amount" required style="width:100%" {% if latest_snap %}value="{{ latest_snap.amount }}"{% endif %}>
-
-    <label style="display:block; margin:.75rem 0 .25rem;">Timestamp</label>
-    <input type="datetime-local" name="timestamp" style="width:100%"
-           value="{% if latest_snap %}{{ latest_snap.timestamp|date:'Y-m-d\\TH:i' }}{% else %}{{ now_val }}{% endif %}">
-
-    <label style="display:block; margin:.75rem 0 .25rem;">Note (optional)</label>
-    <input type="text" name="note" maxlength="180" style="width:100%"
-           {% if latest_snap and latest_snap.note %}value="{{ latest_snap.note }}"{% endif %}>
-
-    <div style="display:flex; gap:.5rem; margin-top:1rem;">
-      <button type="submit">Save</button>
-      <button type="button" onclick="document.getElementById('balanceDialog').close()">Cancel</button>
-    </div>
-  </form>
-</dialog>
-
-{% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
-  <h3 style="margin-top:1rem;">Balance over time (monthly)</h3>
-  <div style="max-width:1000px; margin: 0 auto 1.5rem;">
-    <canvas id="balanceChart"></canvas>
+<!-- Savings goals (unchanged) -->
+{% if goals %}
+<div style="margin:1rem 0; padding:0.9rem; border:1px solid #ddd; border-radius:10px; background:#f6fff7;">
+  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+    <strong>Savings goals</strong>
+    <a href="/profile/" style="margin-left:auto; font-size:.9em;">Manage in Profile →</a>
   </div>
-{% endif %}
 
-<!-- Income vs Spending per month -->
-<div style="max-width:1000px; margin: 0 auto 1.5rem;">
-  <canvas id="incomeSpending"></canvas>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:.75rem; margin-top:.75rem;">
+    {% for g in goals %}
+      <div style="border:1px solid #e1f0e1; border-radius:10px; padding:.65rem; background:#ffffff;">
+        <div style="display:flex; justify-content:space-between; gap:.5rem;">
+          <div style="font-weight:600;">{{ g.name }}</div>
+          {% if g.eta %}
+            <div style="font-size:.85em; color:#666;">ETA {{ g.eta }}</div>
+          {% endif %}
+        </div>
+        <div style="margin:.35rem 0; font-size:.95em; color:#333;">
+          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
+        </div>
+        <div style="height:10px; background:#eef6ee; border-radius:999px; overflow:hidden;">
+          <div style="height:100%; width:{{ g.pct|floatformat:1 }}%; background:#2e7d32;"></div>
+        </div>
+        <div style="margin-top:.35rem; font-size:.85em; color:#555;">
+          {{ g.pct|floatformat:1 }}%
+          {% if g.accounts and g.accounts|length %}
+            · via
+            {% for a in g.accounts %}
+              <span style="background:#f0f7ff; border:1px solid #d7e7ff; padding:.05rem .35rem; border-radius:999px; margin-right:.25rem;">
+                {{ a.name }}
+              </span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 </div>
-
-<!-- Net by month (compact table) -->
-<h3>Net by month (Income − Spending)</h3>
-<table>
-  <tr>
-    <th>Month</th>
-    <th>Net</th>
-  </tr>
-  {% for r in net_rows %}
-    <tr>
-      <td>{{ r.month }}</td>
-      <td>
-        {% if r.net >= 0 %}
-          <span style="color:#2e7d32">{{ r.net }}</span>
-        {% else %}
-          <span style="color:#b00020">{{ r.net }}</span>
-        {% endif %}
-      </td>
-    </tr>
-  {% endfor %}
-</table>
-
-<h3 style="margin-top:1.5rem;">Spending per category</h3>
-
-{% if cat_names %}
-  <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 1rem;">
-    <div style="display:flex; gap:.4rem; flex-wrap: wrap;">
-      {% for cname in cat_names %}
-        <button class="cat-btn" data-cat="{{ cname }}"
-                style="padding:.35rem .6rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;">
-          {{ cname }}
-        </button>
-      {% endfor %}
-    </div>
-    <div style="margin-left:auto;">
-      <label style="font-size:.9em; color:#555; margin-right:.3rem;">Chart</label>
-      <select id="catChartType">
-        <option value="bar">Bar</option>
-        <option value="line">Line</option>
-      </select>
-    </div>
-  </div>
-
-  <div style="max-width:1000px; margin: 0 auto 1.5rem;">
-    <canvas id="catChart"></canvas>
-  </div>
-
-  <!-- Per-month merchant breakdown -->
-  <div id="catBreakdown" style="max-width:1000px; margin: 0 auto 1.5rem;">
-    <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 0.5rem;">
-      <label style="font-size:.9em; color:#555;">Month:</label>
-      <div id="catMonthButtons" style="display:flex; gap:.35rem; flex-wrap: wrap;"></div>
-    </div>
-    <div id="catMonthTableWrap"></div>
-  </div>
-
-{% else %}
-  <p style="opacity:.7">No categorized spending yet.</p>
 {% endif %}
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const labels   = {{ labels_json|safe }};
-  const income   = {{ income_json|safe }};
-  const spending = {{ spending_json|safe }};
-
-  const ctx = document.getElementById('incomeSpending').getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Income',   data: income },
-        { label: 'Spending', data: spending }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      stacked: false,
-      plugins: { legend: { position: 'top' } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
+<!-- ===== Balance over time + Income vs Spending (combined grey box) ===== -->
+<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div><strong>Balance over time (monthly) & Income vs Spending</strong></div>
 
   {% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
-  const balLabels = {{ balance_labels_json|safe }};
-  const balValues = {{ balance_values_json|safe }};
-  const bctx = document.getElementById('balanceChart').getContext('2d');
-  new Chart(bctx, {
-    type: 'line',
-    data: {
-      labels: balLabels,
-      datasets: [
-        { label: 'Balance', data: balValues }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'top' } },
-      scales: { y: { beginAtZero: false } }
-    }
-  });
+    <div style="max-width:1000px; margin:.75rem auto 1.25rem;">
+      <canvas id="balanceChart"></canvas>
+    </div>
   {% endif %}
 
-  // ---- Category chart + breakdown data from server ----
-  const catMonths   = {{ cat_month_labels_json|default:"[]"|safe }};
-  const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
-  const breakdownByCatMonth = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
-  const monthBounds = {{ month_bounds_json|default:"{}"|safe }};
+  <div style="max-width:1000px; margin:.75rem auto 0;">
+    <canvas id="incomeSpending"></canvas>
+  </div>
+</div>
 
-  if (catMonths.length && Object.keys(seriesByCat).length) {
-    const catCanvas  = document.getElementById('catChart').getContext('2d');
+<!-- ===== Net by month (grey box) ===== -->
+<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div><strong>Net by month (Income − Spending)</strong></div>
+  <div style="margin-top:.5rem;">
+    <table>
+      <tr>
+        <th>Month</th>
+        <th>Net</th>
+      </tr>
+      {% for r in net_rows %}
+        <tr>
+          <td>{{ r.month }}</td>
+          <td>
+            {% if r.net >= 0 %}
+              <span style="color:#2e7d32">{{ r.net }}</span>
+            {% else %}
+              <span style="color:#b00020">{{ r.net }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<!-- ===== Spending per category (chart + merchant breakdown in one grey box) ===== -->
+<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div><strong>Spending per category</strong></div>
+
+  {% if cat_names %}
+    <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.75rem 0 1rem;">
+      <div style="display:flex; gap:.4rem; flex-wrap: wrap;">
+        {% for cname in cat_names %}
+          <button class="cat-btn" data-cat="{{ cname }}"
+                  style="padding:.35rem .6rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;">
+            {{ cname }}
+          </button>
+        {% endfor %}
+      </div>
+      <div style="margin-left:auto;">
+        <label style="font-size:.9em; color:#555; margin-right:.3rem;">Chart</label>
+        <select id="catChartType">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="max-width:1000px; margin: 0 auto 1.25rem;">
+      <canvas id="catChart"></canvas>
+    </div>
+
+    <!-- Merchant breakdown (per selected category + month buttons) -->
+    <div id="catBreakdown" style="max-width:1000px; margin: 0 auto .25rem;">
+      <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 0.5rem;">
+        <label style="font-size:.9em; color:#555;">Month:</label>
+        <div id="catMonthButtons" style="display:flex; gap:.35rem; flex-wrap: wrap;"></div>
+      </div>
+      <div id="catMonthTableWrap"></div>
+    </div>
+  {% else %}
+    <p style="opacity:.7; margin-top:.5rem;">No categorized spending yet.</p>
+  {% endif %}
+</div>
+
+<!-- ===== Budgets vs Spent (already in grey box; unchanged) ===== -->
+<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+    <strong>Budgets vs Spent</strong>
+    <div id="budgetMonthButtons" style="display:flex; gap:.35rem; flex-wrap:wrap; margin-left:auto;"></div>
+  </div>
+
+  <div id="budgetEmpty" style="display:none; margin-top:.6rem; color:#666; font-size:.95em;">
+    You haven't set any category caps yet. Set them in <a href="/profile/">Profile</a>.
+  </div>
+
+  <div style="max-width:1000px; margin:.75rem auto 0;">
+    <canvas id="budgetChart"></canvas>
+  </div>
+
+  <div style="font-size:.85em; color:#666; margin-top:.4rem;">
+    <span style="display:inline-block; width:12px; height:12px; background:rgba(25,118,210,0.6); border:1px solid rgb(25,118,210); vertical-align:middle; margin-right:.35rem;"></span>
+    Spent
+    <span style="display:inline-block; width:18px; height:0; border-top:2px solid #d32f2f; margin:0 .5rem .15rem .75rem;"></span>
+    Cap
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // ========== Income vs Spending ==========
+  (function(){
+    const labels   = {{ labels_json|safe }};
+    const income   = {{ income_json|safe }};
+    const spending = {{ spending_json|safe }};
+    new Chart(document.getElementById('incomeSpending').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Income',   data: income },
+        { label: 'Spending', data: spending }
+      ] },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        stacked: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  })();
+
+  // ========== Balance chart ==========
+  {% if latest_snap and balance_labels_json and balance_values_json %}
+  (function(){
+    const balLabels = {{ balance_labels_json|safe }};
+    const balValues = {{ balance_values_json|safe }};
+    new Chart(document.getElementById('balanceChart').getContext('2d'), {
+      type: 'line',
+      data: { labels: balLabels, datasets: [{ label: 'Balance', data: balValues }] },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: false } }
+      }
+    });
+  })();
+  {% endif %}
+
+  // ========== Category chart + breakdown (own state) ==========
+  (function(){
+    const catMonths   = {{ cat_month_labels_json|default:"[]"|safe }};
+    const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
+    const breakdownByCatMonth = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
+    const monthBounds = {{ month_bounds_json|default:"{}"|safe }};
+
+    if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
+
+    const catCanvas = document.getElementById('catChart').getContext('2d');
     const typeSelect = document.getElementById('catChartType');
-    const buttons    = Array.from(document.querySelectorAll('.cat-btn'));
+    const buttons = Array.from(document.querySelectorAll('.cat-btn'));
 
     let currentCat = buttons.length ? buttons[0].dataset.cat : null;
     let currentType = typeSelect.value;
@@ -210,22 +254,61 @@
       options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
     });
 
-    function highlightButton(activeBtn) {
-      buttons.forEach(b => b.style.background = '#f7f7f7');
-      if (activeBtn) activeBtn.style.background = '#e6f0ff';
+    function renderMonthButtons() {
+      const wrap = document.getElementById('catMonthButtons');
+      wrap.innerHTML = '';
+      catMonths.forEach((mk, idx) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = mk;
+        b.style.cssText = 'padding:.25rem .45rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          showBreakdown(mk);
+          Array.from(wrap.children).forEach(x => x.style.background = '#f7f7f7');
+          b.style.background = '#e6f0ff';
+        });
+        if (idx === catMonths.length - 1) b.style.background = '#e6f0ff';
+        wrap.appendChild(b);
+      });
+      if (catMonths.length) showBreakdown(catMonths[catMonths.length - 1]);
     }
-    if (buttons.length) highlightButton(buttons[0]);
+
+    function showBreakdown(monthKey) {
+      const rows = (breakdownByCatMonth[currentCat] && breakdownByCatMonth[currentCat][monthKey]) || [];
+      const mb = monthBounds[monthKey] || null;
+      let html = '';
+      if (!rows.length) {
+        html = '<p style="opacity:.7">No merchants for this month.</p>';
+      } else {
+        html = '<table><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg</th><th></th></tr>';
+        rows.forEach(r => {
+          const q = encodeURIComponent(r.merchant);
+          const link = mb ? `/?q=${q}&from=${mb.start}&to=${mb.end}` : `/?q=${q}`;
+          html += `<tr>
+            <td>${r.merchant}</td>
+            <td>${r.total.toFixed(2)} EUR</td>
+            <td>${r.count}</td>
+            <td>${r.avg.toFixed(2)} EUR</td>
+            <td><a href="${link}">Open</a></td>
+          </tr>`;
+        });
+        html += '</table>';
+      }
+      document.getElementById('catMonthTableWrap').innerHTML = html;
+    }
 
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
         currentCat = btn.dataset.cat;
         catChart.data.datasets = [ datasetFor(currentCat) ];
         catChart.update();
-        highlightButton(btn);
-        renderMonthButtons(catMonths, currentMonth);
-        renderBreakdown(currentCat, currentMonth);
+        buttons.forEach(b => b.style.background = '#f7f7f7');
+        btn.style.background = '#e6f0ff';
+        renderMonthButtons();
       });
     });
+    if (buttons.length) buttons[0].style.background = '#e6f0ff';
 
     typeSelect.addEventListener('change', () => {
       currentType = typeSelect.value;
@@ -237,58 +320,135 @@
       });
     });
 
-    const monthBtnWrap  = document.getElementById('catMonthButtons');
-    const monthTableWrap = document.getElementById('catMonthTableWrap');
+    renderMonthButtons();
+  })();
 
-    function renderMonthButtons(months, current) {
-      monthBtnWrap.innerHTML = '';
-      months.forEach(m => {
+  // ========== Budgets vs Spent (fully separate state) ==========
+  (function(){
+    const budgetAll = {{ budget_all_json|default:"null"|safe }};
+    const monthKeys = {{ budget_month_keys|default:"[]"|safe }};
+    const defaultKey = "{{ budget_selected_key|default:'' }}";
+    const HAS_CAPS = {{ budget_has_caps|yesno:"true,false" }};
+
+    const btnWrap = document.getElementById('budgetMonthButtons');
+    const emptyBox = document.getElementById('budgetEmpty');
+    const canvas   = document.getElementById('budgetChart');
+    const ctx = canvas.getContext('2d');
+
+    if (!HAS_CAPS) {
+      emptyBox.style.display = 'block';
+      canvas.style.display = 'none';
+      return;
+    } else {
+      emptyBox.style.display = 'none';
+      canvas.style.display = '';
+    }
+
+    const CapLinePlugin = {
+      id: 'capLinePlugin',
+      afterDatasetsDraw(chart) {
+        const {ctx, scales} = chart;
+        const capsDS = chart.config.data?.datasets?.find(d => d._isCaps);
+        if (!capsDS) return;
+        const caps = capsDS.data || [];
+        const labels = chart.config.data?.labels || [];
+        const x = scales.x, y = scales.y;
+        ctx.save();
+        ctx.strokeStyle = '#d32f2f';
+        ctx.lineWidth = 2;
+
+        for (let i = 0; i < labels.length; i++) {
+          const capVal = Number(caps[i] ?? NaN);
+          if (isNaN(capVal)) continue;
+          const xCenter = x.getPixelForValue(i);
+          const xNext = x.getPixelForValue(i + 1);
+          const step = isFinite(xNext) ? (xNext - xCenter) : (xCenter - x.getPixelForValue(i - 1));
+          const half = Math.abs(step) * 0.3;
+          const yPix = y.getPixelForValue(capVal);
+          ctx.beginPath();
+          ctx.moveTo(xCenter - half, yPix);
+          ctx.lineTo(xCenter + half, yPix);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    };
+
+    let activeKey = (defaultKey && budgetAll && budgetAll[defaultKey]) ? defaultKey : (monthKeys.length ? monthKeys[monthKeys.length-1] : null);
+    let chartRef = null;
+
+    function renderButtons() {
+      btnWrap.innerHTML = '';
+      monthKeys.forEach(k => {
         const b = document.createElement('button');
-        b.textContent = m;
-        b.className = 'month-btn';
-        b.style.cssText = 'padding:.25rem .5rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
-        if (m === current) b.style.background = '#e6f0ff';
-        b.addEventListener('click', () => {
-          currentMonth = m;
-          renderMonthButtons(months, currentMonth);
-          renderBreakdown(currentCat, currentMonth);
+        b.type = 'button';
+        b.textContent = k;
+        b.style.cssText = 'padding:.25rem .45rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
+        if (k === activeKey) b.style.background = '#e6f0ff';
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          activeKey = k;
+          Array.from(btnWrap.children).forEach(x => x.style.background = '#f7f7f7');
+          b.style.background = '#e6f0ff';
+          draw(activeKey);
         });
-        monthBtnWrap.appendChild(b);
+        btnWrap.appendChild(b);
       });
     }
 
-    function renderBreakdown(cat, month) {
-      const rows = (breakdownByCatMonth[cat] && breakdownByCatMonth[cat][month]) ? breakdownByCatMonth[cat][month] : [];
-      const bounds = monthBounds[month] || {};
-      if (!rows.length) {
-        monthTableWrap.innerHTML = '<p style="opacity:.7">No merchant breakdown for this month.</p>';
+    function draw(key) {
+      if (!(budgetAll && budgetAll[key])) {
+        canvas.style.display = 'none';
         return;
       }
-      let html = '<table><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg/Tx</th><th>Review</th></tr>';
-      rows.forEach(r => {
-        const total = (typeof r.total === 'number') ? r.total.toFixed(2) : r.total;
-        const avg   = (typeof r.avg === 'number') ? r.avg.toFixed(2) : r.avg;
-        const q     = encodeURIComponent(r.merchant);
-        const start = encodeURIComponent(bounds.start || '');
-        const end   = encodeURIComponent(bounds.end || '');
-        const href  = `/?q=${q}&from=${start}&to=${end}`;
-        html += `<tr>
-          <td>${r.merchant}</td>
-          <td>${total} EUR</td>
-          <td>${r.count}</td>
-          <td>${avg} EUR</td>
-          <td><a href="${href}">Review</a></td>
-        </tr>`;
+      const pack = budgetAll[key];
+      const labels = pack.labels || [];
+      const spent  = pack.spent  || [];
+      const caps   = pack.caps   || [];
+
+      canvas.style.display = '';
+      if (chartRef) chartRef.destroy();
+      chartRef = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Spent',
+              data: spent,
+              backgroundColor: 'rgba(25,118,210,0.6)',
+              borderColor: 'rgb(25,118,210)',
+              borderWidth: 1,
+              categoryPercentage: 0.7,
+              barPercentage: 0.8,
+            },
+            {
+              type: 'line',
+              label: 'Cap',
+              data: caps,
+              borderWidth: 0,
+              pointRadius: 0,
+              borderColor: 'rgba(0,0,0,0)',
+              _isCaps: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            capLinePlugin: {}
+          },
+          scales: { y: { beginAtZero: true } }
+        },
+        plugins: [CapLinePlugin]
       });
-      html += '</table>';
-      monthTableWrap.innerHTML = html;
     }
 
-    let currentMonth = catMonths.length ? catMonths[catMonths.length - 1] : null;
-    if (currentCat && currentMonth) {
-      renderMonthButtons(catMonths, currentMonth);
-      renderBreakdown(currentCat, currentMonth);
-    }
-  }
+    renderButtons();
+    if (activeKey) draw(activeKey);
+  })();
 </script>
 {% endblock %}

@@ -49,31 +49,98 @@
   </div>
 </div>
 
-<!-- ===== Category share (pie) + month picker ===== -->
+<!-- ===== Category share (pie) + month/range picker ===== -->
 <div style="margin:1.25rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
-    <strong>Category share</strong>
-    <form method="get" style="display:flex; gap:.5rem; align-items:center;">
+
+  <!-- Title -->
+  <div><strong>Category share</strong></div>
+
+  <!-- Controls row under the title, left-aligned -->
+  <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; margin-top:.5rem;">
+    <button type="button" id="editCatsBtn">Edit categories</button>
+
+    <form method="get" style="display:flex; gap:.5rem; align-items:center; margin:0;">
       <label style="font-size:.9em; color:#555;">From</label>
       <select name="start_month">
         {% for m in available_month_keys %}
           <option value="{{ m }}" {% if m == start_key %}selected{% endif %}>{{ m }}</option>
         {% endfor %}
       </select>
+
       <label style="font-size:.9em; color:#555;">To</label>
       <select name="end_month">
         {% for m in available_month_keys %}
           <option value="{{ m }}" {% if m == end_key %}selected{% endif %}>{{ m }}</option>
         {% endfor %}
       </select>
+
+      {# Preserve current category selections across month-range submit #}
+      {% for c in all_categories %}
+        {% if c.id in selected_cat_ids %}
+          <input type="hidden" name="cats" value="{{ c.id }}">
+        {% endif %}
+      {% endfor %}
+      {% if include_uncat %}
+        <input type="hidden" name="include_uncat" value="1">
+      {% endif %}
+
       <button type="submit">Apply</button>
     </form>
   </div>
 
+  {# Modal (no external CSS/JS) #}
+  <div id="catsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="background:#fff; border-radius:10px; max-width:520px; margin:10vh auto; padding:1rem; border:1px solid #ddd;">
+      <div style="display:flex; align-items:center; gap:.5rem;">
+        <strong>Choose categories to include</strong>
+        <button type="button" id="catsClose" style="margin-left:auto;">✕</button>
+      </div>
+
+      <form method="get" style="margin-top:.5rem;">
+        {# Keep current month range #}
+        <input type="hidden" name="start_month" value="{{ start_key }}">
+        <input type="hidden" name="end_month" value="{{ end_key }}">
+
+        <div style="display:flex; gap:.5rem; margin:.5rem 0;">
+          <button type="button" id="selectAll">Select all</button>
+          <button type="button" id="selectNone">Select none</button>
+        </div>
+
+        <div style="max-height:40vh; overflow:auto; border:1px solid #eee; border-radius:8px; padding:.5rem;">
+          {% for c in all_categories %}
+            <label style="display:flex; align-items:center; gap:.5rem; padding:.2rem .25rem;">
+              <input type="checkbox" name="cats" value="{{ c.id }}"
+                     {% if c.id in selected_cat_ids %}checked{% endif %}>
+              <span>{{ c.name }}</span>
+            </label>
+          {% empty %}
+            <div style="opacity:.7;">No categories yet.</div>
+          {% endfor %}
+        </div>
+
+        <label style="display:flex; align-items:center; gap:.5rem; margin:.5rem 0 .75rem;">
+          <input type="checkbox" name="include_uncat" value="1" {% if include_uncat %}checked{% endif %}>
+          <span>Include Uncategorized</span>
+        </label>
+
+        <div style="display:flex; gap:.5rem; justify-content:flex-end;">
+          <button type="button" id="catsCancel">Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pie stays inside the grey box -->
   <div style="max-width:480px; margin:.75rem auto 0;">
     {% if cat_labels_json and cat_labels_json != "[]" %}
       <canvas id="catSharePie" width="360" height="360"></canvas>
-      <div style="color:#666; font-size:.9em; margin-top:.5rem; text-align:center;">{{ share_note }}</div>
+      <div style="color:#666; font-size:.9em; margin-top:.5rem; text-align:center;">
+        {{ share_note }}<br>
+        <span style="font-size:.85em; color:#888;">
+          Tip: “Δ vs Cap” below uses (monthly cap × number of months in range) − total spent.
+        </span>
+      </div>
     {% else %}
       <p style="opacity:.7; margin-top:.5rem;">No spending in the selected period.</p>
     {% endif %}
@@ -88,6 +155,8 @@
           <th>Total (EUR)</th>
           <th>#Tx</th>
           <th>Avg/Tx</th>
+          <th>Cap (range)</th>
+          <th>Δ vs Cap</th>
           <th>Avg/Month</th>
           <th>Review</th>
         </tr>
@@ -97,6 +166,26 @@
             <td>{{ row.total|floatformat:2 }}</td>
             <td>{{ row.count }}</td>
             <td>{{ row.avg|floatformat:2 }}</td>
+            <td>
+              {% if row.has_cap %}
+                {{ row.cap_total|floatformat:2 }}
+              {% else %}
+                <span style="color:#888;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.has_cap %}
+                {% if row.delta >= 0 %}
+                  <span title="Remaining vs cap for selected period (cap={{ row.cap_total|floatformat:2 }} EUR)"
+                        style="color:#2e7d32;">+{{ row.delta|floatformat:2 }}</span>
+                {% else %}
+                  <span title="Overspent vs cap for selected period (cap={{ row.cap_total|floatformat:2 }} EUR)"
+                        style="color:#b00020;">{{ row.delta|floatformat:2 }}</span>
+                {% endif %}
+              {% else %}
+                <span style="color:#888;">—</span>
+              {% endif %}
+            </td>
             <td>{{ row.avg_month|floatformat:2 }}</td>
             <td><a href="/?cat={{ row.cat_id }}&from={{ start_date }}&to={{ end_date }}">Open</a></td>
           </tr>
@@ -117,7 +206,6 @@
   </div>
 </div>
 
-
 <!-- ===== Charts ===== -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -128,10 +216,7 @@
     const pieCtx = document.getElementById('catSharePie').getContext('2d');
     new Chart(pieCtx, {
       type: 'pie',
-      data: {
-        labels: catLabels,
-        datasets: [{ data: catValues }]
-      },
+      data: { labels: catLabels, datasets: [{ data: catValues }] },
       options: {
         responsive: true,
         maintainAspectRatio: true,
@@ -166,4 +251,30 @@
     }
   });
 </script>
+<script>
+  // Categories modal controls
+  (function(){
+    const openBtn = document.getElementById('editCatsBtn');
+    const modal   = document.getElementById('catsModal');
+    const close1  = document.getElementById('catsClose');
+    const cancel  = document.getElementById('catsCancel');
+    const selAll  = document.getElementById('selectAll');
+    const selNone = document.getElementById('selectNone');
+
+    function open(){ modal.style.display = 'block'; }
+    function close(){ modal.style.display = 'none'; }
+    openBtn?.addEventListener('click', open);
+    close1?.addEventListener('click', close);
+    cancel?.addEventListener('click', close);
+    modal?.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    selAll?.addEventListener('click', () => {
+      modal.querySelectorAll('input[type="checkbox"][name="cats"]').forEach(cb => cb.checked = true);
+    });
+    selNone?.addEventListener('click', () => {
+      modal.querySelectorAll('input[type="checkbox"][name="cats"]').forEach(cb => cb.checked = false);
+    });
+  })();
+</script>
+
 {% endblock %}

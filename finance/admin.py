@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Transaction, Category, MoneySource, BalanceSnapshot
+from .models import Transaction, Category, MoneySource, BalanceSnapshot, SavingsGoal
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
@@ -25,3 +25,10 @@ class BalanceSnapshotAdmin(admin.ModelAdmin):
     list_display = ("user", "amount", "currency", "timestamp", "note", "created_at")
     list_filter = ("user", "currency")
     date_hierarchy = "timestamp"
+
+@admin.register(SavingsGoal)
+class SavingsGoalAdmin(admin.ModelAdmin):
+    list_display = ("name", "user", "target_amount", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "user__username")
+    filter_horizontal = ("accounts",)

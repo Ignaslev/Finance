@@ -4,19 +4,33 @@
 
 <!-- Controls -->
 <div style="margin: .5rem 0 1rem; margin-top: 50px;">
-  <a href="/ai/full/?limit=200"
-     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none;">
-    Auto-categorize
-  </a>
-  <a href="/ai/full/?mode=uncat&limit=200"
+  <a href="{% url 'ai_run_uncategorized' %}"
      style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; margin-right:.5rem;">
-    Auto-categorize (Uncategorized only)
+    Auto-categorize (uncategorized)
   </a>
-  <a href="/ai/full/?mode=all&limit=200"
+  <a href="{% url 'ai_recheck_all' %}"
      style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none;">
-    Recheck categories (learn from my edits)
+    Recheck categories (AI)
   </a>
 </div>
+
+{% if last_ai_pre %}
+  <div style="margin:.5rem 0 1rem; padding:.6rem .75rem; border:1px solid #e3e3e3; border-radius:8px; background:#f7f7f7;">
+    {% if last_ai_pre.kind == "uncategorized" %}
+      <strong>Auto-categorize</strong> started for
+      <strong>{{ last_ai_pre.considered }}</strong> uncategorized transactions.
+    {% elif last_ai_pre.kind == "recheck_ai" %}
+      <strong>Recheck categories</strong> started for
+      <strong>{{ last_ai_pre.considered }}</strong> AI-labeled transactions.
+    {% endif %}
+    <div style="color:#666; font-size:.9em; margin-top:.25rem;">
+      Began at {{ last_ai_pre.started_at }}
+      · Low-confidence suggestions will appear in <a href="/review/low/">Review (Low)</a>
+      · Recent AI-labeled in <a href="/review/ai/">Review (AI)</a>.
+    </div>
+  </div>
+{% endif %}
+
 
 <div style="margin:.5rem 0 1rem;">
   <a href="/review/ai/" style="margin-right:.75rem">AI-categorized (recent)</a>
@@ -137,7 +151,7 @@
     <input type="hidden" name="q" value="{{ q }}">
     <input type="hidden" name="from" value="{{ from }}">
     <input type="hidden" name="to" value="{{ to }}">
-    <input type="hidden" name="amin" value="{{ amax }}">
+    <input type="hidden" name="amin" value="{{ amin }}">
     <input type="hidden" name="amax" value="{{ amax }}">
     <input type="hidden" name="flow" value="{{ flow }}">
     <input type="hidden" name="cat" value="{{ cat }}">

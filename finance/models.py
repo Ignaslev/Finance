@@ -25,6 +25,7 @@ class Category(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=40)
     color = models.CharField(max_length=7, blank=True, default="")  # optional hex color
+    monthly_cap = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     class Meta:
         unique_together = ("user", "name")
@@ -93,6 +94,12 @@ class Transaction(models.Model):
     currency = models.CharField(max_length=8, default="EUR")
     in_out = models.CharField(max_length=3, choices=IO_CHOICES, default=OUT)
     notes = models.TextField(blank=True, default="")
+    goal_fk = models.ForeignKey(
+        "finance.SavingsGoal",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+    )
 
     # per-user dedupe key (we will include source id when importing)
     fingerprint = models.CharField(max_length=64, db_index=True)
@@ -132,3 +139,20 @@ class BalanceSnapshot(models.Model):
 
     def __str__(self):
         return f"{self.user} @ {self.timestamp:%Y-%m-%d %H:%M} = {self.amount} {self.currency}"
+
+# --- SavingsGoal (MVP) ---
+class SavingsGoal(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="savings_goals")
+    name = models.CharField(max_length=100)
+    target_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    accounts = models.ManyToManyField("MoneySource", related_name="goals", blank=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_active", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.user})"

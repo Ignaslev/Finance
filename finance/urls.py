@@ -37,4 +37,8 @@ urlpatterns = [
     path("deleted/", f.deleted_list, name="deleted_list"),
 
     path("profile/", f.profile, name="profile"),
+    # Smart launchers (no AI logic here, just scoping & redirects)
+    path("ai/run-uncategorized/", f.ai_run_uncategorized, name="ai_run_uncategorized"),
+    path("ai/recheck-all/", f.ai_recheck_all, name="ai_recheck_all"),
+
 ]
