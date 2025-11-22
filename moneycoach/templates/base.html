@@ -1,52 +1,272 @@
-<!doctype html>
+{% load static %}
+{# Load our new custom tag library #}
+{% load active_link_tags %}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>{% block title %}MoneyCoach{% endblock %}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem;
-                 font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    nav a { margin-right: .75rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f7f7f7; position: sticky; top: 0; }
-    .pager a { margin: 0 .5rem; }
-    .meta { color: #666; margin: .5rem 0 1rem; }
-    .upload { margin: 1rem 0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Compass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* DEFINING THE THEME */
+        :root {
+            /* The specific Teal from your design */
+            --primary-teal: #00cea6;
+            --primary-teal-dark: #00b593;
+
+            /* Backgrounds */
+            --bg-body: #e2e8f0; /* Very subtle off-white for contrast */
+            --bg-card: #ffffff; /* Pure white cards */
+
+            /* Text */
+            --text-dark: #1a202c; /* Near black for headers */
+            --text-medium: #4a5568; /* Gray for secondary text */
+            --text-light: #a0aec0;
+
+            /* Shape & Shadow */
+            --card-radius: 20px;
+            --btn-radius: 12px;
+            /* Soft, modern shadow */
+            --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-medium);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* LAYOUT CONTAINERS */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* THE NAVBAR */
+        .navbar {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            position: relative; /* For dropdown positioning */
+        }
+
+        .nav-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand::before {
+             content: '';
+             display: inline-block;
+             width: 12px;
+             height: 12px;
+             background: var(--primary-teal);
+             border-radius: 50%;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: var(--text-medium);
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding-bottom: 4px;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--text-dark);
+            border-bottom-color: var(--primary-teal);
+        }
+
+        /* PROFILE DROPDOWN (CSS-Only Hover) */
+        .nav-profile-container {
+            position: relative;
+            cursor: pointer;
+            padding-bottom: 10px; /* Adds a small invisible bridge so mouse doesn't leave container */
+        }
+
+        .nav-profile {
+            width: 40px;
+            height: 40px;
+            background: #e2e8f0; /* Placeholder color */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-medium);
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-profile:hover {
+            border-color: var(--primary-teal);
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: 100%; /* Position right below the container */
+            right: 0;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-soft);
+            width: 160px;
+            padding: 0.5rem 0;
+            display: none; /* Hidden by default */
+            z-index: 100;
+            border: 1px solid #f0f0f0;
+        }
+
+        /* SHOW MENU ON HOVER */
+        .nav-profile-container:hover .profile-dropdown {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f7fafc;
+            color: var(--primary-teal);
+        }
+
+        /* CORE COMPONENT: THE CLEAN WHITE CARD */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-soft);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: none; /* No borders, just shadow */
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--btn-radius);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-teal);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-teal-dark);
+        }
+
+        /* UTILITIES */
+        .text-teal { color: var(--primary-teal); }
+        .text-dark { color: var(--text-dark); }
+        .font-bold { font-weight: 700; }
+        .mb-4 { margin-bottom: 1rem; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-4 { gap: 1rem; }
+
+        /* GRID SYSTEM FOR DASHBOARD */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr; /* Left column slightly wider */
+            gap: 2rem;
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; } /* Stack on mobile */
+        }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--text-medium); font-weight: 500; padding: 1rem 0.5rem; border-bottom: 1px solid #e2e8f0;}
+        td { padding: 1rem 0.5rem; color: var(--text-dark); border-bottom: 1px solid #f7fafc; }
+    </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <div><strong>MoneyCoach</strong></div>
-    <nav>
-      <a href="/overview/">Overview</a>
-      <a href="/">Upload</a>
-      <a href="/statistics/">Statistics</a>
-      {% if request.user.is_authenticated %}
-        <span style="color:#666">Hi, <a href="/profile/" style="margin-right:.75rem;">{{ request.user.username }}</a></span>
-        <a href="/logout/">Logout</a>
-      {% else %}
-        <a href="/login/">Login</a>
-        <a href="/register/">Register</a>
-      {% endif %}
+
+    <nav class="navbar">
+        <div class="nav-brand">Money Compass</div>
+        <div class="nav-links">
+            <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">Dashboard</a>
+            <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">Statistics</a>
+            <a href="#" class="nav-item">Transactions</a>
+            <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">Upload</a>
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="nav-profile-container">
+            <div class="nav-profile">{{ user.username.0|upper }}</div>
+
+            <div class="profile-dropdown">
+                <a href="{% url 'profile' %}" class="dropdown-item">Profile</a>
+
+                <!-- POST-only logout (safer) -->
+                <form action="{% url 'logout' %}" method="post" style="margin:0;">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item" style="background:none; border:0; width:100%; text-align:left; cursor:pointer;">
+                    Log Out
+                  </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="nav-links">
+            <a href="{% url 'login' %}" class="nav-item">Log In</a>
+        </div>
+        {% endif %}
     </nav>
-  </header>
 
-  {% if messages %}
-  <ul style="list-style:none;padding:0;margin:.5rem 0 1rem 0;">
-    {% for message in messages %}
-      <li style="margin:.5rem 0; padding:.5rem .75rem; border-radius:6px;
-                 background:#e8f5e9; color:#2e7d32;">
-        {{ message }}
-      </li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="card" style="background: {% if message.tags == 'success' %}#d1fae5{% else %}#fee2e2{% endif %}; color: {% if message.tags == 'success' %}#065f46{% else %}#991b1b{% endif %}; padding: 1rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
-  {% block content %}{% endblock %}
-</div>
-</body>
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    </body>
 </html>

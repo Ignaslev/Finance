@@ -4,6 +4,11 @@
 
 <h2 style="margin-top:50px;">Statistics</h2>
 
+{% if empty_state %}
+  <p>No statistics yet — upload some transactions to get started.</p>
+{% endif %}
+
+{% if not empty_state %}
 <!-- ===== Lifetime summary cards ===== -->
 <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; margin:1rem 0;">
   <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
@@ -250,6 +255,8 @@
       plugins: { legend: { position: 'top' } }
     }
   });
+
+
 </script>
 <script>
   // Categories modal controls
@@ -276,5 +283,5 @@
     });
   })();
 </script>
-
+{% endif %}
 {% endblock %}

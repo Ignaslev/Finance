@@ -1,255 +1,286 @@
 {% extends "base.html" %}
-{% block title %}Profile · MoneyCoach{% endblock %}
+{% block title %}Profile · Money Compass{% endblock %}
 {% block content %}
 
-<h2 style="margin-top:50px;">Profile</h2>
-
-<div style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  <strong>User:</strong> {{ request.user.username }}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">Profile</h2>
+    <div class="text-medium" style="font-size:0.95rem;">
+      User: <strong class="text-dark">{{ request.user.username }}</strong>
+    </div>
 </div>
 
-<!-- ================= Accounts ================= -->
-<h3 style="margin-top:1.5rem;">Accounts</h3>
+<div class="card">
+  <div class="card-title">Accounts</div>
 
-<form method="post" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="add">
-  <div style="display:flex; gap:.5rem; align-items:end; flex-wrap:wrap;">
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Name</label>
-      <input type="text" name="name" required placeholder="e.g. Revolut, SEB, Cash">
-    </div>
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Type</label>
-      <select name="type" required>
-        {% for val, label in type_choices %}
-          <option value="{{ val }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <button type="submit">Add account</button>
-    </div>
-  </div>
-</form>
-
-<table>
-  <tr>
-    <th>Account</th>
-    <th>Type</th>
-    <th>Status</th>
-    <th>Default import</th>
-    <th style="min-width:14rem;">Balance (EUR)</th>
-    <th>Actions</th>
-  </tr>
-  {% for a in accounts %}
-    <tr>
-      <td>{{ a.name }}</td>
-      <td>{{ a.get_type_display }}</td>
-      <td>
-        {% if a.is_active %}
-          <span style="padding:.1rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32;">Active</span>
-        {% else %}
-          <span style="padding:.1rem .4rem; border-radius:10px; background:#eee; color:#666;">Inactive</span>
-        {% endif %}
-      </td>
-      <td>
-        {% if default_id == a.id %}
-          <strong>Default</strong>
-        {% elif a.is_active %}
-          <form method="post" style="display:inline;">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="setdefault">
-            <input type="hidden" name="id" value="{{ a.id }}">
-            <button type="submit">Make default</button>
-          </form>
-        {% else %}
-          <span style="opacity:.6">—</span>
-        {% endif %}
-      </td>
-      <td>
-        <form method="post" style="display:flex; gap:.4rem; align-items:center;">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="setbalance">
-          <input type="hidden" name="id" value="{{ a.id }}">
-          <input type="number" step="0.01" name="amount" value="{{ a.manual_balance }}" placeholder="e.g. 1234.56" style="width:8rem;">
-          <button type="submit">Save</button>
-        </form>
-        {% if a.balance_updated_at %}
-          <div style="font-size:.8em; color:#666; margin-top:.25rem;">
-            updated {{ a.balance_updated_at|date:"Y-m-d H:i" }}
-          </div>
-        {% endif %}
-      </td>
-      <td>
-        <!-- rename -->
-        <form method="post" style="display:inline;">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="rename">
-          <input type="hidden" name="id" value="{{ a.id }}">
-          <input type="text" name="name" value="{{ a.name }}" style="width:12rem;">
-          <button type="submit">Rename</button>
-        </form>
-
-        <!-- toggle -->
-        <form method="post" style="display:inline; margin-left:.5rem;">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="toggle">
-          <input type="hidden" name="id" value="{{ a.id }}">
-          <button type="submit">
-            {% if a.is_active %}Deactivate{% else %}Activate{% endif %}
-          </button>
-        </form>
-      </td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="6" style="opacity:.7">No accounts yet.</td></tr>
-  {% endfor %}
-</table>
-
-
-<!-- ================== Category caps (monthly budgets) ================== -->
-<h3 style="margin-top:1.5rem;">Category caps (monthly)</h3>
-<p style="color:#666; margin:.25rem 0;">{{ caps_window_note }}</p>
-
-<table>
-  <tr>
-    <th>Category</th>
-    <th style="min-width:12rem;">Monthly cap (EUR)</th>
-    <th>Suggested avg (EUR)</th>
-    <th>Actions</th>
-  </tr>
-  {% for r in caps_rows %}
-    <tr>
-      <td>
-        <span style="display:inline-flex; align-items:center; gap:.5rem;">
-          {% if r.color %}
-            <span style="display:inline-block;width:12px;height:12px;background:{{ r.color }};border:1px solid #ccc;border-radius:3px;"></span>
-          {% endif %}
-          {{ r.name }}
-        </span>
-      </td>
-      <td>
-        <form method="post" style="display:flex; gap:.4rem; align-items:center;">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="setcap">
-          <input type="hidden" name="id" value="{{ r.id }}">
-          <input type="number" step="0.01" name="amount"
-                 value="{% if r.cap is not None %}{{ r.cap }}{% endif %}"
-                 placeholder="e.g. 250.00" style="width:9rem;">
-          <button type="submit">Save</button>
-          {% if r.cap is not None %}
-            <button type="submit" onclick="this.form.amount.value='';">Clear</button>
-          {% endif %}
-        </form>
-      </td>
-      <td>{{ r.suggested|floatformat:2 }}</td>
-      <td>
-        <a href="/statistics/?start_month=">Review stats</a>
-      </td>
-    </tr>
-  {% endfor %}
-</table>
-
-
-
-<!-- ================= Savings goals ================= -->
-<h3 style="margin-top:2rem;">Savings goals</h3>
-
-<form method="post" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="goal_add">
-  <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem;">
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Goal name</label>
-      <input type="text" name="goal_name" required placeholder="e.g. Emergency fund">
-    </div>
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Target amount (EUR)</label>
-      <input type="number" step="0.01" name="goal_target" required placeholder="e.g. 10000">
-    </div>
-    <div style="grid-column: 1 / -1;">
-      <div style="font-size:.85em; color:#555; margin-bottom:.25rem;">Include balances from accounts:</div>
-      <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
-        {% for a in accounts %}
-          <label style="display:inline-flex; align-items:center; gap:.35rem; border:1px solid #ddd; border-radius:8px; padding:.3rem .5rem; background:#fff;">
-            <input type="checkbox" name="goal_accounts" value="{{ a.id }}"> {{ a.name }} <span style="color:#777">({{ a.get_type_display }})</span>
-          </label>
-        {% endfor %}
+  <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid #edf2f7;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+      <div style="flex-grow:1; max-width:300px;">
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">New Account Name</label>
+        <input type="text" name="name" required placeholder="e.g. Revolut, SEB" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
       </div>
-      <div style="font-size:.85em; color:#666; margin-top:.35rem;">
-        Tip: Pick any mix (e.g., main + savings + cash). Progress sums their effective balances.
+      <div style="flex-grow:1; max-width:200px;">
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Type</label>
+        <select name="type" required style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px; background:white;">
+          {% for val, label in type_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem;">Add account</button>
       </div>
     </div>
-    <div>
-      <button type="submit">Create goal</button>
-    </div>
-  </div>
-</form>
+  </form>
 
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Accounts</th>
-    <th>Progress</th>
-    <th>Target</th>
-    <th>ETA</th>
-    <th>Status</th>
-    <th>Actions</th>
-  </tr>
-  {% for g in goals %}
-    <tr>
-      <td>{{ g.obj.name }}</td>
-      <td>
-        {% for a in g.accounts %}
-          <span style="display:inline-block; margin:.1rem .25rem; padding:.1rem .4rem; border:1px solid #ddd; border-radius:10px; background:#f9f9f9;">
-            {{ a.name }}
-          </span>
-        {% empty %}—{% endfor %}
-      </td>
-      <td>
-        <div style="min-width:220px;">
-          <div style="font-size:.9em; color:#444; margin-bottom:.2rem;">
-            {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR ({{ g.progress_pct }}%)
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Default import</th>
+          <th style="min-width:14rem;">Balance (EUR)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in accounts %}
+        <tr>
+          <td style="font-weight:500;">{{ a.name }}</td>
+          <td style="color:var(--text-medium); font-size:0.9rem;">{{ a.get_type_display }}</td>
+          <td>
+            {% if a.is_active %}
+              <span style="padding:.1rem .5rem; border-radius:6px; background:#f0fdf4; color:#15803d; font-size:0.85rem; font-weight:500;">Active</span>
+            {% else %}
+              <span style="padding:.1rem .5rem; border-radius:6px; background:#f1f5f9; color:#64748b; font-size:0.85rem;">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if default_id == a.id %}
+              <strong class="text-teal">Default</strong>
+            {% elif a.is_active %}
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="setdefault">
+                <input type="hidden" name="id" value="{{ a.id }}">
+                <button type="submit" class="btn" style="padding:0.2rem 0.6rem; font-size:0.8rem; background:#edf2f7;">Make default</button>
+              </form>
+            {% else %}
+              <span style="opacity:.3">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="post" style="display:flex; gap:.4rem; align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="setbalance">
+              <input type="hidden" name="id" value="{{ a.id }}">
+              <input type="number" step="0.01" name="amount" value="{{ a.manual_balance }}" placeholder="0.00"
+                     style="width:7rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px;">
+              <button type="submit" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.85rem;">Save</button>
+            </form>
+            {% if a.balance_updated_at %}
+              <div style="font-size:.75em; color:#94a3b8; margin-top:.25rem;">
+                updated {{ a.balance_updated_at|date:"Y-m-d H:i" }}
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex; gap:0.5rem;">
+                <form method="post" style="display:flex; gap:0.25rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="rename">
+                  <input type="hidden" name="id" value="{{ a.id }}">
+                  <input type="text" name="name" value="{{ a.name }}" style="width:8rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem;">
+                  <button type="submit" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:#edf2f7;">Rename</button>
+                </form>
+
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="toggle">
+                  <input type="hidden" name="id" value="{{ a.id }}">
+                  <button type="submit" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:#fff; border:1px solid #e2e8f0; color:var(--text-medium);">
+                    {% if a.is_active %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" style="opacity:.7; padding:2rem; text-align:center;">No accounts yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <div class="card-title" style="margin:0;">Category Caps (Monthly)</div>
+        <div style="font-size:0.85em; color:var(--text-light);">{{ caps_window_note }}</div>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th style="min-width:12rem;">Monthly cap (EUR)</th>
+            <th>Suggested avg (EUR)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in caps_rows %}
+          <tr>
+            <td>
+              <span style="display:inline-flex; align-items:center; gap:.5rem; font-weight:500;">
+                {% if r.color %}
+                  <span style="display:inline-block;width:12px;height:12px;background:{{ r.color }}; border-radius:3px;"></span>
+                {% endif %}
+                {{ r.name }}
+              </span>
+            </td>
+            <td>
+              <form method="post" style="display:flex; gap:.4rem; align-items:center;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="setcap">
+                <input type="hidden" name="id" value="{{ r.id }}">
+                <input type="number" step="0.01" name="amount"
+                       value="{% if r.cap is not None %}{{ r.cap }}{% endif %}"
+                       placeholder="No limit"
+                       style="width:8rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px;">
+                <button type="submit" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.85rem;">Save</button>
+                {% if r.cap is not None %}
+                  <button type="submit" onclick="this.form.amount.value='';" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:transparent; color:var(--text-light);">✕</button>
+                {% endif %}
+              </form>
+            </td>
+            <td style="color:var(--text-medium);">{{ r.suggested|floatformat:2 }}</td>
+            <td>
+              <a href="/statistics/?start_month=" class="text-teal" style="font-size:0.9rem; text-decoration:none;">Review stats</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-title">Savings Goals</div>
+
+    <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid #edf2f7;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="goal_add">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap:1rem;">
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Goal Name</label>
+          <input type="text" name="goal_name" required placeholder="e.g. Emergency fund" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Target Amount (EUR)</label>
+          <input type="number" step="0.01" name="goal_target" required placeholder="10000" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <div style="font-size:.85em; color:var(--text-medium); margin-bottom:0.5rem;">Include balances from accounts:</div>
+          <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+            {% for a in accounts %}
+              <label style="cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; border:1px solid #e2e8f0; border-radius:20px; padding:.3rem .8rem; background:#fff; font-size:0.9rem; transition:all 0.2s;">
+                <input type="checkbox" name="goal_accounts" value="{{ a.id }}">
+                <span>{{ a.name }}</span>
+              </label>
+            {% endfor %}
           </div>
-          <div style="height:10px; background:#eee; border-radius:999px; overflow:hidden;">
-            <div style="height:100%; width: {{ g.progress_pct }}%; background:#4caf50;"></div>
+          <div style="font-size:.8em; color:var(--text-light); margin-top:.35rem;">
+            Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal.
           </div>
         </div>
-      </td>
-      <td>{{ g.obj.target_amount|floatformat:2 }} EUR</td>
-      <td>
-        {% if g.eta_months %}
-          ~{{ g.eta_months }} mo
-        {% else %}
-          <span style="color:#777">—</span>
-        {% endif %}
-      </td>
-      <td>
-        {% if g.obj.is_active %}
-          <span style="padding:.1rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32;">Active</span>
-        {% else %}
-          <span style="padding:.1rem .4rem; border-radius:10px; background:#eee; color:#666;">Paused</span>
-        {% endif %}
-      </td>
-      <td>
-        <form method="post" style="display:inline;">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="goal_toggle">
-          <input type="hidden" name="goal_id" value="{{ g.obj.id }}">
-          <button type="submit">{% if g.obj.is_active %}Pause{% else %}Activate{% endif %}</button>
-        </form>
-        <form method="post" style="display:inline; margin-left:.4rem;" onsubmit="return confirm('Delete this goal?');">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="goal_delete">
-          <input type="hidden" name="goal_id" value="{{ g.obj.id }}">
-          <button type="submit" style="background:#c62828; color:#fff; border:1px solid #b71c1c;">Delete</button>
-        </form>
-      </td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="7" style="opacity:.7">No savings goals yet.</td></tr>
-  {% endfor %}
-</table>
+        <div>
+          <button type="submit" class="btn btn-primary">Create Goal</button>
+        </div>
+      </div>
+    </form>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Accounts Linked</th>
+            <th style="width:250px;">Progress</th>
+            <th>Target</th>
+            <th>ETA</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for g in goals %}
+          <tr>
+            <td style="font-weight:600; color:var(--text-dark);">{{ g.obj.name }}</td>
+            <td>
+              {% for a in g.accounts %}
+                <span style="display:inline-block; font-size:0.8rem; margin:0.1rem; padding:0.1rem 0.5rem; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; color:var(--text-medium);">
+                  {{ a.name }}
+                </span>
+              {% empty %}—{% endfor %}
+            </td>
+            <td>
+              <div>
+                <div style="font-size:.85em; color:var(--text-medium); margin-bottom:.25rem; display:flex; justify-content:space-between;">
+                  <span>{{ g.current|floatformat:2 }} EUR</span>
+                  <strong>{{ g.progress_pct }}%</strong>
+                </div>
+                <div style="height:8px; background:#edf2f7; border-radius:999px; overflow:hidden;">
+                  <div style="height:100%; width: {{ g.progress_pct }}%; background:var(--primary-teal);"></div>
+                </div>
+              </div>
+            </td>
+            <td>{{ g.obj.target_amount|floatformat:2 }} EUR</td>
+            <td>
+              {% if g.eta_months %}
+                <span style="color:var(--text-medium);">~{{ g.eta_months }} mo</span>
+              {% else %}
+                <span style="color:var(--text-light);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if g.obj.is_active %}
+                <span style="padding:.1rem .5rem; border-radius:6px; background:#f0fdf4; color:#15803d; font-size:0.85rem;">Active</span>
+              {% else %}
+                <span style="padding:.1rem .5rem; border-radius:6px; background:#f1f5f9; color:#64748b; font-size:0.85rem;">Paused</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="goal_toggle">
+                    <input type="hidden" name="goal_id" value="{{ g.obj.id }}">
+                    <button type="submit" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:#fff; border:1px solid #e2e8f0;">
+                        {% if g.obj.is_active %}Pause{% else %}Activate{% endif %}
+                    </button>
+                  </form>
+                  <form method="post" style="display:inline;" onsubmit="return confirm('Delete this goal?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="goal_delete">
+                    <input type="hidden" name="goal_id" value="{{ g.obj.id }}">
+                    <button type="submit" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">Delete</button>
+                  </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" style="opacity:.7; padding:2rem; text-align:center;">No savings goals yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+</div>
 
 {% endblock %}

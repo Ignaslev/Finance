@@ -1,298 +1,265 @@
 {% extends "base.html" %}
-{% block title %}Upload transactions · MoneyCoach{% endblock %}
+{% block title %}Upload · Money Compass{% endblock %}
 {% block content %}
 
-<!-- Controls -->
-<div style="margin: .5rem 0 1rem; margin-top: 50px;">
-  <a href="{% url 'ai_run_uncategorized' %}"
-     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; margin-right:.5rem;">
-    Auto-categorize (uncategorized)
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">Transactions</h2>
+    <a href="{% url 'tx_add' %}" class="btn btn-primary">Add Manual</a>
+</div>
+
+<div class="flex gap-4 mb-4" style="font-size: 0.95rem;">
+  <a href="/review/ai/" class="text-teal" style="text-decoration:none; font-weight:500;">AI-categorized</a>
+  <a href="/review/low/" class="text-teal" style="text-decoration:none; font-weight:500;">
+    Low-confidence {% if low_conf_count %}<span style="background:#fff3cd; color:#7a5d00; padding:0 6px; border-radius:8px; font-size:0.8em;">{{ low_conf_count }}</span>{% endif %}
   </a>
-  <a href="{% url 'ai_recheck_all' %}"
-     style="display:inline-block; padding:.45rem .8rem; border:1px solid #ccc; border-radius:6px; text-decoration:none;">
-    Recheck categories (AI)
+  <a href="/uncategorized/" class="text-teal" style="text-decoration:none; font-weight:500;">
+    Uncategorized {% if uncat_count %}<span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">{{ uncat_count }}</span>{% endif %}
   </a>
+  <a href="/deleted/" style="color:var(--text-light); text-decoration:none;">Deleted</a>
 </div>
 
 {% if last_ai_pre %}
-  <div style="margin:.5rem 0 1rem; padding:.6rem .75rem; border:1px solid #e3e3e3; border-radius:8px; background:#f7f7f7;">
+  <div class="card" style="background:#e6fffa; border:1px solid #b2f5ea; padding:1rem;">
     {% if last_ai_pre.kind == "uncategorized" %}
-      <strong>Auto-categorize</strong> started for
-      <strong>{{ last_ai_pre.considered }}</strong> uncategorized transactions.
+      <strong class="text-teal-dark">Auto-categorize</strong> started for
+      <strong>{{ last_ai_pre.considered }}</strong> items.
     {% elif last_ai_pre.kind == "recheck_ai" %}
-      <strong>Recheck categories</strong> started for
-      <strong>{{ last_ai_pre.considered }}</strong> AI-labeled transactions.
+      <strong class="text-teal-dark">Recheck</strong> started for
+      <strong>{{ last_ai_pre.considered }}</strong> items.
     {% endif %}
-    <div style="color:#666; font-size:.9em; margin-top:.25rem;">
-      Began at {{ last_ai_pre.started_at }}
-      · Low-confidence suggestions will appear in <a href="/review/low/">Review (Low)</a>
-      · Recent AI-labeled in <a href="/review/ai/">Review (AI)</a>.
+    <div style="color:var(--text-medium); font-size:.9em; margin-top:.25rem;">
+      Started at {{ last_ai_pre.started_at }}
     </div>
   </div>
 {% endif %}
 
-
-<div style="margin:.5rem 0 1rem;">
-  <a href="/review/ai/" style="margin-right:.75rem">AI-categorized (recent)</a>
-  <a href="/review/low/" style="margin-right:.75rem">
-    Low-confidence review{% if low_conf_count %} ({{ low_conf_count }}){% endif %}
-  </a>
+<div class="card">
+    <div class="card-title">Upload Statement</div>
+    <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}" class="flex items-center gap-4" style="flex-wrap:wrap;">
+      {% csrf_token %}
+      <div style="flex-grow:1; max-width:300px;">
+          <label for="import_src" style="display:block; font-size:0.85rem; color:var(--text-light); margin-bottom:0.25rem;">Target Account</label>
+          <select name="import_src" id="import_src" required style="width:100%; padding:0.6rem; border:1px solid #e2e8f0; border-radius:8px;">
+            {% for s in sources %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+            {% endfor %}
+          </select>
+      </div>
+      <div style="flex-grow:1;">
+           <label style="display:block; font-size:0.85rem; color:var(--text-light); margin-bottom:0.25rem;">CSV / Excel File</label>
+           <input type="file" name="file" required style="padding:0.4rem 0;">
+      </div>
+      <div style="align-self:flex-end;">
+          <button class="btn btn-primary">Upload</button>
+      </div>
+    </form>
 </div>
 
-<div style="margin:.5rem 0 1rem;">
-  <a href="/uncategorized/" style="margin-right:.75rem">
-    Uncategorized{% if uncat_count %} ({{ uncat_count }}){% endif %}
-  </a>
-  <a href="/categories/" style="margin-right:.75rem">Categories</a>
-  <a href="/deleted/">Deleted</a>
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <div class="card-title" style="margin:0;">Filter & Search</div>
+        <form method="get" style="display:flex; align-items:center; gap:0.5rem;">
+          <label for="src" style="font-size:0.9rem; color:var(--text-medium);">Account:</label>
+          <select name="src" id="src" onchange="this.form.submit()" style="padding:0.4rem; border:1px solid #e2e8f0; border-radius:8px; background:var(--bg-body);">
+            <option value="all" {% if src_param == 'all' %}selected{% endif %}>All accounts</option>
+            {% for s in sources %}
+              <option value="{{ s.id }}" {% if active_src and active_src.id == s.id %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+    </div>
+
+    <form method="get">
+      {% if active_src %}
+        <input type="hidden" name="src" value="{{ active_src.id }}">
+      {% elif src_param == 'all' %}
+        <input type="hidden" name="src" value="all">
+      {% endif %}
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:1rem; align-items:end;">
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Search</label>
+          <input type="text" name="q" value="{{ q }}" placeholder="Merchant..." style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">From</label>
+          <input type="date" name="from" value="{{ from }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">To</label>
+          <input type="date" name="to" value="{{ to }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Min Amount</label>
+          <input type="number" step="0.01" name="amin" value="{{ amin }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Max Amount</label>
+          <input type="number" step="0.01" name="amax" value="{{ amax }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Flow</label>
+          <select name="flow" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+            <option value="" {% if not flow %}selected{% endif %}>All</option>
+            <option value="in" {% if flow == "in" %}selected{% endif %}>Income</option>
+            <option value="out" {% if flow == "out" %}selected{% endif %}>Spending</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">Category</label>
+          <select name="cat" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+            <option value="" {% if not cat %}selected{% endif %}>All</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}" {% if cat == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem; display:flex; gap:0.5rem;">
+          <button type="submit" class="btn btn-primary" style="padding:0.5rem 1.5rem;">Filter</button>
+          <a href="{% if active_src %}/?src={{ active_src.id }}{% elif src_param == 'all' %}/?src=all{% else %}/{% endif %}" class="btn" style="background:#edf2f7; color:var(--text-medium); padding:0.5rem 1rem;">Reset</a>
+      </div>
+    </form>
 </div>
 
+{% if page_obj and page_obj.object_list %}
+<div class="card" style="padding:0; overflow:hidden;"> <div style="padding:1rem; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+      <div class="text-medium" style="font-size:0.9rem;">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · Total {{ total }}
+      </div>
 
+      <div class="flex items-center gap-4">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; cursor:pointer;">
+              <input type="checkbox" id="toggleNotes"> Show notes
+          </label>
 
-<h2>Upload transactions</h2>
-<a href="{% url 'tx_add' %}">Add transaction</a>
-
-<!-- Upload form with account picker (import target) -->
-<form method="post" enctype="multipart/form-data" class="upload" action="{% url 'upload' %}">
-  {% csrf_token %}
-  <label for="import_src" style="margin-right:.5rem;">Import into:</label>
-  <select name="import_src" id="import_src" required style="margin-right:.75rem;">
-    {% for s in sources %}
-      <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
-    {% endfor %}
-  </select>
-  <input type="file" name="file" required>
-  <button>Upload</button>
-</form>
-
-
-<!-- FILTERS -->
-<h2>Filter</h2>
-<!-- Account filter (viewing) -->
-<form method="get" style="margin:.75rem 0 1rem; padding:.5rem .75rem; border:1px solid #e8e8e8; border-radius:8px; background:#fafafa; display:flex; gap:.5rem; align-items:center;">
-  <label for="src"><strong>Viewing account:</strong></label>
-  <select name="src" id="src" onchange="this.form.submit()">
-    <option value="all" {% if src_param == 'all' %}selected{% endif %}>All accounts</option>
-    {% for s in sources %}
-      <option value="{{ s.id }}" {% if active_src and active_src.id == s.id %}selected{% endif %}>
-        {{ s.name }} ({{ s.get_type_display }})
-      </option>
-    {% endfor %}
-  </select>
-</form>
-<form method="get" style="margin:1rem 0; padding:.75rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  {% if active_src %}
-    <input type="hidden" name="src" value="{{ active_src.id }}">
-  {% elif src_param == 'all' %}
-    <input type="hidden" name="src" value="all">
-  {% endif %}
-
-  <div style="display:grid; grid-template-columns: repeat(6, minmax(120px,1fr)); gap:.5rem; align-items:end;">
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Search (merchant)</label>
-      <input type="text" name="q" value="{{ q }}" placeholder="e.g. Maxima" style="width:100%">
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">From (date)</label>
-      <input type="date" name="from" value="{{ from }}" style="width:100%">
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">To (date)</label>
-      <input type="date" name="to" value="{{ to }}" style="width:100%">
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Min amount</label>
-      <input type="number" step="0.01" name="amin" value="{{ amin }}" style="width:100%">
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Max amount</label>
-      <input type="number" step="0.01" name="amax" value="{{ amax }}" style="width:100%">
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Flow</label>
-      <select name="flow" style="width:100%">
-        <option value="" {% if not flow %}selected{% endif %}>All</option>
-        <option value="in" {% if flow == "in" %}selected{% endif %}>Income</option>
-        <option value="out" {% if flow == "out" %}selected{% endif %}>Spending</option>
-      </select>
-    </div>
-
-    <div>
-      <label style="display:block; font-size:.85em; color:#555;">Category</label>
-      <select name="cat" style="width:100%">
-        <option value="" {% if not cat %}selected{% endif %}>All</option>
-        {% for c in categories %}
-          <option value="{{ c.id }}" {% if cat == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div style="grid-column: span 2;">
-      <button type="submit" style="margin-right:.5rem;">Apply</button>
-      <a href="{% if active_src %}/?src={{ active_src.id }}{% elif src_param == 'all' %}/?src=all{% else %}/{% endif %}" style="text-decoration:none;">Reset</a>
-    </div>
+          <form method="get" style="margin:0;">
+             <input type="hidden" name="src" value="{{ src_param }}">
+             <input type="hidden" name="q" value="{{ q }}">
+             <input type="hidden" name="cat" value="{{ cat }}">
+             <input type="hidden" name="flow" value="{{ flow }}">
+             <select name="per" onchange="this.form.submit()" style="padding:0.3rem; border:1px solid #cbd5e0; border-radius:6px; font-size:0.85rem;">
+               {% for n in per_options %}
+                 <option value="{{ n }}" {% if per_value == n %}selected{% endif %}>{{ n }} / page</option>
+               {% endfor %}
+             </select>
+          </form>
+      </div>
   </div>
-</form>
 
-<!-- Page size picker -->
-{% if page_obj and page_obj.object_list %}
-  <form method="get" style="margin:.5rem 0;">
-    {% if active_src %}
-      <input type="hidden" name="src" value="{{ active_src.id }}">
-    {% elif src_param == 'all' %}
-      <input type="hidden" name="src" value="all">
-    {% endif %}
-
-    <input type="hidden" name="q" value="{{ q }}">
-    <input type="hidden" name="from" value="{{ from }}">
-    <input type="hidden" name="to" value="{{ to }}">
-    <input type="hidden" name="amin" value="{{ amin }}">
-    <input type="hidden" name="amax" value="{{ amax }}">
-    <input type="hidden" name="flow" value="{{ flow }}">
-    <input type="hidden" name="cat" value="{{ cat }}">
-    <input type="hidden" name="page" value="{{ page_obj.number }}">
-
-    <label>Rows per page:
-      <select name="per" onchange="this.form.submit()">
-        {% for n in per_options %}
-          <option value="{{ n }}" {% if per_value == n %}selected{% endif %}>{{ n }}</option>
-        {% endfor %}
-      </select>
-    </label>
-  </form>
-{% endif %}
-
-{% if page_obj and page_obj.object_list %}
-  <p class="meta">
-    Total rows: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-    {% if active_src %}
-      · Viewing: <strong>{{ active_src.name }}</strong>
-    {% elif src_param == 'all' %}
-      · Viewing: <strong>All accounts</strong>
-    {% endif %}
-  </p>
-
-  <!-- Optional Notes toggle -->
-  <label style="display:inline-flex; align-items:center; gap:.4rem; margin:.25rem 0 1rem;">
-    <input type="checkbox" id="toggleNotes">
-    <span>Show notes</span>
-  </label>
-
-  <!-- === PER-ROW CATEGORY EDIT FORM (for submission only) === -->
   <form method="post" action="{% url 'tx_bulk_category_apply' %}" id="bulkApplyForm">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
     <input type="hidden" name="changes_json" id="changes_json">
 
-    <table>
-      <tr>
-        <th>date</th>
-        <th>merchant</th>
-        <th>amount</th>
-        <th>currency</th>
-        <th>in_out</th>
-        <th class="col-notes" style="display:none">notes</th>
-        <th>account</th>
-        <th>category</th>
-        <th>source</th>
-        <th>user_note</th>
-        <th>edit</th>
-      </tr>
-      {% for t in page_obj.object_list %}
-        <tr data-row="{{ t.id }}">
-          <td>{{ t.date|date:"Y-m-d" }}</td>
-          <td>{{ t.merchant }}</td>
-          <td>{{ t.amount }}</td>
-          <td>{{ t.currency }}</td>
-          <td>{{ t.in_out }}</td>
+    <div style="overflow-x:auto;">
+        <table style="font-size:0.95rem;">
+          <thead>
+              <tr>
+                <th style="width:100px;">Date</th>
+                <th>Merchant</th>
+                <th style="text-align:right;">Amount</th>
+                <th style="width:50px;"></th>
+                <th class="col-notes" style="display:none">Notes</th>
+                <th>Account</th>
+                <th>Category</th>
+                <th>Source</th>
+                <th>User Note</th>
+                <th></th>
+              </tr>
+          </thead>
+          <tbody>
+          {% for t in page_obj.object_list %}
+            <tr data-row="{{ t.id }}">
+              <td style="white-space:nowrap;">{{ t.date|date:"Y-m-d" }}</td>
+              <td style="font-weight:500;">{{ t.merchant }}</td>
+              <td style="text-align:right; font-family:monospace; font-size:1rem;">
+                  {% if t.in_out == "in" %}+{% endif %}{{ t.amount }}
+              </td>
+              <td style="color:var(--text-light); font-size:0.85rem;">{{ t.currency }}</td>
 
-          <td class="col-notes" style="display:none">{{ t.notes }}</td>
+              <td class="col-notes" style="display:none; font-size:0.85rem; color:var(--text-medium);">{{ t.notes|truncatechars:30 }}</td>
 
-          <td>
-            {% if t.money_source %}
-              {{ t.money_source.name }}
-            {% else %}
-              <span style="opacity:.6">—</span>
-            {% endif %}
-          </td>
+              <td style="font-size:0.9rem; color:var(--text-medium);">
+                {% if t.money_source %}{{ t.money_source.name }}{% else %}—{% endif %}
+              </td>
 
-          <td>
-            <select class="cat-select"
-                    data-tx="{{ t.id }}"
-                    data-initial="{% if t.category_fk %}{{ t.category_fk.id }}{% else %}{{ '' }}{% endif %}">
-              <option value="">— none —</option>
-              {% for c in categories %}
-                {% if t.category_fk and t.category_fk.id == c.id %}
-                  <option value="{{ c.id }}" selected>{{ c.name }}</option>
-                {% else %}
-                  <option value="{{ c.id }}">{{ c.name }}</option>
+              <td>
+                <select class="cat-select"
+                        data-tx="{{ t.id }}"
+                        data-initial="{% if t.category_fk %}{{ t.category_fk.id }}{% else %}{{ '' }}{% endif %}"
+                        style="max-width:160px; padding:0.25rem; border:1px solid #e2e8f0; border-radius:6px;">
+                  <option value="">— none —</option>
+                  {% for c in categories %}
+                    {% if t.category_fk and t.category_fk.id == c.id %}
+                      <option value="{{ c.id }}" selected>{{ c.name }}</option>
+                    {% else %}
+                      <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                <span class="pending-dot" style="display:none; color:var(--primary-teal); font-size:1.2em; vertical-align:middle;">•</span>
+              </td>
+
+              <td>
+                {% if t.category_source == "user" %}
+                  <span style="background:#f0fff4; color:#2f855a; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:600;">USER</span>
+                {% elif t.category_source == "ai" %}
+                  {% if t.ai_confidence and t.ai_confidence < 0.80 %}
+                    <a href="/review/low/" style="background:#fffaf0; color:#b7791f; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:600; text-decoration:none;">
+                      AI ({{ t.ai_confidence|floatformat:2 }})
+                    </a>
+                  {% else %}
+                    <span title="{{ t.ai_reason }}" style="background:#ebf8ff; color:#2b6cb0; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:600;">
+                      AI ({{ t.ai_confidence|floatformat:2 }})
+                    </span>
+                  {% endif %}
+                {% elif t.category_source == "rule" %}
+                   <span style="background:#f7fafc; color:#4a5568; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:600;">RULE</span>
                 {% endif %}
-              {% endfor %}
-            </select>
-            <span class="pending-dot" style="display:none; margin-left:.35rem; font-size:.85em; color:#0d47a1;">• pending</span>
-          </td>
+              </td>
 
-          <td>
-            {% if t.category_source == "user" %}
-              <span style="padding:.15rem .4rem; border-radius:10px; background:#e8f5e9; color:#2e7d32; font-size:.85em;">
-                user
-              </span>
-            {% elif t.category_source == "ai" %}
-              {% if t.ai_confidence and t.ai_confidence < 0.80 %}
-                <a href="/review/low/" title="{{ t.ai_reason|default_if_none:'' }}"
-                   style="padding:.15rem .4rem; border-radius:10px; background:#fff3cd; color:#7a5d00; font-size:.85em; text-decoration:none;">
-                  AI • {{ t.ai_confidence|floatformat:2 }}
-                </a>
-              {% else %}
-                <span title="{{ t.ai_reason|default_if_none:'' }}"
-                      style="padding:.15rem .4rem; border-radius:10px; background:#e3f2fd; color:#0d47a1; font-size:.85em;">
-                  AI • {{ t.ai_confidence|default_if_none:"" |floatformat:2 }}
-                </span>
-              {% endif %}
-            {% elif t.category_source == "rule" %}
-              <span style="padding:.15rem .4rem; border-radius:10px; background:#eef; color:#334; font-size:.85em;">
-                rule
-              </span>
-            {% else %}
-              <span style="padding:.15rem .4rem; border-radius:10px; background:#eee; color:#666; font-size:.85em;">
-                —
-              </span>
-            {% endif %}
-          </td>
+              <td style="font-size:0.85rem; color:var(--text-medium);">{{ t.user_note|default_if_none:""|truncatechars:20 }}</td>
+              <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}" class="text-teal" style="font-size:0.85rem;">Edit</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+    </div>
 
-          <td>{{ t.user_note }}</td>
-          <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}">Edit</a></td>
-        </tr>
-      {% endfor %}
-    </table>
-
-    <!-- Sticky bulk bar -->
-    <div style="position:sticky; bottom:0; background:#fff; border-top:1px solid #eee; padding:.6rem .4rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+    <div style="position:sticky; bottom:1rem; margin:0 1rem 1rem; background:var(--text-dark); color:white; border-radius:12px; padding:0.75rem 1.5rem; display:flex; align-items:center; gap:1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index:50;">
       <strong id="pendingCount">0 pending</strong>
-      <span style="color:#666;">· You can change categories in multiple pages. Click “Apply changes” to save all.</span>
-      <button type="submit" id="applyBtn" disabled>Apply changes</button>
-      <button type="button" id="clearBtn" style="margin-left:auto;">Discard pending</button>
+      <span style="font-size:0.9rem; opacity:0.8;">· Click Apply to save changes across all pages.</span>
+      <div style="margin-left:auto; display:flex; gap:0.5rem;">
+          <button type="button" id="clearBtn" class="btn" style="background:rgba(255,255,255,0.1); color:white; padding:0.4rem 1rem;">Discard</button>
+          <button type="submit" id="applyBtn" class="btn" style="background:var(--primary-teal); color:white; padding:0.4rem 1rem;" disabled>Apply Changes</button>
+      </div>
     </div>
   </form>
 
-  <p class="pager">
-    {% if page_obj.has_previous %}
-      <a href="?page=1&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">« first</a>
-      <a href="?page={{ page_obj.previous_page_number }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">‹ prev</a>
-    {% endif %}
-    <strong>Page {{ page_obj.number }}</strong>
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">next ›</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}&per={{ per_value }}&q={{ q|urlencode }}&from={{ from }}&to={{ to }}&amin={{ amin }}&amax={{ amax }}&flow={{ flow }}&cat={{ cat }}{% if active_src %}&src={{ active_src.id }}{% elif src_param == 'all' %}&src=all{% endif %}">last »</a>
-    {% endif %}
-  </p>
+  <div style="padding:1rem; border-top:1px solid #e2e8f0; display:flex; justify-content:center; gap:0.5rem;">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="btn" style="background:#edf2f7; padding:0.3rem 0.8rem; font-size:0.9rem;">‹ Prev</a>
+      {% endif %}
+      <span style="padding:0.3rem 0.8rem; font-weight:600;">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="btn" style="background:#edf2f7; padding:0.3rem 0.8rem; font-size:0.9rem;">Next ›</a>
+      {% endif %}
+  </div>
+</div>
 {% else %}
-  <p style="opacity:.7">Upload a CSV/Excel to see transactions here.</p>
+  <div class="card">
+    <p style="opacity:.7; text-align:center; padding:2rem;">Upload a CSV/Excel to see transactions here.</p>
+  </div>
 {% endif %}
 
 <script>
@@ -316,7 +283,7 @@
     localStorage.removeItem(userKey);
   }
 
-  // If URL has ?clear_local=1, wipe local draft (after a successful apply)
+  // If URL has ?clear_local=1, wipe local draft
   if (new URLSearchParams(window.location.search).get('clear_local') === '1'){
     clearChanges();
   }
@@ -333,43 +300,35 @@
     pendingCountEl.textContent = n + ' pending';
     applyBtn.disabled = n === 0;
 
-    // Reflect pending state in current page rows
+    // Hide sticky bar if no changes
+    applyBtn.closest('div[style*="position:sticky"]').style.display = n === 0 ? 'none' : 'flex';
+
     document.querySelectorAll('tr[data-row]').forEach(tr => {
       const tx = tr.getAttribute('data-row');
       const dot = tr.querySelector('.pending-dot');
       const select = tr.querySelector('.cat-select');
       const initial = (select?.dataset?.initial || '');
       if (changes[tx]) {
-        // Set dropdown to pending value if it differs from initial
         if (select && select.value !== String(changes[tx])) {
           select.value = String(changes[tx]);
         }
         dot && (dot.style.display = (String(changes[tx]) !== String(initial) ? '' : 'none'));
-        tr.style.background = '#f6faff';
+        tr.style.background = '#f0fdf4'; // Light green highlight
       } else {
         dot && (dot.style.display = 'none');
-        // Keep user's current selection; but if it equals initial, no highlight
-        if (select && String(select.value) === String(initial)) {
-          tr.style.background = '';
-        } else {
-          // User might have changed but not stored — do nothing special.
-          tr.style.background = '';
-        }
+        tr.style.background = '';
       }
     });
   }
 
-  // Initialize selects with any pending draft
   function bootstrapSelects(){
     const changes = loadChanges();
     document.querySelectorAll('.cat-select').forEach(sel => {
       const tx = sel.dataset.tx;
       const initial = sel.dataset.initial || '';
-      // If a pending change exists, show it
       if (changes[tx]) {
         sel.value = String(changes[tx]);
       }
-      // Visual dot
       const dot = sel.parentElement.querySelector('.pending-dot');
       dot && (dot.style.display = (changes[tx] && String(changes[tx]) !== String(initial)) ? '' : 'none');
 
@@ -379,7 +338,6 @@
         if (val && val !== initial) {
           all[tx] = val;
         } else {
-          // if equal to initial or empty, remove from pending
           delete all[tx];
         }
         saveChanges(all);
@@ -388,7 +346,6 @@
     });
   }
 
-  // Prepare payload on submit
   const form = document.getElementById('bulkApplyForm');
   form?.addEventListener('submit', (e) => {
     const changes = loadChanges();
@@ -398,13 +355,11 @@
       return;
     }
     changesField.value = JSON.stringify(changes);
-    // Let the request proceed; server will redirect with ?clear_local=1
   });
 
   clearBtn?.addEventListener('click', () => {
     if (confirm('Discard all pending category changes?')) {
       clearChanges();
-      // Reset visible selects to their initial value
       document.querySelectorAll('.cat-select').forEach(sel => {
         sel.value = sel.dataset.initial || '';
       });
@@ -415,5 +370,4 @@
   bootstrapSelects();
   refreshUI();
 </script>
-
 {% endblock %}

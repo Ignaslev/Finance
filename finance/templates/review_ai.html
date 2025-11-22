@@ -1,42 +1,61 @@
 {% extends "base.html" %}
-{% block title %}AI-categorized (recent) · MoneyCoach{% endblock %}
+{% block title %}AI Runs{% endblock %}
 {% block content %}
-<h2>AI-categorized (recent)</h2>
+<h2>AI Runs</h2>
 
-{% if page_obj and page_obj.object_list %}
-  <p class="meta">Total: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
-  <table>
+<form method="get" style="margin:.5rem 0;">
+  <label>Kind:
+    <select name="kind" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="autocategorize" {% if kind == "autocategorize" %}selected{% endif %}>Auto-categorize</option>
+      <option value="recheck" {% if kind == "recheck" %}selected{% endif %}>Recheck</option>
+    </select>
+  </label>
+  <label style="margin-left:.5rem;">Status:
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for s in statuses %}
+          <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|capfirst }}</option>
+        {% endfor %}
+      </select>
+  </label>
+
+</form>
+
+<table>
+  <thead>
     <tr>
-      <th>date</th><th>merchant</th><th>amount</th><th>in_out</th>
-      <th>notes</th><th>category</th><th>confidence</th>
-      <th>edit</th>
+      <th>Started</th>
+      <th>Kind</th>
+      <th>Status</th>
+      <th>Mode</th>
+      <th>Counts</th>
+      <th>Finished</th>
     </tr>
-    {% for t in page_obj.object_list %}
-      <tr>
-        <td>{{ t.date|date:"Y-m-d" }}</td>
-        <td>{{ t.merchant }}</td>
-        <td>{{ t.amount }} {{ t.currency }}</td>
-        <td>{{ t.in_out }}</td>
-        <td>{{ t.notes }}</td>
-        <td>{% if t.category_fk %}{{ t.category_fk.name }}{% else %}{{ t.category }}{% endif %}</td>
-        <td>{% if t.ai_confidence %}{{ t.ai_confidence|floatformat:2 }}{% else %}—{% endif %}</td>
-        <td><a href="/tx/{{ t.id }}/edit/?next=/review/ai/">Edit</a></td>
-      </tr>
-    {% endfor %}
-  </table>
+  </thead>
+  <tbody>
+  {% for run in page_obj %}
+    <tr>
+      <td><a href="{% url 'review_ai_run_detail' run.id %}">{{ run.started_at|date:"Y-m-d H:i" }}</a></td>
+      <td>{{ run.kind }}</td>
+      <td>{{ run.status }}</td>
+      <td>{{ run.mode }}</td>
+      <td>considered {{ run.considered }}, applied {{ run.applied }}, parked {{ run.parked }}</td>
+      <td>{% if run.finished_at %}{{ run.finished_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
 
-  <p class="pager">
-    {% if page_obj.has_previous %}
-      <a href="?page=1">« first</a>
-      <a href="?page={{ page_obj.previous_page_number }}">‹ prev</a>
-    {% endif %}
-    <strong>Page {{ page_obj.number }}</strong>
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}">next ›</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}">last »</a>
-    {% endif %}
+<p class="meta">
+  Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total }}.
+</p>
+{% if page_obj.has_other_pages %}
+  <p>
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&kind={{ kind }}&status={{ status }}">Previous</a>{% endif %}
+    {% if page_obj.has_next %}<a style="margin-left:.75rem" href="?page={{ page_obj.next_page_number }}&kind={{ kind }}&status={{ status }}">Next</a>{% endif %}
   </p>
-{% else %}
-  <p style="opacity:.7">Nothing categorized by AI yet.</p>
 {% endif %}
 {% endblock %}

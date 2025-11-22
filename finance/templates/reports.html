@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Reports · MoneyCoach{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:50px;">Reports</h2>
+
+<div style="margin:1rem 0; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+  <strong>Select Period:</strong>
+  <div style="display:flex; gap:.35rem; flex-wrap:wrap;">
+    {% for mk in month_keys %}
+      <a href="/reports/?m={{ mk }}"
+         style="padding:.35rem .6rem; border:1px solid #ccc; border-radius:6px;
+                background:{% if mk == sel_m %}#0d47a1; color:white; border-color:#0d47a1;{% else %}#f7f7f7; color:#333;{% endif %};
+                text-decoration:none;">
+        {{ mk }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div style="margin-bottom:2rem; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <h3 style="margin-top:0;">Monthly Report: {{ sel_m }}</h3>
+
+  {% if monthly_report and monthly_report.response %}
+      {% with r=monthly_report.response %}
+        <div style="padding:.6rem; border:1px solid #e3e3e3; border-radius:8px; background:#fff;">
+          <div style="font-weight:600; margin-bottom:.35rem;">Summary</div>
+          <div style="color:#333;">{{ r.summary }}</div>
+        </div>
+        {% endwith %}
+  {% else %}
+      <div style="padding:1.5rem; text-align:center; color:#666; border:1px dashed #ccc; border-radius:8px;">
+        <p>No monthly report generated yet for {{ sel_m }}.</p>
+        <small>Monthly reports are generated automatically on the 1st of the following month.</small>
+      </div>
+  {% endif %}
+</div>
+
+<div style="margin-bottom:2rem; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+  <h3 style="margin-top:0;">Weekly Reports ({{ sel_m }})</h3>
+
+  <div style="margin-bottom:1rem; display:flex; gap:.35rem; flex-wrap:wrap;">
+    {% for wr in week_ranges %}
+      <a href="/reports/?m={{ sel_m }}&wstart={{ wr.start }}"
+         style="padding:.25rem .45rem; border:1px solid #ccc; border-radius:6px;
+                background:{% if wr.start == sel_w_start %}#0d47a1; color:white;{% else %}#fff; color:#333;{% endif %};
+                text-decoration:none; font-size:0.9em;">
+        {{ wr.start }} → {{ wr.end }}
+      </a>
+    {% empty %}
+      <span style="opacity:.7;">No weeks calculated for this month.</span>
+    {% endfor %}
+  </div>
+
+  {% if weekly_report and weekly_report.response %}
+      {% with r=weekly_report.response %}
+        <div style="padding:.6rem; border:1px solid #e3e3e3; border-radius:8px; background:#fff;">
+          <div style="font-weight:600; margin-bottom:.35rem;">Summary</div>
+          <div style="color:#333;">{{ r.summary }}</div>
+        </div>
+        {% endwith %}
+  {% else %}
+      <div style="padding:1.5rem; text-align:center; color:#666; border:1px dashed #ccc; border-radius:8px;">
+        <p>No report for week starting {{ sel_w_start }}.</p>
+        <small>Weekly reports are generated automatically every Monday.</small>
+      </div>
+  {% endif %}
+</div>
+
+<h3 style="margin-top:2rem">Balance Anomalies History</h3>
+{% endblock %}

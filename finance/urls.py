@@ -21,7 +21,7 @@ urlpatterns = [
 # NEW review pages
     path("review/low/", f.review_low_conf, name="review_low_conf"),
     path("review/low/apply/", f.review_low_apply, name="review_low_apply"),
-    path("review/ai/", f.review_ai_recent, name="review_ai_recent"),
+
 
     # --- NEW: categories CRUD ---
     path("categories/", f.category_list, name="category_list"),
@@ -30,7 +30,7 @@ urlpatterns = [
 
     path("register/", f.register, name="register"),
     path("login/",  auth_views.LoginView.as_view(template_name="login.html"), name="login"),
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
 
     path("tx/<int:tx_id>/delete/", f.tx_delete, name="tx_delete"),
     path("tx/<int:tx_id>/restore/", f.tx_restore, name="tx_restore"),
@@ -40,5 +40,16 @@ urlpatterns = [
     # Smart launchers (no AI logic here, just scoping & redirects)
     path("ai/run-uncategorized/", f.ai_run_uncategorized, name="ai_run_uncategorized"),
     path("ai/recheck-all/", f.ai_recheck_all, name="ai_recheck_all"),
+
+    path("reports/", f.reports, name="reports"),
+    path("reports/generate/", f.reports_generate, name="reports_generate"),
+
+    path("teach-ai/", f.teach_ai, name="teach_ai"),
+    path("onboarding/mark", f.onboarding_mark_done, name="onboarding_mark_done"),
+
+    path("review/ai/", f.review_ai_runs, name="review_ai_runs"),
+    path("review/ai/<int:run_id>/", f.review_ai_run_detail, name="review_ai_run_detail"),
+
+    path("ai/dismiss/<int:run_id>/", f.ai_dismiss_notification, name="ai_dismiss_notification"),
 
 ]

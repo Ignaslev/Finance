@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}AI Run {{ run.id }}{% endblock %}
+{% block content %}
+<h2>AI Run — {{ run.kind }} — {{ run.started_at|date:"Y-m-d H:i" }}</h2>
+<p class="meta">
+  Status: <strong>{{ run.status }}</strong> | Mode: {{ run.mode }} |
+  Considered: {{ run.considered }}, Applied: {{ run.applied }}, Parked: {{ run.parked }}
+  {% if run.finished_at %}| Finished: {{ run.finished_at|date:"Y-m-d H:i" }}{% endif %}
+</p>
+{% if run.log_text %}<pre style="background:#f8f8f8; padding:.5rem; border:1px solid #eee; border-radius:6px;">{{ run.log_text }}</pre>{% endif %}
+
+<form method="get" style="margin:.5rem 0;">
+  <label>Filter:
+    <select name="action" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="applied" {% if action == "applied" %}selected{% endif %}>Applied</option>
+      <option value="parked" {% if action == "parked" %}selected{% endif %}>Parked</option>
+      <option value="skipped" {% if action == "skipped" %}selected{% endif %}>Skipped</option>
+    </select>
+  </label>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tx</th>
+      <th>Old → New / Suggested</th>
+      <th>Confidence</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for it in page_obj %}
+    <tr>
+      <td>#{{ it.transaction_id }} — {{ it.transaction.date }} — {{ it.transaction.merchant|default:"—" }}</td>
+      <td>
+        {% if it.action == "applied" %}
+          {{ it.old_category_fk.name|default:"—" }} → <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
+        {% elif it.action == "parked" %}
+          suggestion: <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
+        {% else %}
+          {{ it.action|capfirst }}
+        {% endif %}
+      </td>
+      <td>{% if it.confidence %}{{ it.confidence }}{% else %}—{% endif %}</td>
+      <td style="max-width:480px">{{ it.reason|default:"" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">No items.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<p class="meta">
+  Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total }}.
+</p>
+{% if page_obj.has_other_pages %}
+  <p>
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&action={{ action }}">Previous</a>{% endif %}
+    {% if page_obj.has_next %}<a style="margin-left:.75rem" href="?page={{ page_obj.next_page_number }}&action={{ action }}">Next</a>{% endif %}
+  </p>
+{% endif %}
+
+<p style="margin-top:1rem;"><a href="{% url 'review_ai_runs' %}">← Back to all runs</a></p>
+{% endblock %}
