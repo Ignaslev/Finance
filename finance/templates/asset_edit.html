@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Edit Asset · Money Compass{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:2rem;">Edit Asset</h2>
+
+<div class="card" style="max-width:500px;">
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <div class="text-medium" style="font-size:0.9rem;">{{ holding.asset.symbol }}</div>
+            <div style="font-weight:700; font-size:1.2rem;">{{ holding.asset.name }}</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="text-medium" style="font-size:0.8rem;">Current Price</div>
+            <div style="font-weight:600;">{{ holding.asset.current_price_eur|floatformat:2 }} EUR</div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Quantity Held</label>
+        <input type="number" step="any" name="quantity" value="{{ holding.quantity }}" required 
+               style="width:100%; padding:0.8rem; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:2rem; font-size:1.1rem;">
+
+        <div class="flex justify-between items-center">
+            <button type="submit" name="delete" value="1" class="btn" style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2; font-size:0.9rem;" onclick="return confirm('Remove this asset from your portfolio?');">
+                Remove Asset
+            </button>
+
+            <div class="flex gap-4">
+                <a href="{% url 'assets_dashboard' %}" class="btn" style="background:transparent; color:var(--text-medium);">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

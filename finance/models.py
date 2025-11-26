@@ -33,6 +33,7 @@ class MoneySource(models.Model):
         ("bank", "Bank account"),
         ("cash", "Cash reserve"),
         ("savings", "Savings account"),
+        ("investment", "Investment"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="money_sources")
@@ -296,3 +297,99 @@ class AiRunItem(models.Model):
 
     def __str__(self):
         return f"AiRunItem<{self.run_id} tx={self.transaction_id} {self.action}>"
+
+
+# --- UNIFIED ASSET TRACKING ---
+
+class Asset(models.Model):
+    TYPE_CHOICES = [
+        ('crypto', 'Crypto'),
+        ('stock', 'Stock/ETF'),
+    ]
+
+    # identification
+    symbol = models.CharField(max_length=20)  # e.g. 'BTC', 'AAPL', 'VWCE'
+    lookup_key = models.CharField(max_length=100, unique=True)
+    # ^ For Crypto: CoinGecko ID (e.g. 'bitcoin')
+    # ^ For Stocks: Yahoo Ticker (e.g. 'AAPL', 'VWCE.DE')
+
+    name = models.CharField(max_length=100)
+    asset_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+
+    # We normalize EVERYTHING to EUR for simple math in the app
+    current_price_eur = models.DecimalField(max_digits=20, decimal_places=8, default=0)
+    price_updated_at = models.DateTimeField(null=True, blank=True)
+
+    # Metadata
+    currency_raw = models.CharField(max_length=5, default="EUR")  # Original currency (USD, EUR)
+
+    def __str__(self):
+        return f"{self.symbol} ({self.asset_type})"
+
+
+class AssetHolding(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='assets')
+    asset = models.ForeignKey(Asset, on_delete=models.CASCADE)
+
+    # The "Virtual" Account this belongs to (e.g., "Trading 212" or "Ledger Nano")
+    money_source = models.ForeignKey(
+        MoneySource,
+        on_delete=models.SET_NULL,  # Changed to SET_NULL
+        null=True,
+        blank=True,
+        related_name='holdings'
+    )
+
+    quantity = models.DecimalField(max_digits=20, decimal_places=8)
+
+    class Meta:
+        unique_together = ('user', 'asset',
+                           'money_source')  # You might want to remove 'money_source' from unique if it's auto-assigned, but keeping it is fine for now.
+
+    @property
+    def value_eur(self):
+        # Safety check if price is missing
+        return self.quantity * (self.asset.current_price_eur or 0)
+
+
+class PortfolioSnapshot(models.Model):
+    """
+    Daily history of portfolio value for graphing.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolio_history')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    crypto_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    stock_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ['timestamp']
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+        ]
+
+    @property
+    def total(self):
+        return self.crypto_total + self.stock_total
+
+
+class PortfolioSnapshot(models.Model):
+    """
+    History of portfolio value.
+    Designed to be populated every 10-60 minutes.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolio_history')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    crypto_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    stock_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ['timestamp']
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+        ]
+
+    @property
+    def total(self):
+        return self.crypto_total + self.stock_total

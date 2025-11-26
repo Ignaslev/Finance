@@ -85,14 +85,14 @@
 
 <!-- ===== Balance over time + Income vs Spending (combined grey box) ===== -->
 <div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div><strong>Balance over time (monthly) & Income vs Spending</strong></div>
+  <div><strong>Balance over time</strong></div>
 
   {% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
     <div style="max-width:1000px; margin:.75rem auto 1.25rem;">
       <canvas id="balanceChart"></canvas>
     </div>
   {% endif %}
-
+  <div><strong>Income vs Spending</strong></div>
   <div style="max-width:1000px; margin:.75rem auto 0;">
     <canvas id="incomeSpending"></canvas>
   </div>

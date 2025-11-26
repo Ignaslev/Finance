@@ -52,4 +52,8 @@ urlpatterns = [
 
     path("ai/dismiss/<int:run_id>/", f.ai_dismiss_notification, name="ai_dismiss_notification"),
 
+    path("assets/", f.assets_dashboard, name="assets_dashboard"),
+    path("assets/add/", f.asset_add, name="asset_add"),
+    path("assets/<int:pk>/edit/", f.asset_edit, name="asset_edit"),
+    path("api/search-asset/", f.api_search_asset, name="api_search_asset"),
 ]

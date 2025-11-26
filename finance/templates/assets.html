@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block title %}Portfolio · Money Compass{% endblock %}
+{% block content %}
+
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">Portfolio</h2>
+    <div style="text-align:right;">
+        <div class="text-medium" style="font-size:0.85rem;">Total Net Worth</div>
+        <div style="font-size:1.4rem; font-weight:700; color:var(--primary-teal);">
+            {{ total_portfolio|floatformat:2 }} EUR
+        </div>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap:2rem;">
+
+    <div>
+        <div class="card" style="border-top: 4px solid #805ad5; display:flex; flex-direction:column; gap:1rem;">
+
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="card-title" style="margin:0; color:#553c9a;">Crypto Assets</div>
+                    <div class="text-medium" style="font-size:0.9rem;">{{ crypto_total|floatformat:2 }} EUR</div>
+                </div>
+                <button onclick="openModal('modalCrypto')" class="btn" style="background:#f3e8ff; color:#553c9a; font-size:0.85rem; padding:0.4rem 0.8rem;">
+                    + Add Crypto
+                </button>
+            </div>
+
+            {% if crypto_rows %}
+            <div style="overflow-x:auto;">
+                <table style="font-size:0.9rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid #f3e8ff;">
+                            <th style="padding-left:0;">Asset</th>
+                            <th style="text-align:right;">Price</th>
+                            <th style="text-align:right;">Qty</th>
+                            <th style="text-align:right; padding-right:0;">Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in crypto_rows %}
+                        <tr>
+                            <td style="padding-left:0;">
+                                <div style="font-weight:600;">{{ h.symbol }}</div>
+                                <div style="font-size:0.75rem; color:var(--text-light);">{{ h.name }}</div>
+                            </td>
+                            <td style="text-align:right; font-family:monospace;">{{ h.price|floatformat:2 }}</td>
+                            <td style="text-align:right;">{{ h.quantity|floatformat:4 }}</td>
+                            <td style="text-align:right; padding-right:0; font-weight:600;">{{ h.value|floatformat:2 }}</td>
+                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">Edit</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <div class="flex justify-between items-center mb-2">
+                    <strong style="font-size:0.85rem; color:var(--text-light);">Value Over Time</strong>
+                    <div style="background:#f7fafc; border-radius:6px; padding:2px; display:flex;">
+                        <button onclick="setChartMode('1h')" class="chart-toggle btn-1h" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">1H</button>
+                        <button onclick="setChartMode('24h')" class="chart-toggle btn-24h active" style="border:none; background:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1);">24H</button>
+                        <button onclick="setChartMode('30d')" class="chart-toggle btn-30d" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">30D</button>
+                        <button onclick="setChartMode('all')" class="chart-toggle btn-all" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">ALL</button>
+                    </div>
+                </div>
+                <div style="height:200px; width:100%;">
+                    <canvas id="cryptoChart"></canvas>
+                </div>
+            </div>
+
+            {% else %}
+            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">No crypto assets yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card" style="border-top: 4px solid #3182ce; display:flex; flex-direction:column; gap:1rem;">
+
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="card-title" style="margin:0; color:#2c5282;">Stocks & ETFs</div>
+                    <div class="text-medium" style="font-size:0.9rem;">{{ stock_total|floatformat:2 }} EUR</div>
+                </div>
+                <button onclick="openModal('modalStock')" class="btn" style="background:#ebf8ff; color:#2c5282; font-size:0.85rem; padding:0.4rem 0.8rem;">
+                    + Add Stock
+                </button>
+            </div>
+
+            {% if stock_rows %}
+            <div style="overflow-x:auto;">
+                <table style="font-size:0.9rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid #ebf8ff;">
+                            <th style="padding-left:0;">Asset</th>
+                            <th style="text-align:right;">Price</th>
+                            <th style="text-align:right;">Qty</th>
+                            <th style="text-align:right; padding-right:0;">Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in stock_rows %}
+                        <tr>
+                            <td style="padding-left:0;">
+                                <div style="font-weight:600;">{{ h.symbol }}</div>
+                                <div style="font-size:0.75rem; color:var(--text-light);">{{ h.name }}</div>
+                            </td>
+                            <td style="text-align:right; font-family:monospace;">{{ h.price|floatformat:2 }}</td>
+                            <td style="text-align:right;">{{ h.quantity|floatformat:2 }}</td>
+                            <td style="text-align:right; padding-right:0; font-weight:600;">{{ h.value|floatformat:2 }}</td>
+                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">Edit</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <div class="flex justify-between items-center mb-2">
+                    <strong style="font-size:0.85rem; color:var(--text-light);">Value Over Time</strong>
+                    <div style="background:#f7fafc; border-radius:6px; padding:2px; display:flex;">
+                        <button onclick="setChartMode('1h')" class="chart-toggle btn-1h" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">1H</button>
+                        <button onclick="setChartMode('24h')" class="chart-toggle btn-24h active" style="border:none; background:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1);">24H</button>
+                        <button onclick="setChartMode('30d')" class="chart-toggle btn-30d" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">30D</button>
+                        <button onclick="setChartMode('all')" class="chart-toggle btn-all" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">ALL</button>
+                    </div>
+                </div>
+                <div style="height:200px; width:100%;">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            {% else %}
+            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">No stocks tracked yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="modalCrypto" class="modal-backdrop" style="display:none;">
+    <div class="card modal-content">
+        <h3 class="card-title">Add Crypto</h3>
+        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">Search for a coin (e.g. "Bitc...").</p>
+        <form method="post" action="{% url 'asset_add' %}">
+            {% csrf_token %}
+            <input type="hidden" name="asset_type" value="crypto">
+
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Search Coin</label>
+            <div style="position:relative; margin-bottom:1rem;">
+                <input type="text" id="cryptoSearch" placeholder="Type to search..." autocomplete="off" class="form-input" required>
+                <input type="hidden" name="symbol_input" id="cryptoSymbolHidden">
+                <div id="cryptoResults" class="search-results" style="display:none;"></div>
+            </div>
+
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Quantity</label>
+            <input type="number" step="any" name="quantity" placeholder="0.5" required class="form-input" style="margin-bottom:1.5rem;">
+
+            <div class="flex justify-between">
+                <button type="button" onclick="closeModal('modalCrypto')" class="btn" style="background:transparent; color:var(--text-medium);">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Crypto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalStock" class="modal-backdrop" style="display:none;">
+    <div class="card modal-content">
+        <h3 class="card-title">Add Stock / ETF</h3>
+        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">Search for a company or ETF (e.g. "Apple", "Vanguard").</p>
+        <form method="post" action="{% url 'asset_add' %}">
+            {% csrf_token %}
+            <input type="hidden" name="asset_type" value="stock">
+
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Search Ticker</label>
+            <div style="position:relative; margin-bottom:1rem;">
+                <input type="text" id="stockSearch" placeholder="Type to search..." autocomplete="off" class="form-input" required>
+                <input type="hidden" name="symbol_input" id="stockSymbolHidden">
+                <div id="stockResults" class="search-results" style="display:none;"></div>
+            </div>
+
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Quantity</label>
+            <input type="number" step="any" name="quantity" placeholder="10" required class="form-input" style="margin-bottom:1.5rem;">
+
+            <div class="flex justify-between">
+                <button type="button" onclick="closeModal('modalStock')" class="btn" style="background:transparent; color:var(--text-medium);">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Stock</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-content { width: 100%; max-width: 400px; animation: slideUp 0.2s ease-out; overflow: visible; }
+    .form-input { width: 100%; padding: 0.6rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+    .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 4px; }
+    .search-item { padding: 0.6rem; cursor: pointer; border-bottom: 1px solid #f7fafc; display: flex; justify-content: space-between; align-items: center; }
+    .search-item:hover { background: #f0fdf4; }
+    .search-item:last-child { border-bottom: none; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // -- Modals & Search Logic --
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    document.querySelectorAll('.modal-backdrop').forEach(el => {
+        el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+    });
+
+    function setupSearch(inputId, resultsId, hiddenId, type) {
+        const input = document.getElementById(inputId);
+        const results = document.getElementById(resultsId);
+        const hidden = document.getElementById(hiddenId);
+        let debounceTimer;
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+            if (query.length < 1) { results.style.display = 'none'; return; }
+            debounceTimer = setTimeout(() => {
+                fetch(`/api/search-asset/?type=${type}&q=${query}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        results.innerHTML = '';
+                        if (data.results && data.results.length > 0) {
+                            results.style.display = 'block';
+                            data.results.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'search-item';
+                                const extra = item.thumb
+                                    ? `<img src="${item.thumb}" style="width:20px;height:20px;margin-right:8px;vertical-align:middle;">`
+                                    : (item.exch ? `<span style="font-size:0.7em;color:#aaa;">${item.exch}</span>` : '');
+                                div.innerHTML = `<div style="display:flex; align-items:center;">${extra}<div><div style="font-weight:600; font-size:0.9em;">${item.symbol}</div><div style="font-size:0.8em; color:#666;">${item.name}</div></div></div>`;
+                                div.addEventListener('click', () => {
+                                    input.value = `${item.symbol} - ${item.name}`;
+                                    hidden.value = item.id;
+                                    results.style.display = 'none';
+                                });
+                                results.appendChild(div);
+                            });
+                        } else { results.style.display = 'none'; }
+                    });
+            }, 300);
+        });
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !results.contains(e.target)) { results.style.display = 'none'; }
+        });
+    }
+    setupSearch('cryptoSearch', 'cryptoResults', 'cryptoSymbolHidden', 'crypto');
+    setupSearch('stockSearch', 'stockResults', 'stockSymbolHidden', 'stock');
+
+    // -- DYNAMIC CHARTS --
+
+    // 1. Data Sets from Django
+    const datasets = {
+        '1h':  {{ json_1h|safe }},
+        '24h': {{ json_24h|safe }},
+        '30d': {{ json_30d|safe }},
+        'all': {{ json_all|safe }}
+    };
+
+    let cryptoChart, stockChart;
+
+    // 2. Common Chart Config
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            x: { display: false },
+            y: { display: true, grid: { color: '#f7fafc' } }
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                titleColor: '#1a202c', bodyColor: '#4a5568',
+                borderColor: '#e2e8f0', borderWidth: 1,
+                displayColors: false,
+                callbacks: { label: (c) => c.parsed.y.toFixed(2) + ' EUR' }
+            }
+        },
+        elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 0, hitRadius: 20, hoverRadius: 4 } }
+    };
+
+    // 3. Initialize
+    function initCharts() {
+        const startData = datasets['24h'];
+
+        // Crypto
+        const ctxC = document.getElementById('cryptoChart');
+        if (ctxC) {
+            cryptoChart = new Chart(ctxC.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: startData.labels,
+                    datasets: [{
+                        data: startData.crypto,
+                        borderColor: '#805ad5',
+                        backgroundColor: 'rgba(128, 90, 213, 0.05)',
+                        fill: true
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+
+        // Stock
+        const ctxS = document.getElementById('stockChart');
+        if (ctxS) {
+            stockChart = new Chart(ctxS.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: startData.labels,
+                    datasets: [{
+                        data: startData.stock,
+                        borderColor: '#3182ce',
+                        backgroundColor: 'rgba(49, 130, 206, 0.05)',
+                        fill: true
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+    }
+
+    // 4. Toggle Logic
+    window.setChartMode = function(mode) {
+        // Reset ALL buttons (remove .active)
+        document.querySelectorAll('.chart-toggle').forEach(b => {
+            b.style.background = 'transparent';
+            b.style.color = '#a0aec0';
+            b.style.boxShadow = 'none';
+            b.classList.remove('active');
+        });
+
+        // Activate specific class (e.g. .btn-24h) across ALL cards
+        document.querySelectorAll(`.btn-${mode}`).forEach(b => {
+            b.style.background = 'white';
+            b.style.color = '#1a202c';
+            b.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+            b.classList.add('active');
+        });
+
+        // Update Data
+        const newData = datasets[mode];
+
+        if (cryptoChart) {
+            cryptoChart.data.labels = newData.labels;
+            cryptoChart.data.datasets[0].data = newData.crypto;
+            cryptoChart.update();
+        }
+        if (stockChart) {
+            stockChart.data.labels = newData.labels;
+            stockChart.data.datasets[0].data = newData.stock;
+            stockChart.update();
+        }
+    }
+
+    initCharts();
+</script>
+
+{% endblock %}

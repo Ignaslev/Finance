@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Add Asset · Money Compass{% endblock %}
+{% block content %}
+
+<h2 style="margin-top:2rem;">Add Investment</h2>
+
+<div class="card" style="max-width:500px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin-bottom:1.5rem;">
+            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">1. Asset Type</label>
+            <div style="display:flex; gap:1rem;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; border:1px solid #e2e8f0; border-radius:8px; background:white;">
+                    <input type="radio" name="asset_type" value="crypto" checked>
+                    <span>Crypto</span>
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; border:1px solid #e2e8f0; border-radius:8px; background:white;">
+                    <input type="radio" name="asset_type" value="stock">
+                    <span>Stock / ETF</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">2. Symbol / Ticker</label>
+            <input type="text" name="symbol_input" placeholder="e.g. BTC, SOL, AAPL, VWCE.DE" required
+                   style="width:100%; padding:0.8rem; border:1px solid #e2e8f0; border-radius:8px; font-size:1.1rem;">
+            <div style="font-size:0.85rem; color:var(--text-light); margin-top:0.3rem;">
+                We'll auto-detect the price.
+            </div>
+        </div>
+
+        <div style="margin-bottom:2rem;">
+            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">3. Quantity Held</label>
+            <input type="number" step="any" name="quantity" placeholder="e.g. 0.5" required
+                   style="width:100%; padding:0.8rem; border:1px solid #e2e8f0; border-radius:8px;">
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Add to Portfolio</button>
+            <a href="{% url 'assets_dashboard' %}" class="btn" style="background:#edf2f7; color:var(--text-medium);">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -228,7 +228,8 @@
         <div class="nav-links">
             <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">Dashboard</a>
             <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">Statistics</a>
-            <a href="#" class="nav-item">Transactions</a>
+            <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">Reports</a>
+            <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">Portfolio</a>
             <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">Upload</a>
         </div>
 
