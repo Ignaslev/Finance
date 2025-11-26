@@ -1,454 +1,338 @@
 {% extends "base.html" %}
 {% block title %}Overview · MoneyCoach{% endblock %}
 {% block content %}
-<h2>Overview</h2>
 
-<!-- Balance card (unchanged) -->
-<div style="margin:1rem 0; padding:0.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div>
-    <strong>Total balance (all accounts):</strong>
-    {{ total_accounts_balance|floatformat:2 }} EUR
-  </div>
-
-  {% if accounts_with_balances %}
-    <div style="margin-top:.5rem; font-size:.95em; color:#444;">
-      {% for acc in accounts_with_balances %}
-        <div style="display:flex; justify-content:space-between; gap:1rem; padding:.15rem 0; border-bottom:1px dashed #eee;">
-          <span>
-            {{ acc.name }}
-            <span style="color:#888;">({{ acc.get_type_display }})</span>
-          </span>
-          <span>
-            {% if acc.effective_balance is not None %}
-              {{ acc.effective_balance|floatformat:2 }} EUR
-              {% if acc.manual_balance is not None %}
-                <span style="color:#999; font-size:.85em;">· manual</span>
-              {% else %}
-                <span style="color:#999; font-size:.85em;">· computed</span>
-              {% endif %}
-              {% if acc.balance_updated_at %}
-                <span style="color:#999; font-size:.85em;">· {{ acc.balance_updated_at|date:"Y-m-d H:i" }}</span>
-              {% endif %}
-            {% else %}
-              <span style="color:#999;">not set</span>
-            {% endif %}
-          </span>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div style="margin-top:.5rem; color:#777; font-size:.95em;">
-      No active accounts yet.
-    </div>
-  {% endif %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">Dashboard</h2>
+    <div class="text-medium" style="font-size:0.9rem;">{{ now_val|date:"l, F j" }}</div>
 </div>
 
-<!-- Savings goals (unchanged) -->
-{% if goals %}
-<div style="margin:1rem 0; padding:0.9rem; border:1px solid #ddd; border-radius:10px; background:#f6fff7;">
-  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
-    <strong>Savings goals</strong>
-    <a href="/profile/" style="margin-left:auto; font-size:.9em;">Manage in Profile →</a>
-  </div>
+<div class="card" style="padding:2rem;">
+    <div class="text-medium" style="text-align:center; font-size:0.9rem; margin-bottom:0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Net Worth</div>
+    <div style="text-align:center; font-size:2.8rem; font-weight:800; color:var(--text-dark); margin-bottom:2.5rem; letter-spacing: -0.02em;">
+        {{ total_net_worth|floatformat:2 }} <span style="font-size:1.2rem; color:var(--text-medium); font-weight:500;">EUR</span>
+    </div>
 
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:.75rem; margin-top:.75rem;">
-    {% for g in goals %}
-      <div style="border:1px solid #e1f0e1; border-radius:10px; padding:.65rem; background:#ffffff;">
-        <div style="display:flex; justify-content:space-between; gap:.5rem;">
-          <div style="font-weight:600;">{{ g.name }}</div>
-          {% if g.eta %}
-            <div style="font-size:.85em; color:#666;">ETA {{ g.eta }}</div>
-          {% endif %}
-        </div>
-        <div style="margin:.35rem 0; font-size:.95em; color:#333;">
-          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
-        </div>
-        <div style="height:10px; background:#eef6ee; border-radius:999px; overflow:hidden;">
-          <div style="height:100%; width:{{ g.pct|floatformat:1 }}%; background:#2e7d32;"></div>
-        </div>
-        <div style="margin-top:.35rem; font-size:.85em; color:#555;">
-          {{ g.pct|floatformat:1 }}%
-          {% if g.accounts and g.accounts|length %}
-            · via
-            {% for a in g.accounts %}
-              <span style="background:#f0f7ff; border:1px solid #d7e7ff; padding:.05rem .35rem; border-radius:999px; margin-right:.25rem;">
-                {{ a.name }}
-              </span>
+    {% if composition_bar %}
+    <div style="margin-bottom:1rem;">
+        <div style="display:flex; height:14px; width:100%; background:#edf2f7; border-radius:7px; overflow:hidden;">
+            {% for seg in composition_bar %}
+                <div style="width:{{ seg.pct }}%; background:{{ seg.color }}; transition: width 1s ease-in-out;"
+                     title="{{ seg.label }}: {{ seg.value|floatformat:0 }} EUR"></div>
             {% endfor %}
-          {% endif %}
         </div>
-      </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 
-<!-- ===== Balance over time + Income vs Spending (combined grey box) ===== -->
-<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div><strong>Balance over time</strong></div>
-
-  {% if balance_labels_json and balance_values_json and balance_labels_json != "[]" %}
-    <div style="max-width:1000px; margin:.75rem auto 1.25rem;">
-      <canvas id="balanceChart"></canvas>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; margin-top:1.2rem;">
+            {% for seg in composition_bar %}
+            <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem;">
+                <span style="width:10px; height:10px; border-radius:50%; background:{{ seg.color }}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>
+                <span style="color:var(--text-medium);">{{ seg.label }}</span>
+                <strong style="color:var(--text-dark);">{{ seg.pct|floatformat:0 }}%</strong>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-  {% endif %}
-  <div><strong>Income vs Spending</strong></div>
-  <div style="max-width:1000px; margin:.75rem auto 0;">
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-title">Net Worth History</div>
+    <div style="height:320px; width:100%;">
+        <canvas id="netWorthChart"></canvas>
+    </div>
+    <div style="text-align:center; margin-top:1rem; font-size:0.85rem; color:var(--text-light);">
+        Combined history of cash, bank accounts, and investment portfolios.
+    </div>
+</div>
+
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <div class="card-title" style="margin:0;">Accounts & Assets</div>
+        <a href="{% url 'profile' %}" class="btn" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#edf2f7; color:var(--text-medium);">Manage</a>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th style="text-align:right;">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acc in accounts_with_balances %}
+                <tr style="border-bottom: 1px solid #f7fafc;">
+                    <td style="font-weight:600; color:var(--text-dark); padding:1rem 0.5rem;">{{ acc.name }}</td>
+                    <td>
+                        {% if acc.type == 'investment' %}
+                            <span style="background:#f3e8ff; color:#553c9a; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Invest</span>
+                        {% elif acc.type == 'bank' %}
+                            <span style="background:#ebf8ff; color:#2c5282; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Bank</span>
+                        {% elif acc.type == 'cash' %}
+                            <span style="background:#f0fff4; color:#276749; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Cash</span>
+                        {% else %}
+                            <span style="background:#edf2f7; color:#4a5568; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Savings</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right; font-weight:700; font-family:'Inter', sans-serif; font-size:1.05rem; color:var(--text-dark);">
+                        {{ acc.manual_balance|default:acc.effective_balance|floatformat:2 }} <span style="font-size:0.8em; color:var(--text-light); font-weight:400;">EUR</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center; opacity:0.6; padding:2rem;">No accounts found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Income vs Spending</div>
+  <div style="max-width:1000px; margin:0.75rem auto 0;">
     <canvas id="incomeSpending"></canvas>
   </div>
 </div>
 
-<!-- ===== Net by month (grey box) ===== -->
-<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div><strong>Net by month (Income − Spending)</strong></div>
-  <div style="margin-top:.5rem;">
+<div class="card">
+  <div class="card-title">Net by Month</div>
+  <div style="margin-top:0.5rem; overflow-x:auto;">
     <table>
-      <tr>
-        <th>Month</th>
-        <th>Net</th>
-      </tr>
+      <thead><tr><th>Month</th><th>Net</th></tr></thead>
+      <tbody>
       {% for r in net_rows %}
         <tr>
           <td>{{ r.month }}</td>
           <td>
             {% if r.net >= 0 %}
-              <span style="color:#2e7d32">{{ r.net }}</span>
+              <span style="color:#2e7d32; font-weight:600;">+{{ r.net|floatformat:2 }}</span>
             {% else %}
-              <span style="color:#b00020">{{ r.net }}</span>
+              <span style="color:#e53e3e; font-weight:600;">{{ r.net|floatformat:2 }}</span>
             {% endif %}
           </td>
         </tr>
       {% endfor %}
+      </tbody>
     </table>
   </div>
 </div>
 
-<!-- ===== Spending per category (chart + merchant breakdown in one grey box) ===== -->
-<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div><strong>Spending per category</strong></div>
-
+<div class="card">
+  <div class="card-title">Spending per Category</div>
   {% if cat_names %}
-    <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.75rem 0 1rem;">
-      <div style="display:flex; gap:.4rem; flex-wrap: wrap;">
-        {% for cname in cat_names %}
-          <button class="cat-btn" data-cat="{{ cname }}"
-                  style="padding:.35rem .6rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;">
+    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 1rem;">
+      {% for cname in cat_names %}
+        <button class="cat-btn" data-cat="{{ cname }}" style="padding:0.35rem 0.6rem; border:1px solid #e2e8f0; border-radius:6px; background:#f7fafc; cursor:pointer; font-size:0.85rem;">
             {{ cname }}
-          </button>
-        {% endfor %}
-      </div>
-      <div style="margin-left:auto;">
-        <label style="font-size:.9em; color:#555; margin-right:.3rem;">Chart</label>
-        <select id="catChartType">
+        </button>
+      {% endfor %}
+      <select id="catChartType" style="margin-left:auto; padding:0.3rem; border-radius:6px; border:1px solid #e2e8f0;">
           <option value="bar">Bar</option>
           <option value="line">Line</option>
-        </select>
-      </div>
+      </select>
     </div>
-
-    <div style="max-width:1000px; margin: 0 auto 1.25rem;">
+    <div style="max-width:1000px; margin:0 auto 1.25rem;">
       <canvas id="catChart"></canvas>
     </div>
-
-    <!-- Merchant breakdown (per selected category + month buttons) -->
-    <div id="catBreakdown" style="max-width:1000px; margin: 0 auto .25rem;">
-      <div style="display:flex; align-items:center; gap:.5rem; flex-wrap: wrap; margin:.5rem 0 0.5rem;">
-        <label style="font-size:.9em; color:#555;">Month:</label>
-        <div id="catMonthButtons" style="display:flex; gap:.35rem; flex-wrap: wrap;"></div>
+    <div id="catBreakdown">
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.5rem 0;">
+        <span style="font-size:0.9rem; color:#666;">Month:</span>
+        <div id="catMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
       </div>
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
-    <p style="opacity:.7; margin-top:.5rem;">No categorized spending yet.</p>
+    <p style="opacity:0.7; padding:1rem;">No categorized spending yet.</p>
   {% endif %}
 </div>
 
-<!-- ===== Budgets vs Spent (already in grey box; unchanged) ===== -->
-<div style="margin:1.5rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
-    <strong>Budgets vs Spent</strong>
-    <div id="budgetMonthButtons" style="display:flex; gap:.35rem; flex-wrap:wrap; margin-left:auto;"></div>
+<div class="card">
+  <div class="flex justify-between items-center mb-4">
+      <div class="card-title" style="margin:0;">Budgets vs Spent</div>
+      <div id="budgetMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
   </div>
-
-  <div id="budgetEmpty" style="display:none; margin-top:.6rem; color:#666; font-size:.95em;">
-    You haven't set any category caps yet. Set them in <a href="/profile/">Profile</a>.
+  <div id="budgetEmpty" style="display:none; margin-top:0.6rem; color:#666; font-size:0.95em;">
+      You haven't set any caps yet.
   </div>
-
-  <div style="max-width:1000px; margin:.75rem auto 0;">
-    <canvas id="budgetChart"></canvas>
-  </div>
-
-  <div style="font-size:.85em; color:#666; margin-top:.4rem;">
-    <span style="display:inline-block; width:12px; height:12px; background:rgba(25,118,210,0.6); border:1px solid rgb(25,118,210); vertical-align:middle; margin-right:.35rem;"></span>
-    Spent
-    <span style="display:inline-block; width:18px; height:0; border-top:2px solid #d32f2f; margin:0 .5rem .15rem .75rem;"></span>
-    Cap
+  <div style="max-width:1000px; margin:0.75rem auto 0;">
+      <canvas id="budgetChart"></canvas>
   </div>
 </div>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // ========== Income vs Spending ==========
-  (function(){
-    const labels   = {{ labels_json|safe }};
-    const income   = {{ income_json|safe }};
-    const spending = {{ spending_json|safe }};
-    new Chart(document.getElementById('incomeSpending').getContext('2d'), {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'Income',   data: income },
-        { label: 'Spending', data: spending }
-      ] },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        stacked: false,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-  })();
+    // 1. NET WORTH CHART
+    {% if balance_labels_json and balance_values_json %}
+    const ctxNW = document.getElementById('netWorthChart').getContext('2d');
+    const gradNW = ctxNW.createLinearGradient(0, 0, 0, 400);
+    gradNW.addColorStop(0, 'rgba(0, 206, 166, 0.25)');
+    gradNW.addColorStop(1, 'rgba(0, 206, 166, 0.0)');
 
-  // ========== Balance chart ==========
-  {% if latest_snap and balance_labels_json and balance_values_json %}
-  (function(){
-    const balLabels = {{ balance_labels_json|safe }};
-    const balValues = {{ balance_values_json|safe }};
-    new Chart(document.getElementById('balanceChart').getContext('2d'), {
-      type: 'line',
-      data: { labels: balLabels, datasets: [{ label: 'Balance', data: balValues }] },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: false } }
-      }
-    });
-  })();
-  {% endif %}
-
-  // ========== Category chart + breakdown (own state) ==========
-  (function(){
-    const catMonths   = {{ cat_month_labels_json|default:"[]"|safe }};
-    const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
-    const breakdownByCatMonth = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
-    const monthBounds = {{ month_bounds_json|default:"{}"|safe }};
-
-    if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
-
-    const catCanvas = document.getElementById('catChart').getContext('2d');
-    const typeSelect = document.getElementById('catChartType');
-    const buttons = Array.from(document.querySelectorAll('.cat-btn'));
-
-    let currentCat = buttons.length ? buttons[0].dataset.cat : null;
-    let currentType = typeSelect.value;
-
-    function datasetFor(cat) {
-      return { label: cat, data: seriesByCat[cat] || [] };
-    }
-
-    let catChart = new Chart(catCanvas, {
-      type: currentType,
-      data: { labels: catMonths, datasets: [ datasetFor(currentCat) ] },
-      options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-    });
-
-    function renderMonthButtons() {
-      const wrap = document.getElementById('catMonthButtons');
-      wrap.innerHTML = '';
-      catMonths.forEach((mk, idx) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = mk;
-        b.style.cssText = 'padding:.25rem .45rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
-        b.addEventListener('click', (e) => {
-          e.preventDefault();
-          showBreakdown(mk);
-          Array.from(wrap.children).forEach(x => x.style.background = '#f7f7f7');
-          b.style.background = '#e6f0ff';
-        });
-        if (idx === catMonths.length - 1) b.style.background = '#e6f0ff';
-        wrap.appendChild(b);
-      });
-      if (catMonths.length) showBreakdown(catMonths[catMonths.length - 1]);
-    }
-
-    function showBreakdown(monthKey) {
-      const rows = (breakdownByCatMonth[currentCat] && breakdownByCatMonth[currentCat][monthKey]) || [];
-      const mb = monthBounds[monthKey] || null;
-      let html = '';
-      if (!rows.length) {
-        html = '<p style="opacity:.7">No merchants for this month.</p>';
-      } else {
-        html = '<table><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg</th><th></th></tr>';
-        rows.forEach(r => {
-          const q = encodeURIComponent(r.merchant);
-          const link = mb ? `/?q=${q}&from=${mb.start}&to=${mb.end}` : `/?q=${q}`;
-          html += `<tr>
-            <td>${r.merchant}</td>
-            <td>${r.total.toFixed(2)} EUR</td>
-            <td>${r.count}</td>
-            <td>${r.avg.toFixed(2)} EUR</td>
-            <td><a href="${link}">Open</a></td>
-          </tr>`;
-        });
-        html += '</table>';
-      }
-      document.getElementById('catMonthTableWrap').innerHTML = html;
-    }
-
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentCat = btn.dataset.cat;
-        catChart.data.datasets = [ datasetFor(currentCat) ];
-        catChart.update();
-        buttons.forEach(b => b.style.background = '#f7f7f7');
-        btn.style.background = '#e6f0ff';
-        renderMonthButtons();
-      });
-    });
-    if (buttons.length) buttons[0].style.background = '#e6f0ff';
-
-    typeSelect.addEventListener('change', () => {
-      currentType = typeSelect.value;
-      catChart.destroy();
-      catChart = new Chart(catCanvas, {
-        type: currentType,
-        data: { labels: catMonths, datasets: [ datasetFor(currentCat) ] },
-        options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-      });
-    });
-
-    renderMonthButtons();
-  })();
-
-  // ========== Budgets vs Spent (fully separate state) ==========
-  (function(){
-    const budgetAll = {{ budget_all_json|default:"null"|safe }};
-    const monthKeys = {{ budget_month_keys|default:"[]"|safe }};
-    const defaultKey = "{{ budget_selected_key|default:'' }}";
-    const HAS_CAPS = {{ budget_has_caps|yesno:"true,false" }};
-
-    const btnWrap = document.getElementById('budgetMonthButtons');
-    const emptyBox = document.getElementById('budgetEmpty');
-    const canvas   = document.getElementById('budgetChart');
-    const ctx = canvas.getContext('2d');
-
-    if (!HAS_CAPS) {
-      emptyBox.style.display = 'block';
-      canvas.style.display = 'none';
-      return;
-    } else {
-      emptyBox.style.display = 'none';
-      canvas.style.display = '';
-    }
-
-    const CapLinePlugin = {
-      id: 'capLinePlugin',
-      afterDatasetsDraw(chart) {
-        const {ctx, scales} = chart;
-        const capsDS = chart.config.data?.datasets?.find(d => d._isCaps);
-        if (!capsDS) return;
-        const caps = capsDS.data || [];
-        const labels = chart.config.data?.labels || [];
-        const x = scales.x, y = scales.y;
-        ctx.save();
-        ctx.strokeStyle = '#d32f2f';
-        ctx.lineWidth = 2;
-
-        for (let i = 0; i < labels.length; i++) {
-          const capVal = Number(caps[i] ?? NaN);
-          if (isNaN(capVal)) continue;
-          const xCenter = x.getPixelForValue(i);
-          const xNext = x.getPixelForValue(i + 1);
-          const step = isFinite(xNext) ? (xNext - xCenter) : (xCenter - x.getPixelForValue(i - 1));
-          const half = Math.abs(step) * 0.3;
-          const yPix = y.getPixelForValue(capVal);
-          ctx.beginPath();
-          ctx.moveTo(xCenter - half, yPix);
-          ctx.lineTo(xCenter + half, yPix);
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-    };
-
-    let activeKey = (defaultKey && budgetAll && budgetAll[defaultKey]) ? defaultKey : (monthKeys.length ? monthKeys[monthKeys.length-1] : null);
-    let chartRef = null;
-
-    function renderButtons() {
-      btnWrap.innerHTML = '';
-      monthKeys.forEach(k => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = k;
-        b.style.cssText = 'padding:.25rem .45rem; border:1px solid #ccc; border-radius:6px; background:#f7f7f7; cursor:pointer;';
-        if (k === activeKey) b.style.background = '#e6f0ff';
-        b.addEventListener('click', (e) => {
-          e.preventDefault();
-          activeKey = k;
-          Array.from(btnWrap.children).forEach(x => x.style.background = '#f7f7f7');
-          b.style.background = '#e6f0ff';
-          draw(activeKey);
-        });
-        btnWrap.appendChild(b);
-      });
-    }
-
-    function draw(key) {
-      if (!(budgetAll && budgetAll[key])) {
-        canvas.style.display = 'none';
-        return;
-      }
-      const pack = budgetAll[key];
-      const labels = pack.labels || [];
-      const spent  = pack.spent  || [];
-      const caps   = pack.caps   || [];
-
-      canvas.style.display = '';
-      if (chartRef) chartRef.destroy();
-      chartRef = new Chart(ctx, {
-        type: 'bar',
+    new Chart(ctxNW, {
+        type: 'line',
         data: {
-          labels,
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Spent',
-              data: spent,
-              backgroundColor: 'rgba(25,118,210,0.6)',
-              borderColor: 'rgb(25,118,210)',
-              borderWidth: 1,
-              categoryPercentage: 0.7,
-              barPercentage: 0.8,
-            },
-            {
-              type: 'line',
-              label: 'Cap',
-              data: caps,
-              borderWidth: 0,
-              pointRadius: 0,
-              borderColor: 'rgba(0,0,0,0)',
-              _isCaps: true
-            }
-          ]
+            labels: {{ balance_labels_json|safe }},
+            datasets: [{
+                label: 'Net Worth',
+                data: {{ balance_values_json|safe }},
+                borderColor: '#00cea6',
+                backgroundColor: gradNW,
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.3
+            }]
         },
         options: {
-          responsive: true,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { position: 'top' },
-            capLinePlugin: {}
-          },
-          scales: { y: { beginAtZero: true } }
-        },
-        plugins: [CapLinePlugin]
-      });
-    }
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { grid: { color: '#f7fafc' } } }
+        }
+    });
+    {% endif %}
 
-    renderButtons();
-    if (activeKey) draw(activeKey);
-  })();
+    // 2. INCOME VS SPENDING
+    (function(){
+        const labels = {{ labels_json|safe }};
+        const income = {{ income_json|safe }};
+        const spending = {{ spending_json|safe }};
+        if(document.getElementById('incomeSpending')){
+            new Chart(document.getElementById('incomeSpending').getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Income', data: income, borderColor: '#38a169', backgroundColor:'rgba(56,161,105,0.1)' }, { label: 'Spending', data: spending, borderColor:'#e53e3e', backgroundColor:'rgba(229,62,62,0.1)' }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+    })();
+
+    // 3. CATEGORY CHART & BREAKDOWN (Fixed Table)
+    (function(){
+        const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
+        const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
+        const breakdown = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
+
+        if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
+
+        const ctx = document.getElementById('catChart').getContext('2d');
+        const typeSelect = document.getElementById('catChartType');
+        const buttons = Array.from(document.querySelectorAll('.cat-btn'));
+
+        let currentCat = buttons.length ? buttons[0].dataset.cat : null;
+
+        function getDS(cat) { return { label: cat, data: seriesByCat[cat] || [], backgroundColor:'#3182ce', borderColor:'#3182ce' }; }
+
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: catMonths, datasets: [getDS(currentCat)] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        buttons.forEach(b => {
+            b.addEventListener('click', () => {
+                currentCat = b.dataset.cat;
+                chart.data.datasets = [getDS(currentCat)];
+                chart.update();
+                buttons.forEach(x => x.style.background='#f7fafc');
+                b.style.background='#e2e8f0';
+                renderMonthButtons();
+            });
+        });
+
+        typeSelect.addEventListener('change', () => {
+            const type = typeSelect.value;
+            chart.destroy();
+            chart = new Chart(ctx, {
+                type: type,
+                data: { labels: catMonths, datasets: [getDS(currentCat)] },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        });
+
+        function renderMonthButtons() {
+            const wrap = document.getElementById('catMonthButtons');
+            wrap.innerHTML = '';
+            catMonths.forEach(mk => {
+                const btn = document.createElement('button');
+                btn.textContent = mk;
+                btn.style.cssText = "padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer;";
+                btn.onclick = () => renderTable(mk);
+                wrap.appendChild(btn);
+            });
+            if(catMonths.length) renderTable(catMonths[catMonths.length-1]);
+        }
+
+        // FIXED TABLE RENDERER (With #Tx and Link)
+        function renderTable(mk) {
+            const wrap = document.getElementById('catMonthTableWrap');
+            const rows = (breakdown[currentCat] && breakdown[currentCat][mk]) || [];
+
+            let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg</th><th>Action</th></tr></thead><tbody>';
+
+            rows.forEach(r => {
+                // We use a simple search link since we don't have precise date ranges easily available here
+                const link = `/?q=${encodeURIComponent(r.merchant)}`;
+                html += `<tr>
+                    <td>${r.merchant}</td>
+                    <td>${r.total.toFixed(2)}</td>
+                    <td>${r.count}</td>
+                    <td>${r.avg.toFixed(2)}</td>
+                    <td><a href="${link}" class="text-teal" style="text-decoration:none;">Open</a></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+
+            if(!rows.length) html='<p style="opacity:0.6; font-size:0.9em;">No data.</p>';
+            wrap.innerHTML = html;
+        }
+
+        renderMonthButtons();
+    })();
+
+    // 4. BUDGETS
+    (function(){
+        const budgetAll = {{ budget_all_json|default:"{}"|safe }};
+        const keys = {{ budget_month_keys|default:"[]"|safe }};
+        const hasCaps = {{ budget_has_caps|yesno:"true,false" }};
+
+        if(!hasCaps) {
+            document.getElementById('budgetEmpty').style.display='block';
+            document.getElementById('budgetChart').style.display='none';
+            return;
+        }
+
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        let activeKey = keys.length ? keys[keys.length-1] : null;
+        let chart = null;
+
+        const btnWrap = document.getElementById('budgetMonthButtons');
+        keys.forEach(k => {
+            const b = document.createElement('button');
+            b.textContent = k;
+            b.style.cssText = "padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer;";
+            b.onclick = () => draw(k);
+            btnWrap.appendChild(b);
+        });
+
+        function draw(key) {
+            const data = budgetAll[key];
+            if(!data) return;
+            if(chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: 'Spent', data: data.spent, backgroundColor: '#3182ce' },
+                        { label: 'Cap', data: data.caps, type: 'line', borderColor: '#e53e3e', borderWidth: 2, pointRadius: 0 }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+        if(activeKey) draw(activeKey);
+    })();
 </script>
 {% endblock %}
