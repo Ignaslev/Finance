@@ -65,13 +65,28 @@
         </div>
         {% endif %}
     </nav>
-    {% if onboarding %}
+   {% if onboarding %}
     <div class="onboarding-banner">
         <div class="container">
             <span>{{ onboarding.text }}</span>
-            {% if onboarding.cta_href %}
-                <a href="{{ onboarding.cta_href }}" class="btn btn-sm btn-light">{{ onboarding.cta_text }}</a>
-            {% endif %}
+
+            <div style="display:flex; gap: 0.5rem; align-items: center;">
+                {% if onboarding.cta_href %}
+                    <a href="{{ onboarding.cta_href }}" class="btn-light">
+                        {{ onboarding.cta_text }}
+                    </a>
+                {% endif %}
+
+                {% if onboarding.code == 'categories' %}
+                    <form action="{% url 'onboarding_mark_done' %}" method="post" style="margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="step" value="categories">
+                        <button type="submit" class="btn-light" style="opacity: 0.8; cursor: pointer;">
+                            I'm Done
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
         </div>
     </div>
     {% endif %}
