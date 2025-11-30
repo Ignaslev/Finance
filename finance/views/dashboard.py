@@ -5,12 +5,13 @@ from django.db.models import Sum, Q, Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from collections import defaultdict
-from datetime import timedelta, datetime, date as _date
+from datetime import timedelta, datetime, date as _date, timezone as dt_timezone
 from decimal import Decimal
 from calendar import monthrange
 import json, os
 
 from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal
+
 
 
 def env_check(request):
@@ -36,10 +37,10 @@ def overview(request):
         if acc.manual_balance is not None:
             anchor_val = acc.manual_balance
             # If we have a timestamp for the manual set, use it. Else assume really old.
-            anchor_date = acc.balance_updated_at or datetime.min.replace(tzinfo=timezone.utc)
+            anchor_date = acc.balance_updated_at or datetime.min.replace(tzinfo=dt_timezone.utc)
         else:
             anchor_val = Decimal("0")
-            anchor_date = datetime.min.replace(tzinfo=timezone.utc)
+            anchor_date = datetime.min.replace(tzinfo=dt_timezone.utc)
 
         # 2. Calculate Delta since Anchor (Only for Non-Investment accounts)
         # Investment accounts are auto-calculated by the asset engine, so we trust manual_balance.

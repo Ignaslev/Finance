@@ -65,7 +65,16 @@
         </div>
         {% endif %}
     </nav>
-
+    {% if onboarding %}
+    <div class="onboarding-banner">
+        <div class="container">
+            <span>{{ onboarding.text }}</span>
+            {% if onboarding.cta_href %}
+                <a href="{{ onboarding.cta_href }}" class="btn btn-sm btn-light">{{ onboarding.cta_text }}</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
     <div class="container">
         {% if messages %}
             {% for message in messages %}
@@ -77,6 +86,8 @@
         {% block content %}
         {% endblock %}
     </div>
+
+
 
     {% if user.is_authenticated %}
     <nav class="bottom-nav">

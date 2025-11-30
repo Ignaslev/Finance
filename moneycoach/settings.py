@@ -60,9 +60,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # Ensure these exist in your project, or comment them out if not built yet
-                # "finance.context_processors.onboarding",
-                # "finance.context_processors.ai_notifications",
+                "finance.context_processors.onboarding",
+                "finance.context_processors.ai_notifications",
             ],
         },
     },

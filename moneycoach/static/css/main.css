@@ -423,3 +423,57 @@ td {
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- Onboarding Banner (Robust Layout) --- */
+.onboarding-banner {
+    max-width: 1200px;
+    margin: 2rem auto;
+    width: 95%; /* Safe margin on mobile */
+
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #00cea6;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    overflow: hidden; /* Cuts off anything trying to escape */
+}
+
+.onboarding-banner .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Allows stacking on mobile */
+    gap: 1rem;
+    padding: 1.25rem 2rem;
+    width: 100%;
+    box-sizing: border-box; /* CRITICAL: Keeps padding inside the width */
+}
+
+.onboarding-banner span {
+    flex: 1 1 auto; /* Text takes available space */
+    min-width: 200px; /* Wraps early on tiny screens */
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #334155;
+    line-height: 1.5; /* Better readability when wrapping */
+}
+
+.onboarding-banner .btn-light {
+    flex: 0 0 auto; /* Button NEVER shrinks or grows */
+    background: #00cea6;
+    color: #ffffff;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.onboarding-banner .btn-light:hover {
+    background: #00b894;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 206, 166, 0.25);
+}
