@@ -1,0 +1,359 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+from django.utils import timezone
+from django.db.models import Sum
+from django.db import transaction as dbtx
+from decimal import Decimal, InvalidOperation
+from datetime import date as _date
+from calendar import monthrange
+from collections import defaultdict
+
+from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState
+from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
+from django.conf import settings
+
+# Paste: register, category_list, category_edit, category_delete, profile, onboarding_mark_done
+
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("upload")
+    else:
+        form = UserCreationForm()
+    return render(request, "register.html", {"form": form})
+
+@login_required
+def category_list(request):
+    if not Category.objects.filter(user=request.user).exists():
+        Category.objects.bulk_create([Category(user=request.user, name=n) for n in settings.DEFAULT_CATEGORIES])
+
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()
+        color = (request.POST.get("color") or "").strip()
+        if name:
+            Category.objects.get_or_create(user=request.user, name=name, defaults={"color": color})
+        return redirect("category_list")
+
+    cats = Category.objects.filter(user=request.user).order_by("name")
+    return render(request, "categories.html", {"categories": cats})
+
+@login_required
+def category_edit(request, pk):
+    cat = get_object_or_404(Category, pk=pk, user=request.user)
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()
+        color = (request.POST.get("color") or "").strip()
+        if name:
+            exists = Category.objects.filter(user=request.user, name=name).exclude(pk=cat.pk).exists()
+            if not exists:
+                cat.name = name
+            cat.color = color
+            cat.save()
+        return redirect("category_list")
+    return render(request, "category_edit.html", {"cat": cat})
+
+@login_required
+def category_delete(request, pk):
+    cat = get_object_or_404(Category, pk=pk, user=request.user)
+    if request.method == "POST":
+        other, _ = Category.objects.get_or_create(user=request.user, name="Other")
+        with dbtx.atomic():
+            Transaction.objects.filter(user=request.user, category_fk=cat).update(category_fk=other)
+            cat.delete()
+        return redirect("category_list")
+    return redirect("category_list")
+
+@login_required
+def profile(request):
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+
+        # Accounts
+        if action == "add":
+            name = (request.POST.get("name") or "").strip()
+            typ  = (request.POST.get("type") or "").strip()
+            if not name or typ not in dict(MoneySource.TYPE_CHOICES):
+                messages.error(request, "Provide a valid name and type.")
+                return redirect("profile")
+            if MoneySource.objects.filter(user=request.user, name=name).exists():
+                messages.error(request, "Account with this name already exists.")
+                return redirect("profile")
+            MoneySource.objects.create(user=request.user, name=name, type=typ, is_active=True)
+            messages.success(request, "Account added.")
+            return redirect("profile")
+
+        if action == "rename":
+            acc_id = request.POST.get("id")
+            new_name = (request.POST.get("name") or "").strip()
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+            if new_name:
+                exists = MoneySource.objects.filter(user=request.user, name=new_name).exclude(id=acc.id).exists()
+                if exists:
+                    messages.error(request, f'Another account named “{new_name}” already exists.')
+                else:
+                    acc.name = new_name
+                    acc.save(update_fields=["name", "updated_at"])
+                    messages.success(request, "Account renamed.")
+            else:
+                messages.error(request, "Name cannot be empty.")
+            return redirect("profile")
+
+        if action == "toggle":
+            acc_id = request.POST.get("id")
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+            acc.is_active = not acc.is_active
+            acc.save(update_fields=["is_active", "updated_at"])
+            messages.success(request, ("Activated" if acc.is_active else "Deactivated") + f' “{acc.name}”.')
+            return redirect("profile")
+
+        if action == "setdefault":
+            acc_id = request.POST.get("id")
+            try:
+                acc = MoneySource.objects.get(id=int(acc_id), user=request.user, is_active=True)
+                request.session["default_src_id"] = acc.id
+                messages.success(request, f'“{acc.name}” set as default import account.')
+            except (MoneySource.DoesNotExist, ValueError):
+                messages.error(request, "Account not found or inactive.")
+            return redirect("profile")
+
+        if action == "setbalance":
+            acc_id = request.POST.get("id")
+            raw = (request.POST.get("amount") or "").strip().replace(",", ".")
+            acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
+
+            if raw == "":
+                # Clear manual balance (no snapshot here, same as your current logic)
+                acc.manual_balance = None
+                acc.balance_updated_at = timezone.now()
+                acc.save(update_fields=["manual_balance", "balance_updated_at"])
+                messages.success(request, "Manual balance cleared.")
+                return redirect("profile")
+
+            # Save manual balance and record a global snapshot for anomaly tracking
+            try:
+                val = Decimal(raw)
+                acc.manual_balance = val
+                acc.balance_updated_at = timezone.now()
+                acc.save(update_fields=["manual_balance", "balance_updated_at"])
+
+                # Compute total effective (post-change), as you already do
+                ledger_map = _ledger_balance_by_source(request.user)  # existing helper
+                total_effective = Decimal("0")
+                for a in MoneySource.objects.filter(user=request.user, is_active=True):
+                    eff = a.manual_balance if a.manual_balance is not None else ledger_map.get(a.id, Decimal("0"))
+                    total_effective += (eff or Decimal("0"))
+
+                # Grab the previous snapshot BEFORE creating a new one
+                prev_snap = (BalanceSnapshot.objects
+                             .filter(user=request.user)
+                             .order_by("-timestamp")
+                             .first())
+
+                new_snap = BalanceSnapshot.objects.create(
+                    user=request.user,
+                    amount=total_effective,
+                    currency="EUR",
+                    timestamp=timezone.now(),
+                    note=f"Snapshot after setting manual balance for {acc.name}",
+                )
+
+                # Compare vs ledger delta and log anomaly if needed
+                # (helper is already in your codebase; we’re reusing it)
+                discrepancy = _maybe_log_balance_anomaly(
+                    request.user, prev_snap, new_snap,
+                    note="After setbalance on Profile"
+                )
+
+                if prev_snap is None:
+                    # First-ever snapshot for this user
+                    messages.success(request, "Manual balance saved and an initial snapshot was recorded.")
+                else:
+                    if discrepancy:
+                        sign = "+" if discrepancy >= 0 else "−"
+                        messages.warning(
+                            request,
+                            f"Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by "
+                            f"{sign}{abs(discrepancy):.2f} EUR."
+                        )
+                    else:
+                        messages.success(request, "Manual balance saved and a global snapshot was recorded.")
+            except (InvalidOperation, TypeError):
+                messages.error(request, "Enter a valid number.")
+            return redirect("profile")
+
+        # Category caps
+        if action == "setcap":
+            cat_id = request.POST.get("id")
+            raw = (request.POST.get("amount") or "").strip().replace(",", ".")
+            cat = get_object_or_404(Category, id=cat_id, user=request.user)
+            if raw == "":
+                cat.monthly_cap = None
+                cat.save(update_fields=["monthly_cap"])
+                messages.success(request, f'Removed cap for “{cat.name}”.')
+            else:
+                try:
+                    val = Decimal(raw)
+                    if val < 0:
+                        raise InvalidOperation
+                    cat.monthly_cap = val
+                    cat.save(update_fields=["monthly_cap"])
+                    messages.success(request, f'Saved cap for “{cat.name}”.')
+                except (InvalidOperation, TypeError):
+                    messages.error(request, "Enter a valid non-negative number.")
+            return redirect("profile")
+
+        # Savings goals
+        if action == "goal_add":
+            name = (request.POST.get("goal_name") or "").strip()
+            target_raw = (request.POST.get("goal_target") or "").strip().replace(",", ".")
+            try:
+                target = Decimal(target_raw)
+            except Exception:
+                target = Decimal("0")
+            g = SavingsGoal.objects.create(user=request.user, name=name, target_amount=target, is_active=True)
+            for aid in request.POST.getlist("goal_accounts"):
+                try:
+                    a = MoneySource.objects.get(id=int(aid), user=request.user)
+                    g.accounts.add(a)
+                except MoneySource.DoesNotExist:
+                    pass
+            messages.success(request, "Goal created.")
+            return redirect("profile")
+
+        if action == "goal_toggle":
+            gid = request.POST.get("goal_id")
+            g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
+            g.is_active = not g.is_active
+            g.save(update_fields=["is_active", "updated_at"])
+            messages.success(request, ("Activated" if g.is_active else "Paused") + f' “{g.name}”.')
+            return redirect("profile")
+
+        if action == "goal_delete":
+            gid = request.POST.get("goal_id")
+            g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
+            g.delete()
+            messages.success(request, "Goal deleted.")
+            return redirect("profile")
+
+    # ---------- GET ----------
+    accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
+
+    tx_sums = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False)
+        .values("money_source_id", "in_out")
+        .annotate(total=Sum("amount"))
+    )
+    ledger_map = defaultdict(lambda: Decimal("0"))
+    for row in tx_sums:
+        ms_id = row["money_source_id"]
+        amt = row["total"] or Decimal("0")
+        if row["in_out"] == Transaction.IN:
+            ledger_map[ms_id] += amt
+        else:
+            ledger_map[ms_id] -= amt
+
+    total_effective = Decimal("0")
+    acc_by_id = {}
+    for acc in accounts:
+        ledger_val = ledger_map.get(acc.id, Decimal("0"))
+        effective = acc.manual_balance if acc.manual_balance is not None else ledger_val
+        acc.effective_balance = effective
+        acc_by_id[acc.id] = acc
+        total_effective += effective if acc.is_active else Decimal("0")
+
+    # Suggested caps (avg of last 3 full months)
+    today = timezone.localdate()
+    def month_start(y, m): return _date(y, m, 1)
+    def month_end(y, m):   return _date(y, m, monthrange(y, m)[1])
+
+    prev_year = today.year if today.month > 1 else today.year - 1
+    prev_month = today.month - 1 if today.month > 1 else 12
+
+    m3 = []
+    y, m = prev_year, prev_month
+    for _ in range(3):
+        m3.append((y, m))
+        if m == 1: y, m = y - 1, 12
+        else: m -= 1
+    m3 = list(reversed(m3))
+
+    start_3 = month_start(m3[0][0], m3[0][1])
+    end_3   = month_end(m3[-1][0], m3[-1][1])
+
+    spend_3 = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False, in_out=Transaction.OUT, date__gte=start_3, date__lte=end_3)
+        .values("category_fk")
+        .annotate(total=Sum("amount"))
+    )
+    spend_map = {r["category_fk"]: (r["total"] or Decimal("0")) for r in spend_3}
+
+    cats = Category.objects.filter(user=request.user).order_by("name")
+    caps_rows = []
+    for c in cats:
+        tot = spend_map.get(c.id, Decimal("0"))
+        suggested = (tot / Decimal("3")) if tot is not None else Decimal("0")
+        caps_rows.append({
+            "id": c.id, "name": c.name, "color": c.color, "cap": c.monthly_cap, "suggested": suggested,
+        })
+
+    # Goals (active + paused)
+    goals_qs = (
+        SavingsGoal.objects
+        .filter(user=request.user)
+        .prefetch_related("accounts")
+        .order_by("created_at", "id")
+    )
+    goals = []
+    for g in goals_qs:
+        sel_accs = [acc_by_id[a.id] for a in g.accounts.all() if a.id in acc_by_id]
+        current = sum((a.effective_balance or Decimal("0") for a in sel_accs), Decimal("0"))
+        target  = g.target_amount or Decimal("0")
+        pct = float((current / target * 100) if target > 0 else 0.0)
+        pct = 0.0 if pct != pct else max(0.0, min(pct, 200.0))
+        goals.append({
+            "obj": g, "accounts": sel_accs, "current": float(current), "target": float(target),
+            "progress_pct": round(pct, 1), "eta_months": None,
+        })
+
+    ctx = {
+        "accounts": accounts,
+        "total_accounts_balance": float(total_effective),
+        "type_choices": MoneySource.TYPE_CHOICES,
+        "default_id": request.session.get("default_src_id"),
+        "caps_rows": caps_rows,
+        "caps_window_note": f"Based on average spending across {m3[0][0]:04d}-{m3[0][1]:02d} to {m3[-1][0]:04d}-{m3[-1][1]:02d}.",
+        "goals": goals,
+    }
+    return render(request, "profile.html", ctx)
+
+@login_required
+@require_POST
+def onboarding_mark_done(request):
+    step = (request.POST.get("step") or "").strip()
+    state, _ = OnboardingState.objects.get_or_create(user=request.user)
+
+    if step == "categories":
+        state.categories_done = True
+        # also keep session if you want:
+        request.session["onboarding_categories_done"] = True
+
+    elif step == "ready":
+        state.ready_dismissed = True
+        request.session["onboarding_ready_dismissed"] = True
+
+    # (If later you add explicit buttons for "upload", "balance", "teach_ai", mark them here.)
+
+    state.save(update_fields=["categories_done", "ready_dismissed", "updated_at"])
+    messages.success(request, "Thanks! We’ve saved your onboarding progress.")
+    return redirect(request.META.get("HTTP_REFERER") or "upload")
+
