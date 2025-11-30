@@ -24,8 +24,20 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+
+            # === AUTO-POPULATE START ===
+            # 1. Create Default Categories (Income, Groceries, etc.)
+            ensure_default_categories(user)
+
+            # 2. Create Default Accounts so the Dashboard isn't empty
+            MoneySource.objects.create(user=user, name="Main Account", type="bank", is_active=True)
+            MoneySource.objects.create(user=user, name="Cash Wallet", type="cash", is_active=True)
+            MoneySource.objects.create(user=user, name="Savings", type="savings", is_active=True)
+            # === AUTO-POPULATE END ===
+
             login(request, user)
-            return redirect("upload")
+            messages.success(request, "Welcome! We've set up your default accounts and categories.")
+            return redirect("overview")  # Redirect to Dashboard instead of Upload
     else:
         form = UserCreationForm()
     return render(request, "register.html", {"form": form})
