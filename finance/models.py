@@ -151,10 +151,6 @@ class SavingsGoal(models.Model):
     def __str__(self):
         return f"{self.name} ({self.user})"
 
-# finance/models.py (add at the bottom)
-from django.conf import settings
-from django.db import models
-
 class AdvisorReport(models.Model):
     TYPE_MONTHLY = "monthly"
     TYPE_WEEKLY = "weekly"
@@ -372,27 +368,6 @@ class PortfolioSnapshot(models.Model):
     def total(self):
         return self.crypto_total + self.stock_total
 
-
-class PortfolioSnapshot(models.Model):
-    """
-    History of portfolio value.
-    Designed to be populated every 10-60 minutes.
-    """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolio_history')
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    crypto_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
-    stock_total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
-
-    class Meta:
-        ordering = ['timestamp']
-        indexes = [
-            models.Index(fields=['user', 'timestamp']),
-        ]
-
-    @property
-    def total(self):
-        return self.crypto_total + self.stock_total
 
 
 from django.utils.crypto import get_random_string

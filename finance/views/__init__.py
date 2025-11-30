@@ -11,8 +11,9 @@ from .settings import (
     profile, register, category_list, category_edit, category_delete,
     onboarding_mark_done
 )
+# UNCOMMENTED THESE LINES:
 from .ai import (
-    ai_full_categorize, ai_run_uncategorized, ai_recheck_all,
-    teach_ai, review_low_conf, review_low_apply, review_ai_recent,
-    ai_dismiss_notification, review_ai_runs, review_ai_run_detail
+   ai_full_categorize, ai_run_uncategorized, ai_recheck_all,
+   teach_ai, review_low_conf, review_low_apply, review_ai_recent,
+   ai_dismiss_notification, review_ai_runs, review_ai_run_detail
 )

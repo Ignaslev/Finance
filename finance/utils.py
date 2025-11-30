@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from django.utils import timezone
 from django.conf import settings
-from .models import Category, Transaction, BalanceAnomaly, BalanceSnapshot, PortfolioSnapshot
+from .models import Category, Transaction, BalanceAnomaly, BalanceSnapshot
 from django.db.models import Sum, Case, When, F, DecimalField
 
 

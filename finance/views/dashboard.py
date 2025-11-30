@@ -11,7 +11,7 @@ from calendar import monthrange
 import json, os
 
 from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal
-from finance.utils import _ledger_balance_by_source # You might need to move this to utils too
+
 
 def env_check(request):
     ok = bool(os.getenv("OPENAI_API_KEY"))
