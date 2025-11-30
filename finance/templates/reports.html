@@ -1,14 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Reports · Money Compass{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Reports" %} · Money Compass{% endblock %}
 {% block content %}
 
 <div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
-    <h2 class="text-dark" style="margin:0;">Reports</h2>
+    <h2 class="text-dark" style="margin:0;">{% trans "Reports" %}</h2>
 </div>
 
 <div class="card">
   <div class="flex items-center gap-4" style="flex-wrap:wrap;">
-    <strong class="text-dark">Select Period:</strong>
+    <strong class="text-dark">{% trans "Select Period:" %}</strong>
     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
       {% for mk in month_keys %}
         <a href="/reports/?m={{ mk }}"
@@ -23,18 +24,18 @@
 </div>
 
 <div class="card">
-  <div class="card-title">Monthly Report: {{ sel_m }}</div>
+  <div class="card-title">{% trans "Monthly Report:" %} {{ sel_m }}</div>
 
   {% if monthly_report and monthly_report.response %}
       {% with r=monthly_report.response %}
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.5rem;">
-          <h4 style="margin-top:0; color:var(--text-dark);">Summary</h4>
+          <h4 style="margin-top:0; color:var(--text-dark);">{% trans "Summary" %}</h4>
           <div style="color:var(--text-dark); line-height:1.6;">{{ r.summary|linebreaks }}</div>
 
           {% if r.key_metrics %}
              <div style="margin-top:1rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem;">
                 <div style="background:white; padding:1rem; border-radius:8px; border:1px solid #edf2f7;">
-                    <div class="text-medium" style="font-size:0.85rem;">Net Savings</div>
+                    <div class="text-medium" style="font-size:0.85rem;">{% trans "Net Savings" %}</div>
                     <div class="text-teal font-bold" style="font-size:1.1rem;">{{ r.key_metrics.net|floatformat:2 }} EUR</div>
                 </div>
              </div>
@@ -43,14 +44,14 @@
       {% endwith %}
   {% else %}
       <div style="padding:3rem; text-align:center; opacity:0.7;">
-        <p style="margin-bottom:0.5rem;">No monthly report generated yet for {{ sel_m }}.</p>
-        <small>Reports are generated automatically on the 1st of the following month.</small>
+        <p style="margin-bottom:0.5rem;">{% trans "No monthly report generated yet for" %} {{ sel_m }}.</p>
+        <small>{% trans "Reports are generated automatically on the 1st of the following month." %}</small>
       </div>
   {% endif %}
 </div>
 
 <div class="card">
-  <div class="card-title">Weekly Reports ({{ sel_m }})</div>
+  <div class="card-title">{% trans "Weekly Reports" %} ({{ sel_m }})</div>
 
   <div style="margin-bottom:1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
     {% for wr in week_ranges %}
@@ -61,39 +62,39 @@
         {{ wr.start }} → {{ wr.end }}
       </a>
     {% empty %}
-      <span style="opacity:0.6;">No weeks calculated for this month.</span>
+      <span style="opacity:0.6;">{% trans "No weeks calculated for this month." %}</span>
     {% endfor %}
   </div>
 
   {% if weekly_report and weekly_report.response %}
       {% with r=weekly_report.response %}
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.5rem;">
-          <h4 style="margin-top:0; color:var(--text-dark);">Summary</h4>
+          <h4 style="margin-top:0; color:var(--text-dark);">{% trans "Summary" %}</h4>
           <div style="color:var(--text-dark); line-height:1.6;">{{ r.summary|linebreaks }}</div>
         </div>
       {% endwith %}
   {% else %}
       <div style="padding:2rem; text-align:center; opacity:0.7; border:1px dashed #e2e8f0; border-radius:12px;">
-        <p style="margin-bottom:0.5rem;">No report for week starting {{ sel_w_start }}.</p>
-        <small>Weekly reports generate automatically every Monday.</small>
+        <p style="margin-bottom:0.5rem;">{% trans "No report for week starting" %} {{ sel_w_start }}.</p>
+        <small>{% trans "Weekly reports generate automatically every Monday." %}</small>
       </div>
   {% endif %}
 </div>
 
 <div class="card">
-    <div class="card-title">Balance Anomalies History</div>
+    <div class="card-title">{% trans "Balance Anomalies History" %}</div>
 
     {% if anomaly_history %}
     <div style="overflow-x:auto;">
       <table style="font-size:0.9rem;">
         <thead>
           <tr>
-            <th>Detected</th>
-            <th>Gap</th>
-            <th>App Expected</th>
-            <th>You Entered</th>
-            <th>Diff</th>
-            <th>Notes</th>
+            <th>{% trans "Detected" %}</th>
+            <th>{% trans "Gap" %}</th>
+            <th>{% trans "App Expected" %}</th>
+            <th>{% trans "You Entered" %}</th>
+            <th>{% trans "Diff" %}</th>
+            <th>{% trans "Notes" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -122,7 +123,7 @@
                   {{ row.note }}
                   {% if row.largest_out.amount > 0 %}
                     <div style="font-size:0.8em; margin-top:0.2rem;">
-                      Biggest spend: {{ row.largest_out.merchant }} ({{ row.largest_out.amount }})
+                      {% trans "Biggest spend:" %} {{ row.largest_out.merchant }} ({{ row.largest_out.amount }})
                     </div>
                   {% endif %}
               </td>
@@ -132,7 +133,7 @@
       </table>
     </div>
     {% else %}
-      <p style="padding:2rem; text-align:center; opacity:0.6;">No history recorded yet.</p>
+      <p style="padding:2rem; text-align:center; opacity:0.6;">{% trans "No history recorded yet." %}</p>
     {% endif %}
 </div>
 

@@ -1,12 +1,42 @@
 {% extends "base.html" %}
-{% block title %}AI Error · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "AI Error" %} · Money Compass{% endblock %}
+
 {% block content %}
-<h2>Auto-categorize error</h2>
-<p style="color:#b00020; margin:.5rem 0 1rem;">{{ error }}</p>
-{% if batch_index is not None %}
-  <p>While processing batch #{{ batch_index }}.</p>
-{% endif %}
-<p style="margin-top:1rem;">
-  <a href="/ai/full/">Try again</a> · <a href="/">Back to Upload</a>
-</p>
+
+<div style="max-width: 600px; margin: 4rem auto;">
+    <div class="card" style="text-align: center; padding: 2.5rem;">
+
+        <div style="font-size: 3rem; color: #e53e3e; margin-bottom: 1rem;">
+            <i class="ph ph-warning-circle"></i>
+        </div>
+
+        <h2 class="card-title" style="font-size: 1.5rem; margin-bottom: 1rem;">
+            {% trans "Auto-categorization Error" %}
+        </h2>
+
+        <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; text-align: left;">
+            <strong style="color: #c53030; display: block; margin-bottom: 0.5rem;">{% trans "Error Details:" %}</strong>
+            <code style="color: #9b2c2c; font-size: 0.9rem; word-break: break-all;">{{ error }}</code>
+        </div>
+
+        {% if batch_index is not None %}
+            <p style="color: var(--text-medium); font-size: 0.9rem; margin-bottom: 2rem;">
+                {% trans "Stopped while processing batch" %} #{{ batch_index }}.
+            </p>
+        {% endif %}
+
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="/" class="btn" style="background: #edf2f7; color: var(--text-medium);">
+                {% trans "Back to Upload" %}
+            </a>
+            <a href="/ai/full/" class="btn btn-primary">
+                <i class="ph ph-arrow-clockwise" style="vertical-align: middle; margin-right: 5px;"></i>
+                {% trans "Try Again" %}
+            </a>
+        </div>
+
+    </div>
+</div>
+
 {% endblock %}

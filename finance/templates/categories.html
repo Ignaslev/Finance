@@ -1,17 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Categories · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Categories" %} · MoneyCoach{% endblock %}
 {% block content %}
-<h2>Categories</h2>
+<h2>{% trans "Categories" %}</h2>
 
 <form method="post" style="margin:1rem 0; display:flex; gap:.5rem; align-items:center;">
   {% csrf_token %}
-  <input name="name" placeholder="New category name" required>
-  <input name="color" placeholder="#RRGGBB (optional)" style="width:10rem">
-  <button>Add</button>
+  <input name="name" placeholder="{% trans 'New category name' %}" required>
+  <input name="color" placeholder="{% trans '#RRGGBB (optional)' %}" style="width:10rem">
+  <button>{% trans "Add" %}</button>
 </form>
 
 <table>
-  <tr><th>Name</th><th>Color</th><th>Actions</th></tr>
+  <tr><th>{% trans "Name" %}</th><th>{% trans "Color" %}</th><th>{% trans "Actions" %}</th></tr>
   {% for c in categories %}
     <tr>
       <td>{{ c.name }}</td>
@@ -24,11 +25,11 @@
         {% endif %}
       </td>
       <td>
-        <a href="/categories/{{ c.id }}/edit/">Edit</a>
+        <a href="/categories/{{ c.id }}/edit/">{% trans "Edit" %}</a>
         {% if c.name != "Other" %}
-          <form method="post" action="/categories/{{ c.id }}/delete/" style="display:inline" onsubmit="return confirm('Reassign to Other and delete this category?');">
+          <form method="post" action="/categories/{{ c.id }}/delete/" style="display:inline" onsubmit="return confirm('{% trans "Reassign to Other and delete this category?" %}');">
             {% csrf_token %}
-            <button>Delete</button>
+            <button>{% trans "Delete" %}</button>
           </form>
         {% endif %}
       </td>

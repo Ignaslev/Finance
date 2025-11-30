@@ -1936,42 +1936,54 @@ def review_ai_recent(request):
 
 @login_required
 def overview(request):
-    # ==========================================
-    # 1. ACCOUNTS & COMPOSITION (New Logic)
-    # ==========================================
+    # 1. ACCOUNTS & COMPOSITION
+    # We need to calculate "Live Balance":
+    # Live = Manual_Anchor + (Income_Since_Anchor - Spending_Since_Anchor)
+
     accounts = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("type", "name"))
-
-    # Calculate Effective Balances
-    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False)
-    tx_sums = tx_base.values("money_source_id", "in_out").annotate(total=Sum("amount"))
-
-    ledger_map = defaultdict(Decimal)
-    for row in tx_sums:
-        ms_id = row["money_source_id"]
-        amt = row["total"] or Decimal("0")
-        if row["in_out"] == Transaction.IN:
-            ledger_map[ms_id] += amt
-        else:
-            ledger_map[ms_id] -= amt
 
     comp_totals = defaultdict(Decimal)
     total_net_worth = Decimal("0")
 
     for acc in accounts:
-        ledger_val = ledger_map.get(acc.id, Decimal("0"))
+        # 1. Determine Anchor
         if acc.manual_balance is not None:
-            acc.effective_balance = acc.manual_balance
+            anchor_val = acc.manual_balance
+            # If we have a timestamp for the manual set, use it. Else assume really old.
+            anchor_date = acc.balance_updated_at or datetime.min.replace(tzinfo=timezone.utc)
         else:
-            acc.effective_balance = ledger_val
+            anchor_val = Decimal("0")
+            anchor_date = datetime.min.replace(tzinfo=timezone.utc)
 
-        bal = acc.effective_balance
-        if bal > 0:
-            comp_totals[acc.type] += bal
-            total_net_worth += bal
-        elif bal < 0:
-            total_net_worth += bal
+        # 2. Calculate Delta since Anchor (Only for Non-Investment accounts)
+        # Investment accounts are auto-calculated by the asset engine, so we trust manual_balance.
+        if acc.type == 'investment':
+            live_balance = anchor_val
+        else:
+            # Sum transactions strictly AFTER the anchor update
+            delta_qs = Transaction.objects.filter(
+                user=request.user,
+                money_source=acc,
+                is_deleted=False,
+                created_at__gt=anchor_date  # Use created_at for precision vs manual entry time
+            ).aggregate(
+                inc=Sum('amount', filter=Q(in_out='in')),
+                out=Sum('amount', filter=Q(in_out='out'))
+            )
+            plus = delta_qs['inc'] or Decimal("0")
+            minus = delta_qs['out'] or Decimal("0")
+            live_balance = anchor_val + plus - minus
 
-    # Composition Bar Data
+        acc.effective_balance = live_balance
+
+        # 3. Add to Totals
+        if live_balance > 0:
+            comp_totals[acc.type] += live_balance
+            total_net_worth += live_balance
+        elif live_balance < 0:
+            total_net_worth += live_balance
+
+    # Composition Bar
     composition_bar = []
     if total_net_worth > 0:
         type_colors = {'bank': '#3182ce', 'savings': '#2b6cb0', 'cash': '#38a169', 'investment': '#805ad5'}
@@ -1985,12 +1997,9 @@ def overview(request):
                 'pct': float(pct),
                 'color': type_colors.get(k, '#cbd5e0')
             })
-    composition_bar.sort(key=lambda x: x['value'], reverse=True)
+        composition_bar.sort(key=lambda x: x['value'], reverse=True)
 
-    # ==========================================
-    # 2. MERGED HISTORY GRAPH
-    # ==========================================
-    from .models import BalanceSnapshot, PortfolioSnapshot
+    # 2. HISTORY GRAPH (Unified)
     days_to_graph = 90
     start_date = timezone.now().date() - timedelta(days=days_to_graph)
 
@@ -1999,20 +2008,18 @@ def overview(request):
         'timestamp')
 
     history_map = {}
-    current_cash = Decimal("0")
 
+    # Fill Cash History
     for b in bal_snaps:
         d = b.timestamp.date() if hasattr(b.timestamp, 'date') else b.timestamp
-        current_cash = b.amount
         if d not in history_map: history_map[d] = {'cash': 0, 'assets': 0}
-        history_map[d]['cash'] = current_cash
+        history_map[d]['cash'] = b.amount
 
-    current_assets = Decimal("0")
+    # Fill Asset History
     for p in port_snaps:
         d = p.timestamp.date() if hasattr(p.timestamp, 'date') else p.timestamp
-        current_assets = p.total
         if d not in history_map: history_map[d] = {'cash': 0, 'assets': 0}
-        history_map[d]['assets'] = current_assets
+        history_map[d]['assets'] = p.total
 
     graph_dates = []
     graph_values = []
@@ -2039,9 +2046,8 @@ def overview(request):
         graph_dates = ["Now"]
         graph_values = [float(total_net_worth)]
 
-    # ==========================================
     # 3. INCOME VS SPENDING
-    # ==========================================
+    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False)
     qs_month = tx_base.annotate(month=TruncMonth("date"))
     by_month = qs_month.values("month", "in_out").annotate(total=Sum("amount"))
 
@@ -2072,9 +2078,7 @@ def overview(request):
     spending_series = [float(totals_out[m]) for m in months]
     net_rows = [{"month": m.strftime("%Y-%m"), "net": float(totals_in[m] - totals_out[m])} for m in months]
 
-    # ==========================================
-    # 4. CATEGORY BREAKDOWN (Restored Fully)
-    # ==========================================
+    # 4. CATEGORIES & BUDGETS
     qs_cat = (
         tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
         .annotate(month=TruncMonth("date"))
@@ -2136,9 +2140,7 @@ def overview(request):
         for m in per_month:
             per_month[m] = sorted(per_month[m], key=lambda x: (-x["total"], x["merchant"]))[:12]
 
-    # ==========================================
-    # 5. BUDGETS (Restored Fully)
-    # ==========================================
+    # Budgets
     capped_qs = Category.objects.filter(user=request.user, monthly_cap__isnull=False).exclude(monthly_cap=0).order_by(
         "name")
     budget_has_caps = capped_qs.exists()
@@ -2182,30 +2184,25 @@ def overview(request):
         })
 
     ctx = {
-        # Net Worth & Composition
         "total_net_worth": float(total_net_worth),
         "composition_bar": composition_bar,
         "balance_labels_json": json.dumps(graph_dates),
         "balance_values_json": json.dumps(graph_values),
 
-        # Accounts
         "accounts_with_balances": accounts,
         "total_accounts_balance": float(total_net_worth),
 
-        # Income/Spend
         "labels_json": json.dumps(labels),
         "income_json": json.dumps(income_series),
         "spending_json": json.dumps(spending_series),
         "net_rows": net_rows,
 
-        # Categories
         "cat_names": cat_names,
         "cat_month_labels_json": json.dumps(cat_labels),
         "series_by_cat_json": json.dumps(series_by_cat),
         "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
-        "month_bounds_json": "{}",  # Keep simple unless needed for specific drilldown logic
+        "month_bounds_json": "{}",
 
-        # Budgets & Goals
         "goals": goals,
         "budget_all_json": json.dumps(budget_all),
         "budget_month_keys": budget_month_keys,
@@ -2493,27 +2490,80 @@ def profile(request):
 def statistics(request):
     user = request.user
     today = timezone.localtime().date()
+
+    # ==========================================
+    # 1. RUNWAY SIMULATOR (New Logic)
+    # ==========================================
+    # We need these for the simulator modal
+    all_sources_sim = MoneySource.objects.filter(user=user, is_active=True).order_by('type', 'name')
+    all_cats_sim = Category.objects.filter(user=user).order_by('name')
+
+    is_simulated = request.GET.get('runway_sim') == '1'
+
+    if is_simulated:
+        inc_src_ids = {int(x) for x in request.GET.getlist('inc_src') if x.isdigit()}
+        inc_cat_ids = {int(x) for x in request.GET.getlist('inc_cat') if x.isdigit()}
+        inc_uncat = request.GET.get('inc_uncat') == '1'
+    else:
+        # Default: Include everything
+        inc_src_ids = {s.id for s in all_sources_sim}
+        inc_cat_ids = {c.id for c in all_cats_sim}
+        inc_uncat = True
+
+    # Calculate Net Worth (Filtered)
+    total_net_worth = Decimal("0")
+    for acc in all_sources_sim:
+        if acc.id in inc_src_ids:
+            bal = acc.manual_balance if acc.manual_balance is not None else Decimal("0")
+            total_net_worth += bal
+
+    # Calculate Burn Rate (Filtered, Last 90 Days)
+    start_90 = today - timedelta(days=90)
+    spend_qs = Transaction.objects.filter(user=user, is_deleted=False, in_out=Transaction.OUT, date__gte=start_90)
+
+    # Exclude unchecked categories
+    spend_qs = spend_qs.exclude(category_fk__id__in=list(set(c.id for c in all_cats_sim) - inc_cat_ids))
+    if not inc_uncat:
+        spend_qs = spend_qs.exclude(category_fk__isnull=True)
+
+    recent_spend = spend_qs.aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    avg_monthly_burn = recent_spend / Decimal("3.0")
+
+    if avg_monthly_burn > 0:
+        runway_months = total_net_worth / avg_monthly_burn
+    else:
+        runway_months = Decimal("999")
+
+    # Month-over-Month Delta (Raw Reality Check)
+    this_month_start = today.replace(day=1)
+    last_month_end = this_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
     base = Transaction.objects.filter(user=user, is_deleted=False)
+
+    mom_this = base.filter(in_out=Transaction.OUT, date__gte=this_month_start).aggregate(s=Sum("amount"))[
+                   "s"] or Decimal("0")
+    mom_last = base.filter(in_out=Transaction.OUT, date__gte=last_month_start, date__lte=last_month_end).aggregate(
+        s=Sum("amount"))["s"] or Decimal("0")
+    mom_diff = mom_this - mom_last
+
+    # ==========================================
+    # 2. EXISTING STATISTICS LOGIC (Restored 1:1)
+    # ==========================================
 
     if not base.exists():
         return render(request, "statistics.html", {
             "empty_state": True,
-            # lifetime cards
-            "total_in": 0.0, "total_out": 0.0, "lifetime_net": 0.0,
-            "avg_month_in": 0.0, "avg_month_out": 0.0,
-            "best_month": None, "best_month_net": None,
-            "worst_month": None, "worst_month_net": None,
-            "largest_tx": None, "total_tx": 0,
-            "distinct_merchants": 0, "most_freq_merchant": None, "most_freq_merchant_cnt": None,
-            "coverage_pct": 0.0,
-            # pickers & charts
-            "available_month_keys": [], "start_key": None, "end_key": None,
-            "cat_labels_json": "[]", "cat_values_json": "[]", "share_note": "",
-            "cat_summary_rows": [], "start_date": None, "end_date": None,
-            "weekday_labels_json": '["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]',
-            "weekday_values_json": "[0,0,0,0,0,0,0]",
-            "last90_from": None, "last90_to": None,
-            "all_categories": [], "selected_cat_ids": [], "include_uncat": False,
+            # Pass Runway vars even on empty state
+            "runway_months": float(runway_months),
+            "avg_monthly_burn": float(avg_monthly_burn),
+            "mom_diff": float(mom_diff),
+            "all_sources_sim": all_sources_sim,
+            "all_cats_sim": all_cats_sim,
+            "inc_src_ids": list(inc_src_ids),
+            "inc_cat_ids": list(inc_cat_ids),
+            "inc_uncat": inc_uncat,
+            "is_simulated": is_simulated,
         })
 
     # Lifetime stats
@@ -2524,13 +2574,15 @@ def statistics(request):
 
     by_month = (
         base.annotate(m=TruncMonth("date"))
-            .values("m", "in_out")
-            .annotate(total=Sum("amount"))
+        .values("m", "in_out")
+        .annotate(total=Sum("amount"))
     )
+
     def _mk(val):
         if isinstance(val, datetime): d = val.date(); return _date(d.year, d.month, 1)
         if isinstance(val, _date): return _date(val.year, val.month, 1)
         return None
+
     month_map_in, month_map_out = {}, {}
     months_set = set()
     for r in by_month:
@@ -2555,28 +2607,35 @@ def statistics(request):
 
     largest_tx = (
         base.filter(in_out=Transaction.OUT)
-            .order_by("-amount")
-            .values("id", "date", "merchant", "amount", "currency")
-            .first()
+        .order_by("-amount")
+        .values("id", "date", "merchant", "amount", "currency")
+        .first()
     )
     distinct_merchants = base.exclude(merchant="").values("merchant").distinct().count()
     most_freq = (
         base.exclude(merchant="")
-            .values("merchant")
-            .annotate(cnt=Count("id"))
-            .order_by("-cnt")
-            .first()
+        .values("merchant")
+        .annotate(cnt=Count("id"))
+        .order_by("-cnt")
+        .first()
     )
 
     total_categorizable = base.count()
     categorized = base.filter(category_fk__isnull=False).count()
     coverage_pct = (categorized / total_categorizable * 100.0) if total_categorizable else 0.0
 
-    # Category share range picker (defaults to last full month)
+    # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
-    def key_from_date(d: _date) -> str: return d.strftime("%Y-%m")
-    def month_start_from_key(k: str) -> _date: y, m = map(int, k.split("-")); return _date(y, m, 1)
-    def month_end_from_key(k: str) -> _date: y, m = map(int, k.split("-")); return _date(y, m, monthrange(y, m)[1])
+
+    def key_from_date(d: _date) -> str:
+        return d.strftime("%Y-%m")
+
+    def month_start_from_key(k: str) -> _date:
+        y, m = map(int, k.split("-")); return _date(y, m, 1)
+
+    def month_end_from_key(k: str) -> _date:
+        y, m = map(int, k.split("-")); return _date(y, m, monthrange(y, m)[1])
+
     this_month_key = key_from_date(_date(today.year, today.month, 1))
     months_keys = [key_from_date(m) for m in all_months]
 
@@ -2592,7 +2651,9 @@ def statistics(request):
     start_key = (request.GET.get("start_month") or default_start_key)
     end_key = (request.GET.get("end_month") or default_end_key)
     import re as _re
-    def is_valid_key(k): return isinstance(k, str) and _re.match(r"^\d{4}-\d{2}$", k)
+    def is_valid_key(k):
+        return isinstance(k, str) and _re.match(r"^\d{4}-\d{2}$", k)
+
     if not is_valid_key(start_key): start_key = default_start_key
     if not is_valid_key(end_key): end_key = default_end_key
 
@@ -2655,13 +2716,26 @@ def statistics(request):
 
     last90_start = today - timedelta(days=89)
     wday_totals = [Decimal("0")] * 7
-    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).filter(cat_q).only("date", "amount")
+    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).filter(cat_q).only("date",
+                                                                                                              "amount")
     for t in qs_wday:
         wday_totals[t.date.weekday()] += (t.amount or Decimal("0"))
     weekday_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weekday_values = [float(x) for x in wday_totals]
 
     ctx = {
+        # Runway Vars
+        "runway_months": float(runway_months),
+        "avg_monthly_burn": float(avg_monthly_burn),
+        "mom_diff": float(mom_diff),
+        "all_sources_sim": all_sources_sim,
+        "all_cats_sim": all_cats_sim,
+        "inc_src_ids": list(inc_src_ids),
+        "inc_cat_ids": list(inc_cat_ids),
+        "inc_uncat": inc_uncat,
+        "is_simulated": is_simulated,
+
+        # Standard Stats
         "total_in": float(total_in),
         "total_out": float(total_out),
         "lifetime_net": float(lifetime_net),

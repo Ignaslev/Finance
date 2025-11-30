@@ -393,3 +393,21 @@ class PortfolioSnapshot(models.Model):
     @property
     def total(self):
         return self.crypto_total + self.stock_total
+
+
+from django.utils.crypto import get_random_string
+
+class UserProfile(models.Model):
+    """
+    Stores app-specific user settings (e.g. API keys).
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    android_webhook_secret = models.CharField(max_length=64, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.android_webhook_secret:
+            self.android_webhook_secret = get_random_string(length=32)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Profile for {self.user}"

@@ -1,257 +1,67 @@
-{% load static %}
-{# Load our new custom tag library #}
+{% load static i18n %}
 {% load active_link_tags %}
+{% get_current_language as LANGUAGE_CODE %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Compass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Money Compass{% endblock %}</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        /* DEFINING THE THEME */
-        :root {
-            /* The specific Teal from your design */
-            --primary-teal: #00cea6;
-            --primary-teal-dark: #00b593;
-
-            /* Backgrounds */
-            --bg-body: #e2e8f0; /* Very subtle off-white for contrast */
-            --bg-card: #ffffff; /* Pure white cards */
-
-            /* Text */
-            --text-dark: #1a202c; /* Near black for headers */
-            --text-medium: #4a5568; /* Gray for secondary text */
-            --text-light: #a0aec0;
-
-            /* Shape & Shadow */
-            --card-radius: 20px;
-            --btn-radius: 12px;
-            /* Soft, modern shadow */
-            --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-medium);
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* LAYOUT CONTAINERS */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* THE NAVBAR */
-        .navbar {
-            background: var(--bg-card);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            position: relative; /* For dropdown positioning */
-        }
-
-        .nav-brand {
-            font-weight: 700;
-            font-size: 1.25rem;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-brand::before {
-             content: '';
-             display: inline-block;
-             width: 12px;
-             height: 12px;
-             background: var(--primary-teal);
-             border-radius: 50%;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav-item {
-            text-decoration: none;
-            color: var(--text-medium);
-            font-weight: 500;
-            font-size: 0.95rem;
-            padding-bottom: 4px;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            color: var(--text-dark);
-            border-bottom-color: var(--primary-teal);
-        }
-
-        /* PROFILE DROPDOWN (CSS-Only Hover) */
-        .nav-profile-container {
-            position: relative;
-            cursor: pointer;
-            padding-bottom: 10px; /* Adds a small invisible bridge so mouse doesn't leave container */
-        }
-
-        .nav-profile {
-            width: 40px;
-            height: 40px;
-            background: #e2e8f0; /* Placeholder color */
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: var(--text-medium);
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .nav-profile:hover {
-            border-color: var(--primary-teal);
-        }
-
-        .profile-dropdown {
-            position: absolute;
-            top: 100%; /* Position right below the container */
-            right: 0;
-            background: var(--bg-card);
-            border-radius: 12px;
-            box-shadow: var(--shadow-soft);
-            width: 160px;
-            padding: 0.5rem 0;
-            display: none; /* Hidden by default */
-            z-index: 100;
-            border: 1px solid #f0f0f0;
-        }
-
-        /* SHOW MENU ON HOVER */
-        .nav-profile-container:hover .profile-dropdown {
-            display: block;
-        }
-
-        .dropdown-item {
-            display: block;
-            padding: 0.75rem 1.5rem;
-            text-decoration: none;
-            color: var(--text-dark);
-            font-size: 0.9rem;
-            transition: background 0.2s;
-        }
-
-        .dropdown-item:hover {
-            background: #f7fafc;
-            color: var(--primary-teal);
-        }
-
-        /* CORE COMPONENT: THE CLEAN WHITE CARD */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--card-radius);
-            box-shadow: var(--shadow-soft);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: none; /* No borders, just shadow */
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 1rem;
-        }
-
-        /* BUTTONS */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--btn-radius);
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            cursor: pointer;
-            border: none;
-            transition: background 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--primary-teal);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-teal-dark);
-        }
-
-        /* UTILITIES */
-        .text-teal { color: var(--primary-teal); }
-        .text-dark { color: var(--text-dark); }
-        .font-bold { font-weight: 700; }
-        .mb-4 { margin-bottom: 1rem; }
-        .flex { display: flex; }
-        .justify-between { justify-content: space-between; }
-        .items-center { align-items: center; }
-        .gap-4 { gap: 1rem; }
-
-        /* GRID SYSTEM FOR DASHBOARD */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr; /* Left column slightly wider */
-            gap: 2rem;
-        }
-        @media (max-width: 768px) {
-            .dashboard-grid { grid-template-columns: 1fr; } /* Stack on mobile */
-        }
-
-        /* Tables */
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: var(--text-medium); font-weight: 500; padding: 1rem 0.5rem; border-bottom: 1px solid #e2e8f0;}
-        td { padding: 1rem 0.5rem; color: var(--text-dark); border-bottom: 1px solid #f7fafc; }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
 
     <nav class="navbar">
-        <div class="nav-brand">Money Compass</div>
+        <a href="/" class="nav-brand" style="text-decoration:none;">Money Compass</a>
         <div class="nav-links">
-            <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">Dashboard</a>
-            <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">Statistics</a>
-            <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">Reports</a>
-            <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">Portfolio</a>
-            <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">Upload</a>
+            <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">{% trans "Dashboard" %}</a>
+            <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">{% trans "Statistics" %}</a>
+            <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">{% trans "Reports" %}</a>
+            <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">{% trans "Portfolio" %}</a>
+            <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">{% trans "Transactions" %}</a>
         </div>
 
         {% if user.is_authenticated %}
-        <div class="nav-profile-container">
+        <div class="nav-profile-container desktop-only">
             <div class="nav-profile">{{ user.username.0|upper }}</div>
-
             <div class="profile-dropdown">
-                <a href="{% url 'profile' %}" class="dropdown-item">Profile</a>
 
-                <!-- POST-only logout (safer) -->
+                <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid #f7fafc; display:flex; align-items:center; gap:0.5rem;">
+                    <span style="font-size:0.8rem; color:var(--text-light); text-transform:uppercase;">Lang</span>
+                    <form action="{% url 'set_language' %}" method="post" style="margin:0; display:flex; gap:0.3rem;">
+                        {% csrf_token %}
+                        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+
+                        <button type="submit" name="language" value="en"
+                                style="background:none; border:none; cursor:pointer; font-size:0.85rem;
+                                       {% if LANGUAGE_CODE == 'en' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
+                            EN
+                        </button>
+                        <span style="color:#eee;">|</span>
+                        <button type="submit" name="language" value="lt"
+                                style="background:none; border:none; cursor:pointer; font-size:0.85rem;
+                                       {% if LANGUAGE_CODE == 'lt' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
+                            LT
+                        </button>
+                    </form>
+                </div>
+
+                <a href="{% url 'profile' %}" class="dropdown-item">{% trans "Profile" %}</a>
                 <form action="{% url 'logout' %}" method="post" style="margin:0;">
                   {% csrf_token %}
-                  <button type="submit" class="dropdown-item" style="background:none; border:0; width:100%; text-align:left; cursor:pointer;">
-                    Log Out
-                  </button>
+                  <button type="submit" class="dropdown-item" style="background:none; border:0; width:100%; text-align:left; cursor:pointer; font-family:inherit;">{% trans "Log Out" %}</button>
                 </form>
             </div>
         </div>
         {% else %}
         <div class="nav-links">
-            <a href="{% url 'login' %}" class="nav-item">Log In</a>
+            <a href="{% url 'login' %}" class="nav-item">{% trans "Log In" %}</a>
         </div>
         {% endif %}
     </nav>
@@ -259,15 +69,78 @@
     <div class="container">
         {% if messages %}
             {% for message in messages %}
-                <div class="card" style="background: {% if message.tags == 'success' %}#d1fae5{% else %}#fee2e2{% endif %}; color: {% if message.tags == 'success' %}#065f46{% else %}#991b1b{% endif %}; padding: 1rem;">
+                <div class="card" style="background: {% if message.tags == 'success' %}#d1fae5{% elif message.tags == 'error' %}#fee2e2{% else %}#e0f2f1{% endif %}; color: {% if message.tags == 'success' %}#065f46{% elif message.tags == 'error' %}#991b1b{% else %}#004d40{% endif %}; padding: 1rem; margin-top: 1rem;">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
-
         {% block content %}
         {% endblock %}
     </div>
 
-    </body>
+    {% if user.is_authenticated %}
+    <nav class="bottom-nav">
+        <a href="{% url 'overview' %}" class="b-item {% active_link 'overview' %}">
+            <i class="ph ph-squares-four"></i><span>{% trans "Home" %}</span>
+        </a>
+        <a href="{% url 'assets_dashboard' %}" class="b-item {% active_link 'assets_dashboard' %}">
+            <i class="ph ph-chart-line-up"></i><span>{% trans "Invest" %}</span>
+        </a>
+        <a href="{% url 'tx_add' %}" class="b-item b-add">
+            <div class="add-circle"><i class="ph ph-plus"></i></div>
+        </a>
+        <a href="{% url 'upload' %}" class="b-item {% active_link 'upload' %}">
+            <i class="ph ph-list-dashes"></i><span>{% trans "Txns" %}</span>
+        </a>
+        <button onclick="toggleMobileMenu()" class="b-item" style="background:none; border:none; padding:0; font-family:inherit;">
+            <i class="ph ph-user" style="color: {% if '/profile/' in request.path or '/statistics/' in request.path or '/reports/' in request.path %}var(--primary-teal){% else %}var(--text-light){% endif %};"></i>
+            <span style="color: {% if '/profile/' in request.path or '/statistics/' in request.path or '/reports/' in request.path %}var(--primary-teal){% else %}var(--text-light){% endif %};">{% trans "Menu" %}</span>
+        </button>
+    </nav>
+
+    <div id="mobileMenu" class="mobile-menu-overlay" onclick="toggleMobileMenu()" style="display:none;">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <div style="text-align:center; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #eee;">
+                <div style="font-weight:700; font-size:1.1rem; color:var(--text-dark);">{{ user.username }}</div>
+
+                <div style="margin-top:0.5rem; display:flex; justify-content:center;">
+                    <form action="{% url 'set_language' %}" method="post" style="display:inline-flex; gap:0.5rem; background:#f7fafc; padding:4px 10px; border-radius:20px; align-items:center;">
+                        {% csrf_token %}
+                        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                        <button type="submit" name="language" value="en" style="background:none; border:none; font-size:0.8rem; {% if LANGUAGE_CODE == 'en' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-light);{% endif %}">EN</button>
+                        <span style="color:#ddd;">|</span>
+                        <button type="submit" name="language" value="lt" style="background:none; border:none; font-size:0.8rem; {% if LANGUAGE_CODE == 'lt' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-light);{% endif %}">LT</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="menu-grid">
+                <a href="{% url 'statistics' %}" class="menu-item">
+                    <div class="icon-box" style="background:#e6fffa; color:#00cea6;"><i class="ph ph-chart-bar"></i></div>
+                    <span>{% trans "Statistics" %}</span>
+                </a>
+                <a href="{% url 'reports' %}" class="menu-item">
+                    <div class="icon-box" style="background:#ebf8ff; color:#3182ce;"><i class="ph ph-file-text"></i></div>
+                    <span>{% trans "Reports" %}</span>
+                </a>
+                <a href="{% url 'profile' %}" class="menu-item">
+                    <div class="icon-box" style="background:#f3e8ff; color:#805ad5;"><i class="ph ph-gear"></i></div>
+                    <span>{% trans "Settings" %}</span>
+                </a>
+            </div>
+            <form action="{% url 'logout' %}" method="post" style="margin-top:1.5rem;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="width:100%; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">{% trans "Log Out" %}</button>
+            </form>
+            <button onclick="toggleMobileMenu()" style="margin-top:1rem; width:100%; background:none; border:none; color:var(--text-light); padding:0.5rem; font-size:0.9rem;">{% trans "Close" %}</button>
+        </div>
+    </div>
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
+        }
+    </script>
+    {% endif %}
+</body>
 </html>

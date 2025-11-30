@@ -1,12 +1,20 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block content %}
-<h2>Teach AI</h2>
-<p>Pick a category per merchant. This applies to all matching uncategorized transactions.</p>
+<h2>{% trans "Teach AI" %}</h2>
+<p>{% trans "Pick a category per merchant. This applies to all matching uncategorized transactions." %}</p>
 
 <form method="post">
   {% csrf_token %}
   <table class="table">
-    <thead><tr><th>Merchant</th><th>Flow</th><th>Occurrences</th><th>Category</th></tr></thead>
+    <thead>
+      <tr>
+        <th>{% trans "Merchant" %}</th>
+        <th>{% trans "Flow" %}</th>
+        <th>{% trans "Occurrences" %}</th>
+        <th>{% trans "Category" %}</th>
+      </tr>
+    </thead>
     <tbody>
       {% for r in rows %}
       <tr>
@@ -15,7 +23,7 @@
         <td>{{ r.count }}</td>
         <td>
           <select name="{{ r.form_key }}">
-            <option value="">— choose —</option>
+            <option value="">— {% trans "choose" %} —</option>
             {% for c in categories %}
               <option value="{{ c.id }}">{{ c.name }}</option>
             {% endfor %}
@@ -25,6 +33,6 @@
       {% endfor %}
     </tbody>
   </table>
-  <button class="btn btn-primary" type="submit">Apply</button>
+  <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
 </form>
 {% endblock %}

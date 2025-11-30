@@ -1,173 +1,167 @@
 {% extends "base.html" %}
-{% block title %}Statistics · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Statistics" %} · Money Compass{% endblock %}
 {% block content %}
 
-<h2 style="margin-top:50px;">Statistics</h2>
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">{% trans "Statistics" %}</h2>
+</div>
 
 {% if empty_state %}
-  <p>No statistics yet — upload some transactions to get started.</p>
+  <div class="card">
+      <p style="opacity: 0.7; margin:0; text-align:center;">{% trans "No statistics yet — upload some transactions to get started." %}</p>
+  </div>
 {% endif %}
 
 {% if not empty_state %}
-<!-- ===== Lifetime summary cards ===== -->
-<div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; margin:1rem 0;">
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">All-time earned</div>
-    <div style="font-weight:700; font-size:1.2em;">{{ total_in|floatformat:2 }} EUR</div>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; margin: 2rem 0;">
+  <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "All-time earned" %}</div>
+    <div class="text-teal" style="font-weight:700; font-size:1.4em;">{{ total_in|floatformat:2 }} EUR</div>
   </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">All-time spent</div>
-    <div style="font-weight:700; font-size:1.2em;">{{ total_out|floatformat:2 }} EUR</div>
+  <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "All-time spent" %}</div>
+    <div style="font-weight:700; font-size:1.4em; color:#e53e3e;">{{ total_out|floatformat:2 }} EUR</div>
   </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Lifetime net</div>
-    <div style="font-weight:700; font-size:1.2em;">
+  <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "Lifetime net" %}</div>
+    <div style="font-weight:700; font-size:1.4em;">
       {% if lifetime_net >= 0 %}
-        <span style="color:#2e7d32">{{ lifetime_net|floatformat:2 }} EUR</span>
+        <span class="text-teal">+{{ lifetime_net|floatformat:2 }} EUR</span>
       {% else %}
-        <span style="color:#b00020">{{ lifetime_net|floatformat:2 }} EUR</span>
+        <span style="color:#e53e3e;">{{ lifetime_net|floatformat:2 }} EUR</span>
       {% endif %}
     </div>
   </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Avg / month (Income)</div>
-    <div style="font-weight:700; font-size:1.2em;">{{ avg_month_in|floatformat:2 }} EUR</div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "Avg / month (In)" %}</div>
+    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_in|floatformat:2 }}</div>
+    <div class="text-medium" style="font-size:.9em; margin-top:0.5rem;">{% trans "Avg / month (Out)" %}</div>
+    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_out|floatformat:2 }}</div>
   </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Avg / month (Spending)</div>
-    <div style="font-weight:700; font-size:1.2em;">{{ avg_month_out|floatformat:2 }} EUR</div>
-  </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Transactions</div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "Transactions" %}</div>
     <div style="font-weight:700; font-size:1.2em;">{{ total_tx }}</div>
+    <div class="text-medium" style="font-size:.9em; margin-top:0.5rem;">{% trans "Categorized" %}</div>
+    <div style="font-weight:700; font-size:1.2em;">{{ coverage_pct }}%</div>
   </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Merchants</div>
-    <div><strong>{{ distinct_merchants }}</strong> total</div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="text-medium" style="font-size:.9em;">{% trans "Merchants" %}</div>
+    <div class="font-bold">{{ distinct_merchants }} {% trans "total" %}</div>
     {% if most_freq_merchant %}
-      <div style="color:#555">Top: {{ most_freq_merchant }} ({{ most_freq_merchant_cnt }})</div>
+      <div style="font-size:0.85rem; margin-top:0.25rem; color:var(--text-light);">
+          {% trans "Top:" %} {{ most_freq_merchant }} ({{ most_freq_merchant_cnt }})
+      </div>
     {% endif %}
-  </div>
-  <div style="padding:.75rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-    <div style="color:#666; font-size:.9em;">Categorization coverage</div>
-    <div><strong>{{ coverage_pct }}%</strong></div>
   </div>
 </div>
 
-<!-- ===== Category share (pie) + month/range picker ===== -->
-<div style="margin:1.25rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
+<div class="card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
+    <div class="flex justify-between items-start">
+        <div>
+            <div class="flex items-center gap-2">
+                <div class="text-medium" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">{% trans "Financial Runway" %}</div>
+                {% if is_simulated %}
+                    <span style="background:#e6fffa; color:var(--primary-teal-dark); font-size:0.7rem; padding:1px 6px; border-radius:4px; font-weight:600;">{% trans "CUSTOM VIEW" %}</span>
+                {% endif %}
+            </div>
 
-  <!-- Title -->
-  <div><strong>Category share</strong></div>
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-dark);">
+                {{ runway_months|floatformat:1 }} <span style="font-size: 1.2rem; font-weight: 500; color: var(--text-medium);">{% trans "Months" %}</span>
+            </div>
 
-  <!-- Controls row under the title, left-aligned -->
-  <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; margin-top:.5rem;">
-    <button type="button" id="editCatsBtn">Edit categories</button>
-
-    <form method="get" style="display:flex; gap:.5rem; align-items:center; margin:0;">
-      <label style="font-size:.9em; color:#555;">From</label>
-      <select name="start_month">
-        {% for m in available_month_keys %}
-          <option value="{{ m }}" {% if m == start_key %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-      </select>
-
-      <label style="font-size:.9em; color:#555;">To</label>
-      <select name="end_month">
-        {% for m in available_month_keys %}
-          <option value="{{ m }}" {% if m == end_key %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-      </select>
-
-      {# Preserve current category selections across month-range submit #}
-      {% for c in all_categories %}
-        {% if c.id in selected_cat_ids %}
-          <input type="hidden" name="cats" value="{{ c.id }}">
-        {% endif %}
-      {% endfor %}
-      {% if include_uncat %}
-        <input type="hidden" name="include_uncat" value="1">
-      {% endif %}
-
-      <button type="submit">Apply</button>
-    </form>
-  </div>
-
-  {# Modal (no external CSS/JS) #}
-  <div id="catsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
-    <div style="background:#fff; border-radius:10px; max-width:520px; margin:10vh auto; padding:1rem; border:1px solid #ddd;">
-      <div style="display:flex; align-items:center; gap:.5rem;">
-        <strong>Choose categories to include</strong>
-        <button type="button" id="catsClose" style="margin-left:auto;">✕</button>
-      </div>
-
-      <form method="get" style="margin-top:.5rem;">
-        {# Keep current month range #}
-        <input type="hidden" name="start_month" value="{{ start_key }}">
-        <input type="hidden" name="end_month" value="{{ end_key }}">
-
-        <div style="display:flex; gap:.5rem; margin:.5rem 0;">
-          <button type="button" id="selectAll">Select all</button>
-          <button type="button" id="selectNone">Select none</button>
+            <div style="font-size: 0.9rem; color: var(--text-medium); margin-top: 0.5rem;">
+                {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} EUR/mo</strong> ({% trans "last 3 months avg" %}).
+                <br>
+                <button onclick="openRunwayModal()" style="background:none; border:none; color:var(--primary-teal); padding:0; font-weight:600; cursor:pointer; margin-top:0.3rem;">
+                    ⚙ {% trans "Configure Scenario" %}
+                </button>
+            </div>
         </div>
 
-        <div style="max-height:40vh; overflow:auto; border:1px solid #eee; border-radius:8px; padding:.5rem;">
-          {% for c in all_categories %}
-            <label style="display:flex; align-items:center; gap:.5rem; padding:.2rem .25rem;">
-              <input type="checkbox" name="cats" value="{{ c.id }}"
-                     {% if c.id in selected_cat_ids %}checked{% endif %}>
-              <span>{{ c.name }}</span>
-            </label>
-          {% empty %}
-            <div style="opacity:.7;">No categories yet.</div>
-          {% endfor %}
+        <div style="text-align: right; min-width: 150px;">
+            <div class="text-medium" style="font-size: 0.8rem;">{% trans "vs Last Month" %}</div>
+            <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.2rem;">
+                {% if mom_diff < 0 %}
+                    <span style="color: #38a169;">{{ mom_diff|floatformat:0 }} EUR</span>
+                    <div style="font-size: 0.8rem; color: #38a169;">({% trans "Spending Less" %})</div>
+                {% else %}
+                    <span style="color: #e53e3e;">+{{ mom_diff|floatformat:0 }} EUR</span>
+                    <div style="font-size: 0.8rem; color: #e53e3e;">({% trans "Spending More" %})</div>
+                {% endif %}
+            </div>
         </div>
-
-        <label style="display:flex; align-items:center; gap:.5rem; margin:.5rem 0 .75rem;">
-          <input type="checkbox" name="include_uncat" value="1" {% if include_uncat %}checked{% endif %}>
-          <span>Include Uncategorized</span>
-        </label>
-
-        <div style="display:flex; gap:.5rem; justify-content:flex-end;">
-          <button type="button" id="catsCancel">Cancel</button>
-          <button type="submit">Save</button>
-        </div>
-      </form>
     </div>
+</div>
+
+<div class="card">
+  <div class="flex justify-between items-center" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+      <div class="card-title" style="margin:0;">{% trans "Category Share" %}</div>
+
+      <div class="flex items-center gap-4" style="flex-wrap:wrap;">
+        <button type="button" id="editCatsBtn" class="btn" style="background:#edf2f7; color:var(--text-dark); padding:0.5rem 1rem; font-size:0.9rem;">{% trans "Filter Categories" %}</button>
+
+        <form method="get" class="flex items-center gap-4" style="margin:0;">
+          <div class="flex items-center gap-2">
+              <select name="start_month" style="padding:0.4rem; border:1px solid #e2e8f0; border-radius:8px;">
+                {% for m in available_month_keys %}
+                  <option value="{{ m }}" {% if m == start_key %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+              </select>
+              <span class="text-medium">→</span>
+              <select name="end_month" style="padding:0.4rem; border:1px solid #e2e8f0; border-radius:8px;">
+                {% for m in available_month_keys %}
+                  <option value="{{ m }}" {% if m == end_key %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+              </select>
+          </div>
+
+          {# Preserve current category selections #}
+          {% for c in all_categories %}
+            {% if c.id in selected_cat_ids %}
+              <input type="hidden" name="cats" value="{{ c.id }}">
+            {% endif %}
+          {% endfor %}
+          {% if include_uncat %}
+            <input type="hidden" name="include_uncat" value="1">
+          {% endif %}
+
+          <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.9rem;">{% trans "Apply" %}</button>
+        </form>
+      </div>
   </div>
 
-  <!-- Pie stays inside the grey box -->
-  <div style="max-width:480px; margin:.75rem auto 0;">
+  <div style="max-width:400px; margin:0 auto;">
     {% if cat_labels_json and cat_labels_json != "[]" %}
       <canvas id="catSharePie" width="360" height="360"></canvas>
-      <div style="color:#666; font-size:.9em; margin-top:.5rem; text-align:center;">
-        {{ share_note }}<br>
-        <span style="font-size:.85em; color:#888;">
-          Tip: “Δ vs Cap” below uses (monthly cap × number of months in range) − total spent.
-        </span>
+      <div class="text-medium" style="font-size:.9em; margin-top:1rem; text-align:center;">
+        {{ share_note }}
       </div>
     {% else %}
-      <p style="opacity:.7; margin-top:.5rem;">No spending in the selected period.</p>
+      <p style="opacity:.7; text-align:center; padding:2rem;">{% trans "No spending in the selected period." %}</p>
     {% endif %}
   </div>
 
   {% if cat_summary_rows %}
-    <div style="margin-top:.85rem;">
-      <h3 style="margin:.25rem 0;">Category spending summary</h3>
-      <table>
-        <tr>
-          <th>Category</th>
-          <th>Total (EUR)</th>
-          <th>#Tx</th>
-          <th>Avg/Tx</th>
-          <th>Cap (range)</th>
-          <th>Δ vs Cap</th>
-          <th>Avg/Month</th>
-          <th>Review</th>
-        </tr>
+    <div style="margin-top:2rem; overflow-x: auto;">
+      <table style="font-size:0.9rem;">
+        <thead>
+            <tr>
+              <th>{% trans "Category" %}</th>
+              <th>{% trans "Total" %}</th>
+              <th>#Tx</th>
+              <th>{% trans "Avg/Tx" %}</th>
+              <th>{% trans "Cap (range)" %}</th>
+              <th>Δ vs Cap</th>
+              <th>{% trans "Avg/Mo" %}</th>
+              <th>{% trans "Action" %}</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for row in cat_summary_rows %}
           <tr>
-            <td>{{ row.cat_name }}</td>
+            <td class="font-bold">{{ row.cat_name }}</td>
             <td>{{ row.total|floatformat:2 }}</td>
             <td>{{ row.count }}</td>
             <td>{{ row.avg|floatformat:2 }}</td>
@@ -175,59 +169,175 @@
               {% if row.has_cap %}
                 {{ row.cap_total|floatformat:2 }}
               {% else %}
-                <span style="color:#888;">—</span>
+                <span style="opacity:0.3">—</span>
               {% endif %}
             </td>
             <td>
               {% if row.has_cap %}
                 {% if row.delta >= 0 %}
-                  <span title="Remaining vs cap for selected period (cap={{ row.cap_total|floatformat:2 }} EUR)"
-                        style="color:#2e7d32;">+{{ row.delta|floatformat:2 }}</span>
+                  <span title="Remaining" class="text-teal">+{{ row.delta|floatformat:2 }}</span>
                 {% else %}
-                  <span title="Overspent vs cap for selected period (cap={{ row.cap_total|floatformat:2 }} EUR)"
-                        style="color:#b00020;">{{ row.delta|floatformat:2 }}</span>
+                  <span title="Overspent" style="color:#e53e3e;">{{ row.delta|floatformat:2 }}</span>
                 {% endif %}
               {% else %}
-                <span style="color:#888;">—</span>
+                <span style="opacity:0.3">—</span>
               {% endif %}
             </td>
             <td>{{ row.avg_month|floatformat:2 }}</td>
-            <td><a href="/?cat={{ row.cat_id }}&from={{ start_date }}&to={{ end_date }}">Open</a></td>
+            <td><a href="/upload/?cat={{ row.cat_id }}&from={{ start_date }}&to={{ end_date }}" class="text-teal" style="text-decoration:none; font-weight:600;">{% trans "View" %}</a></td>
           </tr>
         {% endfor %}
+        </tbody>
       </table>
     </div>
   {% endif %}
 </div>
 
-<!-- ===== Weekday mix (last 90 days) ===== -->
-<div style="margin:1.25rem 0; padding:.9rem; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
-  <strong>Weekday mix (last 90 days)</strong>
-  <div style="max-width:1000px; margin:.75rem auto 0;">
+<div class="card">
+  <div class="card-title">{% trans "Weekday Spending (Last 90 Days)" %}</div>
+  <div style="max-width:1000px; margin:0 auto;">
     <canvas id="weekdayChart"></canvas>
-  </div>
-  <div style="color:#666; font-size:.9em; margin-top:.4rem;">
-    Tip: Big Sundays? Click <a href="/?from={{ last90_from }}&to={{ last90_to }}">here</a> to review and adjust categories.
   </div>
 </div>
 
-<!-- ===== Charts ===== -->
+<div id="catsModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-content card" style="max-width:500px;">
+      <div class="flex justify-between items-center mb-4">
+        <strong class="text-dark" style="font-size:1.1rem;">{% trans "Choose categories" %}</strong>
+        <button type="button" id="catsClose" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">✕</button>
+      </div>
+
+      <form method="get">
+        <input type="hidden" name="start_month" value="{{ start_key }}">
+        <input type="hidden" name="end_month" value="{{ end_key }}">
+
+        <div class="flex gap-4 mb-4">
+          <button type="button" id="selectAll" class="btn" style="padding:0.25rem 0.75rem; font-size:0.85rem; background:#edf2f7;">{% trans "Select all" %}</button>
+          <button type="button" id="selectNone" class="btn" style="padding:0.25rem 0.75rem; font-size:0.85rem; background:#edf2f7;">{% trans "Select none" %}</button>
+        </div>
+
+        <div style="max-height:40vh; overflow:auto; border:1px solid #e2e8f0; border-radius:8px; padding:0.5rem; margin-bottom:1rem;">
+          {% for c in all_categories %}
+            <label style="display:flex; align-items:center; gap:.5rem; padding:.4rem;">
+              <input type="checkbox" name="cats" value="{{ c.id }}" {% if c.id in selected_cat_ids %}checked{% endif %}>
+              <span>{{ c.name }}</span>
+            </label>
+          {% empty %}
+            <div style="opacity:.7; padding:1rem;">{% trans "No categories yet." %}</div>
+          {% endfor %}
+        </div>
+
+        <label style="display:flex; align-items:center; gap:.5rem; margin-bottom:1.5rem;">
+          <input type="checkbox" name="include_uncat" value="1" {% if include_uncat %}checked{% endif %}>
+          <span>{% trans "Include Uncategorized" %}</span>
+        </label>
+
+        <div class="flex justify-between">
+          <button type="button" id="catsCancel" class="btn" style="background:transparent; color:var(--text-medium);">{% trans "Cancel" %}</button>
+          <button type="submit" class="btn btn-primary">{% trans "Save Selection" %}</button>
+        </div>
+      </form>
+    </div>
+</div>
+
+<div id="runwayModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-content card" style="max-width:600px;">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="card-title" style="margin:0;">{% trans "Runway Simulator" %}</h3>
+            <button onclick="closeRunwayModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+
+        <p style="font-size:0.9rem; color:#666; margin-bottom:1.5rem;">
+            {% trans "Select which assets (Net Worth) and which expenses (Burn Rate) to include in the calculation." %}
+        </p>
+
+        <form method="get">
+            <input type="hidden" name="runway_sim" value="1">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem;">
+                <div>
+                    <strong style="display:block; margin-bottom:0.5rem; color:var(--text-dark);">{% trans "Include Assets" %}</strong>
+                    <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:8px;">
+                        {% for acc in all_sources_sim %}
+                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem;">
+                            <input type="checkbox" name="inc_src" value="{{ acc.id }}"
+                                   {% if acc.id in inc_src_ids %}checked{% endif %}>
+                            <span>{{ acc.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <strong style="display:block; margin-bottom:0.5rem; color:var(--text-dark);">{% trans "Include Spending" %}</strong>
+                    <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:8px;">
+                        {% for c in all_cats_sim %}
+                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem;">
+                            <input type="checkbox" name="inc_cat" value="{{ c.id }}"
+                                   {% if c.id in inc_cat_ids %}checked{% endif %}>
+                            <span>{{ c.name }}</span>
+                        </label>
+                        {% endfor %}
+                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem; border-top:1px dashed #eee; margin-top:0.5rem; padding-top:0.5rem;">
+                            <input type="checkbox" name="inc_uncat" value="1" {% if inc_uncat %}checked{% endif %}>
+                            <span style="color:#666;">{% trans "Uncategorized" %}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-8" style="margin-top:2rem;">
+                <a href="{% url 'statistics' %}" class="btn" style="background:#edf2f7; color:#555; text-decoration:none;">{% trans "Reset" %}</a>
+                <button type="submit" class="btn btn-primary">{% trans "Recalculate" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.2s ease-out;
+        /* Ensure it's on top of backdrop */
+        position: relative;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // Category share pie (compact)
   {% if cat_labels_json and cat_labels_json != "[]" %}
     const catLabels = {{ cat_labels_json|safe }};
     const catValues = {{ cat_values_json|safe }};
     const pieCtx = document.getElementById('catSharePie').getContext('2d');
     new Chart(pieCtx, {
       type: 'pie',
-      data: { labels: catLabels, datasets: [{ data: catValues }] },
+      data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: ['#00cea6', '#3182ce', '#805ad5', '#e53e3e', '#d69e2e', '#38a169', '#00b5d8', '#d53f8c'] }] },
       options: {
         responsive: true,
         maintainAspectRatio: true,
         aspectRatio: 1,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
           tooltip: {
             callbacks: {
               label: (ctx) => {
@@ -242,24 +352,20 @@
     });
   {% endif %}
 
-  // Weekday mix
   const wdLabels = {{ weekday_labels_json|safe }};
   const wdValues = {{ weekday_values_json|safe }};
   const wdCtx = document.getElementById('weekdayChart').getContext('2d');
   new Chart(wdCtx, {
     type: 'bar',
-    data: { labels: wdLabels, datasets: [{ label: 'Spending (EUR)', data: wdValues }] },
+    data: { labels: wdLabels, datasets: [{ label: 'Spending (EUR)', data: wdValues, backgroundColor: '#00cea6', borderRadius: 4 }] },
     options: {
       responsive: true,
-      scales: { y: { beginAtZero: true } },
-      plugins: { legend: { position: 'top' } }
+      scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },
+      plugins: { legend: { display: false } }
     }
   });
 
-
-</script>
-<script>
-  // Categories modal controls
+  // Modal Logic (Category Filter)
   (function(){
     const openBtn = document.getElementById('editCatsBtn');
     const modal   = document.getElementById('catsModal');
@@ -268,7 +374,7 @@
     const selAll  = document.getElementById('selectAll');
     const selNone = document.getElementById('selectNone');
 
-    function open(){ modal.style.display = 'block'; }
+    function open(){ modal.style.display = 'flex'; }
     function close(){ modal.style.display = 'none'; }
     openBtn?.addEventListener('click', open);
     close1?.addEventListener('click', close);
@@ -282,6 +388,10 @@
       modal.querySelectorAll('input[type="checkbox"][name="cats"]').forEach(cb => cb.checked = false);
     });
   })();
+
+  // Modal Logic (Runway)
+  function openRunwayModal() { document.getElementById('runwayModal').style.display = 'flex'; }
+  function closeRunwayModal() { document.getElementById('runwayModal').style.display = 'none'; }
 </script>
 {% endif %}
 {% endblock %}

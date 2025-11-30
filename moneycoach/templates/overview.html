@@ -1,14 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Overview · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Overview" %} · MoneyCoach{% endblock %}
 {% block content %}
 
 <div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
-    <h2 class="text-dark" style="margin:0;">Dashboard</h2>
+    <h2 class="text-dark" style="margin:0;">{% trans "Dashboard" %}</h2>
     <div class="text-medium" style="font-size:0.9rem;">{{ now_val|date:"l, F j" }}</div>
 </div>
 
 <div class="card" style="padding:2rem;">
-    <div class="text-medium" style="text-align:center; font-size:0.9rem; margin-bottom:0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Net Worth</div>
+    <div class="text-medium" style="text-align:center; font-size:0.9rem; margin-bottom:0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">{% trans "Total Net Worth" %}</div>
     <div style="text-align:center; font-size:2.8rem; font-weight:800; color:var(--text-dark); margin-bottom:2.5rem; letter-spacing: -0.02em;">
         {{ total_net_worth|floatformat:2 }} <span style="font-size:1.2rem; color:var(--text-medium); font-weight:500;">EUR</span>
     </div>
@@ -17,15 +18,14 @@
     <div style="margin-bottom:1rem;">
         <div style="display:flex; height:14px; width:100%; background:#edf2f7; border-radius:7px; overflow:hidden;">
             {% for seg in composition_bar %}
-                <div style="width:{{ seg.pct }}%; background:{{ seg.color }}; transition: width 1s ease-in-out;"
-                     title="{{ seg.label }}: {{ seg.value|floatformat:0 }} EUR"></div>
+                <div style="width:{{ seg.pct|stringformat:'f' }}%; background:{{ seg.color }}; transition: width 1s ease-in-out;"
+                    title="{{ seg.label }}: {{ seg.value|floatformat:0 }} EUR"></div>
             {% endfor %}
         </div>
-
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; margin-top:1.2rem;">
             {% for seg in composition_bar %}
             <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem;">
-                <span style="width:10px; height:10px; border-radius:50%; background:{{ seg.color }}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>
+                <span style="width:10px; height:10px; border-radius:50%; background:{{ seg.color }};"></span>
                 <span style="color:var(--text-medium);">{{ seg.label }}</span>
                 <strong style="color:var(--text-dark);">{{ seg.pct|floatformat:0 }}%</strong>
             </div>
@@ -35,52 +35,67 @@
     {% endif %}
 </div>
 
+{% if goals %}
+<div class="card" style=" border:1px solid #e1f0e1;">
+  <div class="flex justify-between items-center mb-4">
+    <div class="card-title" style="margin:0;">{% trans "Savings Goals" %}</div>
+    <a href="{% url 'profile' %}" class="text-teal" style="font-size:0.9rem;">{% trans "Manage" %}</a>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+    {% for g in goals %}
+      <div style="border:1px solid #d1e7d1; border-radius:10px; padding:1rem; background:#ffffff;">
+        <div style="display:flex; justify-content:space-between; gap:.5rem; margin-bottom:0.5rem;">
+          <div style="font-weight:600; color:#2e7d32;">{{ g.name }}</div>
+        </div>
+        <div style="margin-bottom:0.5rem; font-size:.95em; color:#333;">
+          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
+        </div>
+        <div style="height:8px; background:#eef6ee; border-radius:999px; overflow:hidden; margin-bottom:0.5rem;">
+          <div style="height:100%; width:{% if g.pct > 100 %}100{% else %}{{ g.pct|stringformat:'f' }}{% endif %}%; background:#2e7d32;"></div>
+        </div>
+        <div style="font-size:.85em; color:#555;">
+          <strong>{{ g.pct|floatformat:0 }}%</strong>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="card">
-    <div class="card-title">Net Worth History</div>
+    <div class="card-title">{% trans "Net Worth History" %}</div>
     <div style="height:320px; width:100%;">
         <canvas id="netWorthChart"></canvas>
-    </div>
-    <div style="text-align:center; margin-top:1rem; font-size:0.85rem; color:var(--text-light);">
-        Combined history of cash, bank accounts, and investment portfolios.
     </div>
 </div>
 
 <div class="card">
     <div class="flex justify-between items-center mb-4">
-        <div class="card-title" style="margin:0;">Accounts & Assets</div>
-        <a href="{% url 'profile' %}" class="btn" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#edf2f7; color:var(--text-medium);">Manage</a>
+        <div class="card-title" style="margin:0;">{% trans "Accounts & Assets" %}</div>
+        <a href="{% url 'profile' %}" class="btn" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#edf2f7; color:var(--text-medium);">{% trans "Manage" %}</a>
     </div>
-
     <div style="overflow-x:auto;">
         <table>
-            <thead>
-                <tr>
-                    <th>Source</th>
-                    <th>Type</th>
-                    <th style="text-align:right;">Balance</th>
-                </tr>
-            </thead>
+            <thead><tr><th>{% trans "Source" %}</th><th>{% trans "Type" %}</th><th style="text-align:right;">{% trans "Balance" %}</th></tr></thead>
             <tbody>
                 {% for acc in accounts_with_balances %}
                 <tr style="border-bottom: 1px solid #f7fafc;">
-                    <td style="font-weight:600; color:var(--text-dark); padding:1rem 0.5rem;">{{ acc.name }}</td>
+                    <td style="font-weight:600; padding:1rem 0.5rem;">{{ acc.name }}</td>
                     <td>
                         {% if acc.type == 'investment' %}
-                            <span style="background:#f3e8ff; color:#553c9a; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Invest</span>
+                            <span style="background:#f3e8ff; color:#553c9a; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">{% trans "Invest" %}</span>
                         {% elif acc.type == 'bank' %}
-                            <span style="background:#ebf8ff; color:#2c5282; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Bank</span>
+                            <span style="background:#ebf8ff; color:#2c5282; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">{% trans "Bank" %}</span>
                         {% elif acc.type == 'cash' %}
-                            <span style="background:#f0fff4; color:#276749; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Cash</span>
+                            <span style="background:#f0fff4; color:#276749; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">{% trans "Cash" %}</span>
                         {% else %}
-                            <span style="background:#edf2f7; color:#4a5568; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; letter-spacing:0.02em;">Savings</span>
+                            <span style="background:#edf2f7; color:#4a5568; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">{% trans "Savings" %}</span>
                         {% endif %}
                     </td>
-                    <td style="text-align:right; font-weight:700; font-family:'Inter', sans-serif; font-size:1.05rem; color:var(--text-dark);">
-                        {{ acc.manual_balance|default:acc.effective_balance|floatformat:2 }} <span style="font-size:0.8em; color:var(--text-light); font-weight:400;">EUR</span>
-                    </td>
+                    <td style="text-align:right; font-weight:700;">{{ acc.effective_balance|floatformat:2 }} EUR</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="3" style="text-align:center; opacity:0.6; padding:2rem;">No accounts found.</td></tr>
+                <tr><td colspan="3" style="text-align:center; opacity:0.6; padding:2rem;">{% trans "No accounts found." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -88,27 +103,24 @@
 </div>
 
 <div class="card">
-  <div class="card-title">Income vs Spending</div>
+  <div class="card-title">{% trans "Income vs Spending" %}</div>
   <div style="max-width:1000px; margin:0.75rem auto 0;">
     <canvas id="incomeSpending"></canvas>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">Net by Month</div>
+  <div class="card-title">{% trans "Net by Month" %}</div>
   <div style="margin-top:0.5rem; overflow-x:auto;">
     <table>
-      <thead><tr><th>Month</th><th>Net</th></tr></thead>
+      <thead><tr><th>{% trans "Month" %}</th><th>{% trans "Net" %}</th></tr></thead>
       <tbody>
       {% for r in net_rows %}
         <tr>
           <td>{{ r.month }}</td>
           <td>
-            {% if r.net >= 0 %}
-              <span style="color:#2e7d32; font-weight:600;">+{{ r.net|floatformat:2 }}</span>
-            {% else %}
-              <span style="color:#e53e3e; font-weight:600;">{{ r.net|floatformat:2 }}</span>
-            {% endif %}
+            {% if r.net >= 0 %}<span style="color:#2e7d32; font-weight:600;">+{{ r.net|floatformat:2 }}</span>
+            {% else %}<span style="color:#e53e3e; font-weight:600;">{{ r.net|floatformat:2 }}</span>{% endif %}
           </td>
         </tr>
       {% endfor %}
@@ -118,7 +130,7 @@
 </div>
 
 <div class="card">
-  <div class="card-title">Spending per Category</div>
+  <div class="card-title">{% trans "Spending per Category" %}</div>
   {% if cat_names %}
     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 1rem;">
       {% for cname in cat_names %}
@@ -127,32 +139,29 @@
         </button>
       {% endfor %}
       <select id="catChartType" style="margin-left:auto; padding:0.3rem; border-radius:6px; border:1px solid #e2e8f0;">
-          <option value="bar">Bar</option>
-          <option value="line">Line</option>
+          <option value="bar">Bar</option><option value="line">Line</option>
       </select>
     </div>
-    <div style="max-width:1000px; margin:0 auto 1.25rem;">
-      <canvas id="catChart"></canvas>
-    </div>
+    <div style="max-width:1000px; margin:0 auto 1.25rem;"><canvas id="catChart"></canvas></div>
     <div id="catBreakdown">
       <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.5rem 0;">
-        <span style="font-size:0.9rem; color:#666;">Month:</span>
+        <span style="font-size:0.9rem; color:#666;">{% trans "Month" %}:</span>
         <div id="catMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
       </div>
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
-    <p style="opacity:0.7; padding:1rem;">No categorized spending yet.</p>
+    <p style="opacity:0.7; padding:1rem;">{% trans "No categorized spending yet." %}</p>
   {% endif %}
 </div>
 
 <div class="card">
   <div class="flex justify-between items-center mb-4">
-      <div class="card-title" style="margin:0;">Budgets vs Spent</div>
+      <div class="card-title" style="margin:0;">{% trans "Budgets vs Spent" %}</div>
       <div id="budgetMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
   </div>
   <div id="budgetEmpty" style="display:none; margin-top:0.6rem; color:#666; font-size:0.95em;">
-      You haven't set any caps yet.
+      {% trans "You haven't set any caps yet." %}
   </div>
   <div style="max-width:1000px; margin:0.75rem auto 0;">
       <canvas id="budgetChart"></canvas>
@@ -173,7 +182,7 @@
         data: {
             labels: {{ balance_labels_json|safe }},
             datasets: [{
-                label: 'Net Worth',
+                label: '{% trans "Net Worth" %}',
                 data: {{ balance_values_json|safe }},
                 borderColor: '#00cea6',
                 backgroundColor: gradNW,
@@ -201,13 +210,13 @@
         if(document.getElementById('incomeSpending')){
             new Chart(document.getElementById('incomeSpending').getContext('2d'), {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Income', data: income, borderColor: '#38a169', backgroundColor:'rgba(56,161,105,0.1)' }, { label: 'Spending', data: spending, borderColor:'#e53e3e', backgroundColor:'rgba(229,62,62,0.1)' }] },
+                data: { labels, datasets: [{ label: '{% trans "Income" %}', data: income, borderColor: '#38a169', backgroundColor:'rgba(56,161,105,0.1)' }, { label: '{% trans "Spending" %}', data: spending, borderColor:'#e53e3e', backgroundColor:'rgba(229,62,62,0.1)' }] },
                 options: { responsive: true, scales: { y: { beginAtZero: true } } }
             });
         }
     })();
 
-    // 3. CATEGORY CHART & BREAKDOWN (Fixed Table)
+    // 3. CATEGORY CHART
     (function(){
         const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
         const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
@@ -218,16 +227,11 @@
         const ctx = document.getElementById('catChart').getContext('2d');
         const typeSelect = document.getElementById('catChartType');
         const buttons = Array.from(document.querySelectorAll('.cat-btn'));
-
         let currentCat = buttons.length ? buttons[0].dataset.cat : null;
 
         function getDS(cat) { return { label: cat, data: seriesByCat[cat] || [], backgroundColor:'#3182ce', borderColor:'#3182ce' }; }
 
-        let chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: catMonths, datasets: [getDS(currentCat)] },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
+        let chart = new Chart(ctx, { type: 'bar', data: { labels: catMonths, datasets: [getDS(currentCat)] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
 
         buttons.forEach(b => {
             b.addEventListener('click', () => {
@@ -239,15 +243,10 @@
                 renderMonthButtons();
             });
         });
-
         typeSelect.addEventListener('change', () => {
             const type = typeSelect.value;
             chart.destroy();
-            chart = new Chart(ctx, {
-                type: type,
-                data: { labels: catMonths, datasets: [getDS(currentCat)] },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
-            });
+            chart = new Chart(ctx, { type: type, data: { labels: catMonths, datasets: [getDS(currentCat)] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
         });
 
         function renderMonthButtons() {
@@ -263,49 +262,31 @@
             if(catMonths.length) renderTable(catMonths[catMonths.length-1]);
         }
 
-        // FIXED TABLE RENDERER (With #Tx and Link)
         function renderTable(mk) {
             const wrap = document.getElementById('catMonthTableWrap');
             const rows = (breakdown[currentCat] && breakdown[currentCat][mk]) || [];
-
-            let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>Merchant</th><th>Total</th><th>#Tx</th><th>Avg</th><th>Action</th></tr></thead><tbody>';
-
+            let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
             rows.forEach(r => {
-                // We use a simple search link since we don't have precise date ranges easily available here
-                const link = `/?q=${encodeURIComponent(r.merchant)}`;
-                html += `<tr>
-                    <td>${r.merchant}</td>
-                    <td>${r.total.toFixed(2)}</td>
-                    <td>${r.count}</td>
-                    <td>${r.avg.toFixed(2)}</td>
-                    <td><a href="${link}" class="text-teal" style="text-decoration:none;">Open</a></td>
-                </tr>`;
+                html += `<tr><td>${r.merchant}</td><td>${r.total.toFixed(2)}</td><td>${r.count}</td><td>${r.avg.toFixed(2)}</td><td><a href="/?q=${encodeURIComponent(r.merchant)}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
             html += '</tbody></table>';
-
-            if(!rows.length) html='<p style="opacity:0.6; font-size:0.9em;">No data.</p>';
+            if(!rows.length) html='<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
             wrap.innerHTML = html;
         }
-
         renderMonthButtons();
     })();
 
-    // 4. BUDGETS
+    // 4. BUDGETS (Lines)
     (function(){
         const budgetAll = {{ budget_all_json|default:"{}"|safe }};
         const keys = {{ budget_month_keys|default:"[]"|safe }};
         const hasCaps = {{ budget_has_caps|yesno:"true,false" }};
 
-        if(!hasCaps) {
-            document.getElementById('budgetEmpty').style.display='block';
-            document.getElementById('budgetChart').style.display='none';
-            return;
-        }
+        if(!hasCaps) { document.getElementById('budgetEmpty').style.display='block'; document.getElementById('budgetChart').style.display='none'; return; }
 
         const ctx = document.getElementById('budgetChart').getContext('2d');
         let activeKey = keys.length ? keys[keys.length-1] : null;
         let chart = null;
-
         const btnWrap = document.getElementById('budgetMonthButtons');
         keys.forEach(k => {
             const b = document.createElement('button');
@@ -315,21 +296,40 @@
             btnWrap.appendChild(b);
         });
 
+        const capLinePlugin = {
+            id: 'capLine',
+            afterDatasetsDraw(chart) {
+                const { ctx, scales: { x, y } } = chart;
+                const dataset = chart.data.datasets[1];
+                const meta = chart.getDatasetMeta(1);
+                ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = '#d32f2f';
+                meta.data.forEach((point, index) => {
+                    const value = dataset.data[index];
+                    if (value > 0) {
+                        const xPos = point.x;
+                        const yPos = y.getPixelForValue(value);
+                        ctx.beginPath(); ctx.moveTo(xPos - 20, yPos); ctx.lineTo(xPos + 20, yPos); ctx.stroke();
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
         function draw(key) {
             const data = budgetAll[key];
             if(!data) return;
             if(chart) chart.destroy();
-
             chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels,
                     datasets: [
-                        { label: 'Spent', data: data.spent, backgroundColor: '#3182ce' },
-                        { label: 'Cap', data: data.caps, type: 'line', borderColor: '#e53e3e', borderWidth: 2, pointRadius: 0 }
+                        { label: '{% trans "Spent" %}', data: data.spent, backgroundColor: '#3182ce', barPercentage: 0.6 },
+                        { label: '{% trans "Cap" %}', data: data.caps, type: 'scatter', pointRadius: 0 }
                     ]
                 },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: true } } },
+                plugins: [capLinePlugin]
             });
         }
         if(activeKey) draw(activeKey);

@@ -1,20 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Auto-categorize · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Auto-categorize" %} · MoneyCoach{% endblock %}
 {% block content %}
-<h2>Auto-categorize</h2>
+<h2>{% trans "Auto-categorize" %}</h2>
 
-<p>AI key loaded: <strong>{{ key_present|yesno:"YES,NO" }}</strong></p>
+<p>{% trans "AI key loaded" %}: <strong>{{ key_present|yesno:"YES,NO" }}</strong></p>
 {% if not key_present %}
-  <p style="color:#b00">Set <code>OPENAI_API_KEY</code> in your .env to run auto-categorize.</p>
+  <p style="color:#b00">
+    {% blocktrans %}Set <code>OPENAI_API_KEY</code> in your .env to run auto-categorize.{% endblocktrans %}
+  </p>
 {% else %}
-  <p>Eligible rows sent: <strong>{{ total_candidates }}</strong></p>
-  <p>Auto-applied (high confidence): <strong>{{ applied|default:"0" }}</strong></p>
-  <p>Parked (low confidence): <strong>{{ parked|default:"0" }}</strong></p>
-  <p>Left for review now: <strong>{{ left_for_review|default:"0" }}</strong></p>
+  <p>{% trans "Eligible rows sent" %}: <strong>{{ total_candidates }}</strong></p>
+  <p>{% trans "Auto-applied (high confidence)" %}: <strong>{{ applied|default:"0" }}</strong></p>
+  <p>{% trans "Parked (low confidence)" %}: <strong>{{ parked|default:"0" }}</strong></p>
+  <p>{% trans "Left for review now" %}: <strong>{{ left_for_review|default:"0" }}</strong></p>
 {% endif %}
 
 <p style="margin-top:1rem">
-  <a href="/" style="margin-right:.75rem">⬅ Back to Upload</a>
-  <a href="/review/low/">Review low-confidence</a>
+  <a href="/" style="margin-right:.75rem">{% trans "⬅ Back to Upload" %}</a>
+  <a href="/review/low/">{% trans "Review low-confidence" %}</a>
 </p>
 {% endblock %}

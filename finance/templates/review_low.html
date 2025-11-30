@@ -1,10 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Low-confidence review · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Low-confidence review" %} · MoneyCoach{% endblock %}
 {% block content %}
-<h2>Low-confidence (needs your decision)</h2>
+<h2>{% trans "Low-confidence (needs your decision)" %}</h2>
 
 {% if page_obj and page_obj.object_list %}
-  <p class="meta">Total: {{ total }} · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+  <p class="meta">
+    {% blocktrans with total=total num=page_obj.number pages=page_obj.paginator.num_pages %}
+    Total: {{ total }} · Page {{ num }} of {{ pages }}
+    {% endblocktrans %}
+  </p>
 
   <form method="post" action="/review/low/apply/" id="lowConfForm">
     {% csrf_token %}
@@ -14,15 +19,15 @@
 
     <table>
       <tr>
-        <th>date</th>
-        <th>merchant</th>
-        <th>amount</th>
-        <th>in_out</th>
-        <th>notes</th>
-        <th>current</th>
-        <th>AI suggested</th>
-        <th>confidence</th>
-        <th>choose</th>
+        <th>{% trans "date" %}</th>
+        <th>{% trans "merchant" %}</th>
+        <th>{% trans "amount" %}</th>
+        <th>{% trans "in_out" %}</th>
+        <th>{% trans "notes" %}</th>
+        <th>{% trans "current" %}</th>
+        <th>{% trans "AI suggested" %}</th>
+        <th>{% trans "confidence" %}</th>
+        <th>{% trans "choose" %}</th>
       </tr>
       {% for t in page_obj.object_list %}
         <tr data-row="{{ t.id }}">
@@ -38,7 +43,7 @@
           <td>{% if t.ai_confidence %}{{ t.ai_confidence|floatformat:2 }}{% else %}—{% endif %}</td>
           <td>
             <select class="cat-select" data-tx="{{ t.id }}">
-              <option value="">— choose —</option>
+              <option value="">— {% trans "choose" %} —</option>
               {% for c in categories %}
                 <option value="{{ c.id }}"
                   {% if t.ai_suggested_fk and t.ai_suggested_fk.id == c.id %}selected{% endif %}>
@@ -53,20 +58,20 @@
 
     <p class="pager">
       {% if page_obj.has_previous %}
-        <a href="?page=1">« first</a>
-        <a href="?page={{ page_obj.previous_page_number }}">‹ prev</a>
+        <a href="?page=1">« {% trans "first" %}</a>
+        <a href="?page={{ page_obj.previous_page_number }}">‹ {% trans "prev" %}</a>
       {% endif %}
-      <strong>Page {{ page_obj.number }}</strong>
+      <strong>{% trans "Page" %} {{ page_obj.number }}</strong>
       {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">next ›</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}">last »</a>
+        <a href="?page={{ page_obj.next_page_number }}">{% trans "next" %} ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">{% trans "last" %} »</a>
       {% endif %}
     </p>
 
     <div style="position:sticky; bottom:0; background:#fff; border-top:1px solid #ccc; padding:.75rem; display:flex; gap:1rem; align-items:center; z-index:100; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
-       <strong id="pendingCount">0 selected</strong>
-       <button id="applyBtn" style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">Apply All Saved</button>
-       <button type="button" id="clearBtn" style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">Clear</button>
+       <strong id="pendingCount">0 {% trans "selected" %}</strong>
+       <button id="applyBtn" style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">{% trans "Apply All Saved" %}</button>
+       <button type="button" id="clearBtn" style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">{% trans "Clear" %}</button>
     </div>
   </form>
 
@@ -86,7 +91,8 @@
     function refreshUI() {
        const changes = loadChanges();
        const count = Object.keys(changes).length;
-       document.getElementById('pendingCount').textContent = count + ' selected';
+       // Translated "selected"
+       document.getElementById('pendingCount').textContent = count + ' {% trans "selected" %}';
 
        // Update selects on the current page
        document.querySelectorAll('.cat-select').forEach(sel => {
@@ -121,7 +127,7 @@
         const changes = loadChanges();
         if (Object.keys(changes).length === 0) {
             e.preventDefault();
-            alert("No changes selected.");
+            alert("{% trans 'No changes selected.' %}");
             return;
         }
         // Put the JSON into the hidden field
@@ -134,7 +140,7 @@
 
     // Clear Button Handler
     document.getElementById('clearBtn').addEventListener('click', () => {
-        if(confirm("Clear all saved selections?")) {
+        if(confirm("{% trans 'Clear all saved selections?' %}")) {
             localStorage.removeItem(userKey);
             location.reload();
         }
@@ -145,6 +151,6 @@
   </script>
 
 {% else %}
-  <p style="opacity:.7">No low-confidence items 🎉</p>
+  <p style="opacity:.7">{% trans "No low-confidence items 🎉" %}</p>
 {% endif %}
 {% endblock %}

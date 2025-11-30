@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Portfolio · Money Compass{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Portfolio" %} · Money Compass{% endblock %}
 {% block content %}
 
 <div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
-    <h2 class="text-dark" style="margin:0;">Portfolio</h2>
+    <h2 class="text-dark" style="margin:0;">{% trans "Portfolio" %}</h2>
     <div style="text-align:right;">
-        <div class="text-medium" style="font-size:0.85rem;">Total Net Worth</div>
+        <div class="text-medium" style="font-size:0.85rem;">{% trans "Total Net Worth" %}</div>
         <div style="font-size:1.4rem; font-weight:700; color:var(--primary-teal);">
             {{ total_portfolio|floatformat:2 }} EUR
         </div>
@@ -19,11 +20,11 @@
 
             <div class="flex justify-between items-center">
                 <div>
-                    <div class="card-title" style="margin:0; color:#553c9a;">Crypto Assets</div>
+                    <div class="card-title" style="margin:0; color:#553c9a;">{% trans "Crypto Assets" %}</div>
                     <div class="text-medium" style="font-size:0.9rem;">{{ crypto_total|floatformat:2 }} EUR</div>
                 </div>
                 <button onclick="openModal('modalCrypto')" class="btn" style="background:#f3e8ff; color:#553c9a; font-size:0.85rem; padding:0.4rem 0.8rem;">
-                    + Add Crypto
+                    + {% trans "Add Crypto" %}
                 </button>
             </div>
 
@@ -32,10 +33,10 @@
                 <table style="font-size:0.9rem;">
                     <thead>
                         <tr style="border-bottom:1px solid #f3e8ff;">
-                            <th style="padding-left:0;">Asset</th>
-                            <th style="text-align:right;">Price</th>
-                            <th style="text-align:right;">Qty</th>
-                            <th style="text-align:right; padding-right:0;">Value</th>
+                            <th style="padding-left:0;">{% trans "Asset" %}</th>
+                            <th style="text-align:right;">{% trans "Price" %}</th>
+                            <th style="text-align:right;">{% trans "Qty" %}</th>
+                            <th style="text-align:right; padding-right:0;">{% trans "Value" %}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -49,7 +50,7 @@
                             <td style="text-align:right; font-family:monospace;">{{ h.price|floatformat:2 }}</td>
                             <td style="text-align:right;">{{ h.quantity|floatformat:4 }}</td>
                             <td style="text-align:right; padding-right:0; font-weight:600;">{{ h.value|floatformat:2 }}</td>
-                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">Edit</a></td>
+                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">{% trans "Edit" %}</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -58,7 +59,7 @@
 
             <div style="margin-top:1rem;">
                 <div class="flex justify-between items-center mb-2">
-                    <strong style="font-size:0.85rem; color:var(--text-light);">Value Over Time</strong>
+                    <strong style="font-size:0.85rem; color:var(--text-light);">{% trans "Value Over Time" %}</strong>
                     <div style="background:#f7fafc; border-radius:6px; padding:2px; display:flex;">
                         <button onclick="setChartMode('1h')" class="chart-toggle btn-1h" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">1H</button>
                         <button onclick="setChartMode('24h')" class="chart-toggle btn-24h active" style="border:none; background:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1);">24H</button>
@@ -72,7 +73,7 @@
             </div>
 
             {% else %}
-            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">No crypto assets yet.</div>
+            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">{% trans "No crypto assets yet." %}</div>
             {% endif %}
         </div>
     </div>
@@ -82,11 +83,11 @@
 
             <div class="flex justify-between items-center">
                 <div>
-                    <div class="card-title" style="margin:0; color:#2c5282;">Stocks & ETFs</div>
+                    <div class="card-title" style="margin:0; color:#2c5282;">{% trans "Stocks & ETFs" %}</div>
                     <div class="text-medium" style="font-size:0.9rem;">{{ stock_total|floatformat:2 }} EUR</div>
                 </div>
                 <button onclick="openModal('modalStock')" class="btn" style="background:#ebf8ff; color:#2c5282; font-size:0.85rem; padding:0.4rem 0.8rem;">
-                    + Add Stock
+                    + {% trans "Add Stock" %}
                 </button>
             </div>
 
@@ -95,10 +96,10 @@
                 <table style="font-size:0.9rem;">
                     <thead>
                         <tr style="border-bottom:1px solid #ebf8ff;">
-                            <th style="padding-left:0;">Asset</th>
-                            <th style="text-align:right;">Price</th>
-                            <th style="text-align:right;">Qty</th>
-                            <th style="text-align:right; padding-right:0;">Value</th>
+                            <th style="padding-left:0;">{% trans "Asset" %}</th>
+                            <th style="text-align:right;">{% trans "Price" %}</th>
+                            <th style="text-align:right;">{% trans "Qty" %}</th>
+                            <th style="text-align:right; padding-right:0;">{% trans "Value" %}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -112,7 +113,7 @@
                             <td style="text-align:right; font-family:monospace;">{{ h.price|floatformat:2 }}</td>
                             <td style="text-align:right;">{{ h.quantity|floatformat:2 }}</td>
                             <td style="text-align:right; padding-right:0; font-weight:600;">{{ h.value|floatformat:2 }}</td>
-                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">Edit</a></td>
+                            <td style="text-align:right;"><a href="{% url 'asset_edit' h.id %}" class="text-teal" style="font-size:0.85rem;">{% trans "Edit" %}</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -121,7 +122,7 @@
 
             <div style="margin-top:1rem;">
                 <div class="flex justify-between items-center mb-2">
-                    <strong style="font-size:0.85rem; color:var(--text-light);">Value Over Time</strong>
+                    <strong style="font-size:0.85rem; color:var(--text-light);">{% trans "Value Over Time" %}</strong>
                     <div style="background:#f7fafc; border-radius:6px; padding:2px; display:flex;">
                         <button onclick="setChartMode('1h')" class="chart-toggle btn-1h" style="border:none; background:transparent; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; color:var(--text-medium);">1H</button>
                         <button onclick="setChartMode('24h')" class="chart-toggle btn-24h active" style="border:none; background:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1);">24H</button>
@@ -135,7 +136,7 @@
             </div>
 
             {% else %}
-            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">No stocks tracked yet.</div>
+            <div style="text-align:center; padding:2rem; opacity:0.6; font-size:0.9rem;">{% trans "No stocks tracked yet." %}</div>
             {% endif %}
         </div>
     </div>
@@ -143,25 +144,29 @@
 
 <div id="modalCrypto" class="modal-backdrop" style="display:none;">
     <div class="card modal-content">
-        <h3 class="card-title">Add Crypto</h3>
-        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">Search for a coin (e.g. "Bitc...").</p>
+        <h3 class="card-title">{% trans "Add Crypto" %}</h3>
+        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">
+            {% trans "Search for a coin (e.g. 'Bitc...')." %}
+        </p>
         <form method="post" action="{% url 'asset_add' %}">
             {% csrf_token %}
             <input type="hidden" name="asset_type" value="crypto">
 
-            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Search Coin</label>
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">{% trans "Search Coin" %}</label>
             <div style="position:relative; margin-bottom:1rem;">
-                <input type="text" id="cryptoSearch" placeholder="Type to search..." autocomplete="off" class="form-input" required>
+                <input type="text" id="cryptoSearch" placeholder="{% trans 'Type to search...' %}" autocomplete="off"
+                       class="form-input" required>
                 <input type="hidden" name="symbol_input" id="cryptoSymbolHidden">
+
                 <div id="cryptoResults" class="search-results" style="display:none;"></div>
             </div>
 
-            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Quantity</label>
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">{% trans "Quantity" %}</label>
             <input type="number" step="any" name="quantity" placeholder="0.5" required class="form-input" style="margin-bottom:1.5rem;">
 
             <div class="flex justify-between">
-                <button type="button" onclick="closeModal('modalCrypto')" class="btn" style="background:transparent; color:var(--text-medium);">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Crypto</button>
+                <button type="button" onclick="closeModal('modalCrypto')" class="btn" style="background:transparent; color:var(--text-medium);">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary">{% trans "Add Crypto" %}</button>
             </div>
         </form>
     </div>
@@ -169,25 +174,29 @@
 
 <div id="modalStock" class="modal-backdrop" style="display:none;">
     <div class="card modal-content">
-        <h3 class="card-title">Add Stock / ETF</h3>
-        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">Search for a company or ETF (e.g. "Apple", "Vanguard").</p>
+        <h3 class="card-title">{% trans "Add Stock / ETF" %}</h3>
+        <p style="font-size:0.85rem; color:var(--text-medium); margin-bottom:1rem;">
+            {% trans "Search for a company or ETF (e.g. 'Apple', 'Vanguard')." %}
+        </p>
         <form method="post" action="{% url 'asset_add' %}">
             {% csrf_token %}
             <input type="hidden" name="asset_type" value="stock">
 
-            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Search Ticker</label>
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">{% trans "Search Ticker" %}</label>
             <div style="position:relative; margin-bottom:1rem;">
-                <input type="text" id="stockSearch" placeholder="Type to search..." autocomplete="off" class="form-input" required>
+                <input type="text" id="stockSearch" placeholder="{% trans 'Type to search...' %}" autocomplete="off"
+                       class="form-input" required>
                 <input type="hidden" name="symbol_input" id="stockSymbolHidden">
+
                 <div id="stockResults" class="search-results" style="display:none;"></div>
             </div>
 
-            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">Quantity</label>
+            <label style="display:block; font-size:0.9rem; margin-bottom:0.3rem;">{% trans "Quantity" %}</label>
             <input type="number" step="any" name="quantity" placeholder="10" required class="form-input" style="margin-bottom:1.5rem;">
 
             <div class="flex justify-between">
-                <button type="button" onclick="closeModal('modalStock')" class="btn" style="background:transparent; color:var(--text-medium);">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Stock</button>
+                <button type="button" onclick="closeModal('modalStock')" class="btn" style="background:transparent; color:var(--text-medium);">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary">{% trans "Add Stock" %}</button>
             </div>
         </form>
     </div>
@@ -256,7 +265,7 @@
 
     // -- DYNAMIC CHARTS --
 
-    // 1. Data Sets from Django
+    // 1. Data Sets
     const datasets = {
         '1h':  {{ json_1h|safe }},
         '24h': {{ json_24h|safe }},
@@ -266,11 +275,14 @@
 
     let cryptoChart, stockChart;
 
-    // 2. Common Chart Config
+    // 2. Config
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
         scales: {
             x: { display: false },
             y: { display: true, grid: { color: '#f7fafc' } }
@@ -279,17 +291,27 @@
             legend: { display: false },
             tooltip: {
                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                titleColor: '#1a202c', bodyColor: '#4a5568',
-                borderColor: '#e2e8f0', borderWidth: 1,
+                titleColor: '#1a202c',
+                bodyColor: '#4a5568',
+                borderColor: '#e2e8f0',
+                borderWidth: 1,
                 displayColors: false,
-                callbacks: { label: (c) => c.parsed.y.toFixed(2) + ' EUR' }
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y.toFixed(2) + ' EUR';
+                    }
+                }
             }
         },
-        elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 0, hitRadius: 20, hoverRadius: 4 } }
+        elements: {
+            line: { tension: 0.3, borderWidth: 2 },
+            point: { radius: 0, hitRadius: 20, hoverRadius: 4 }
+        }
     };
 
-    // 3. Initialize
+    // 3. Init
     function initCharts() {
+        // Default to 24H view
         const startData = datasets['24h'];
 
         // Crypto
@@ -331,7 +353,7 @@
 
     // 4. Toggle Logic
     window.setChartMode = function(mode) {
-        // Reset ALL buttons (remove .active)
+        // Update Button UI
         document.querySelectorAll('.chart-toggle').forEach(b => {
             b.style.background = 'transparent';
             b.style.color = '#a0aec0';
@@ -339,7 +361,7 @@
             b.classList.remove('active');
         });
 
-        // Activate specific class (e.g. .btn-24h) across ALL cards
+        // Activate specific buttons (by ID pattern)
         document.querySelectorAll(`.btn-${mode}`).forEach(b => {
             b.style.background = 'white';
             b.style.color = '#1a202c';

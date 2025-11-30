@@ -1,11 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Done · MoneyCoach{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Done" %} · MoneyCoach{% endblock %}
 {% block content %}
-<h2>Changes applied</h2>
-<p>Updated <strong>{{ updated|default:"0" }}</strong> transactions.</p>
+<h2>{% trans "Changes applied" %}</h2>
+<p>
+    {% blocktrans with count=updated|default:"0" %}
+    Updated <strong>{{ count }}</strong> transactions.
+    {% endblocktrans %}
+</p>
 
 <p style="margin-top:1rem">
-  <a href="/review/low/">Back to Low-confidence</a> ·
-  <a href="/">Back to Upload</a>
+  <a href="/review/low/">{% trans "Back to Low-confidence" %}</a> ·
+  <a href="/">{% trans "Back to Upload" %}</a>
 </p>
 {% endblock %}
