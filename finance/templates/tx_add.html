@@ -3,84 +3,121 @@
 {% block title %}{% trans "Add transaction" %} · MoneyCoach{% endblock %}
 
 {% block content %}
-<h2 style="margin-top:50px;">{% trans "Add transaction" %}</h2>
+<div class="card" style="max-width: 720px; margin: 1.5rem auto;">
+    <h2 class="card-title">{% trans "Add transaction" %}</h2>
 
-{% if messages %}
-  <ul style="padding:0; list-style:none; margin:.5rem 0;">
-    {% for m in messages %}
-      <li style="margin:.25rem 0; padding:.4rem .6rem; border-radius:6px;
-                 {% if m.tags == 'success' %}background:#e8f5e9; color:#2e7d32;
-                 {% elif m.tags == 'error' %}background:#fdecea; color:#b71c1c;
-                 {% else %}background:#eef5ff; color:#0d47a1;{% endif %}">
-        {{ m }}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
-
-<form method="post" style="max-width:560px; padding:1rem; border:1px solid #e3e3e3; border-radius:8px; background:#fafafa;">
-  {% csrf_token %}
-  <input type="hidden" name="next" value="{{ next }}">
-
-  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.6rem;">
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Date" %}</label>
-      <input type="date" name="date" value="{{ today }}" required style="width:100%;">
-    </div>
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Account" %}</label>
-      <select name="money_source" required style="width:100%;">
-        {% for s in sources %}
-          <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+    {% if messages %}
+      <ul style="padding:0; list-style:none; margin:.5rem 0 1rem 0;">
+        {% for m in messages %}
+          <li style="margin:.25rem 0; padding:.4rem .6rem; border-radius:6px;
+                     {% if m.tags == 'success' %}background:#e8f5e9; color:#2e7d32;
+                     {% elif m.tags == 'error' %}background:#fdecea; color:#b71c1c;
+                     {% else %}background:#eef5ff; color:#0d47a1;{% endif %}">
+            {{ m }}
+          </li>
         {% endfor %}
-      </select>
-    </div>
+      </ul>
+    {% endif %}
 
-    <div style="grid-column: span 2;">
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Merchant" %}</label>
-      <input type="text" name="merchant" maxlength="255" placeholder="{% trans 'e.g., Maxima, Lidl…' %}" style="width:100%;">
-    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
 
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Amount" %}</label>
-      <input type="number" step="0.01" name="amount" required placeholder="{% trans 'e.g., 23.45' %}" style="width:100%;">
-    </div>
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Currency" %}</label>
-      <input type="text" name="currency" value="{{ default_currency }}" maxlength="8" style="width:100%;">
-    </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.75rem; margin-top:0.5rem;">
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Date" %}
+          </label>
+          <input type="date" name="date" value="{{ today }}" required
+                 style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Account" %}
+          </label>
+          <select name="money_source" required
+                  style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+            {% for s in sources %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+            {% endfor %}
+          </select>
+        </div>
 
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Flow" %}</label>
-      <select name="in_out" required style="width:100%;">
-        <option value="out" selected>{% trans "Spending" %}</option>
-        <option value="in">{% trans "Income" %}</option>
-      </select>
-    </div>
-    <div>
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Category" %}</label>
-      <select name="category" style="width:100%;">
-        <option value="">— {% trans "none" %} —</option>
-        {% for c in categories %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Merchant" %}
+          </label>
+          <input type="text" name="merchant" maxlength="255"
+                 placeholder="{% trans 'e.g., Maxima, Lidl…' %}"
+                 style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+        </div>
 
-    <div style="grid-column: span 2;">
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Notes (bank description etc.)" %}</label>
-      <textarea name="notes" rows="2" style="width:100%;" placeholder="{% trans 'Optional' %}"></textarea>
-    </div>
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Amount" %}
+          </label>
+          <input type="number" step="0.01" name="amount" required
+                 placeholder="{% trans 'e.g., 23.45' %}"
+                 style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Currency" %}
+          </label>
+          <input type="text" name="currency" value="{{ default_currency }}" maxlength="8"
+                 style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+        </div>
 
-    <div style="grid-column: span 2;">
-      <label style="display:block; font-size:.9em; color:#555;">{% trans "Your note" %}</label>
-      <textarea name="user_note" rows="2" style="width:100%;" placeholder="{% trans 'Optional' %}"></textarea>
-    </div>
-  </div>
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Flow" %}
+          </label>
+          <select name="in_out" required
+                  style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+            <option value="out" selected>{% trans "Spending" %}</option>
+            <option value="in">{% trans "Income" %}</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Category" %}
+          </label>
+          <select name="category"
+                  style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+            <option value="">— {% trans "none" %} —</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-  <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
-    <button type="submit">{% trans "Add" %}</button>
-    <a href="{{ next }}">{% trans "Cancel" %}</a>
-  </div>
-</form>
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Notes (bank description etc.)" %}
+          </label>
+          <textarea name="notes" rows="2"
+                    style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
+                    placeholder="{% trans 'Optional' %}"></textarea>
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
+              {% trans "Your note" %}
+          </label>
+          <textarea name="user_note" rows="2"
+                    style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
+                    placeholder="{% trans 'Optional' %}"></textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem; display:flex; gap:.75rem; align-items:center;">
+        <button type="submit" class="btn btn-primary">
+            {% trans "Add" %}
+        </button>
+        <a href="{{ next }}" style="font-size:0.9rem; color:var(--text-medium); text-decoration:none;">
+            {% trans "Cancel" %}
+        </a>
+      </div>
+    </form>
+</div>
 {% endblock %}

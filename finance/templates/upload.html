@@ -199,11 +199,21 @@
         </table>
     </div>
 
-    <div id="stickyBar" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1a202c; color:white; padding:0.8rem 1.5rem; border-radius:30px; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:100; align-items:center; gap:1rem;">
-        <span id="pendingCount">0 {% trans "pending" %}</span>
-        <button type="submit" class="btn" style="background:#38a169; color:white; padding:0.4rem 1rem; border-radius:20px;">{% trans "Apply Changes" %}</button>
-        <button type="button" id="clearBtn" style="background:transparent; color:#cbd5e0; border:none; text-decoration:underline; font-size:0.85rem; cursor:pointer;">{% trans "Discard" %}</button>
-    </div>
+    <div id="stickyBar"
+     style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+            background:#1a202c; color:white; padding:0.5rem 1rem; border-radius:999px;
+            box-shadow:0 10px 30px rgba(0,0,0,0.3); z-index:2001; align-items:center; gap:1rem;">
+    <span id="pendingCount">0 {% trans "pending" %}</span>
+    <button type="submit" class="btn"
+            style="background:#38a169; color:white; border:none; padding:0.4rem 1rem; border-radius:20px;">
+        {% trans "Apply Changes" %}
+    </button>
+    <button type="button" id="clearBtn"
+            style="background:transparent; color:#cbd5e0; border:none; text-decoration:underline; font-size:0.85rem; cursor:pointer;">
+        {% trans "Discard" %}
+    </button>
+</div>
+
   </form>
 
   <div style="padding:1rem; border-top:1px solid #e2e8f0; display:flex; justify-content:center; gap:0.5rem;">

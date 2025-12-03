@@ -1,57 +1,86 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Edit transaction" %} · MoneyCoach{% endblock %}
+
 {% block content %}
+<div class="card" style="max-width: 720px; margin: 1.5rem auto;">
+    <h2 class="card-title">{% trans "Edit transaction" %}</h2>
 
-<h2>{% trans "Edit transaction" %}</h2>
+    <div class="row" style="margin:.75rem 0 1rem 0; font-size:0.95rem;">
+        <strong>{{ tx.date|date:"Y-m-d" }}</strong>
+        — {{ tx.merchant }}
+        — {{ tx.amount }} {{ tx.currency }}
+        — {{ tx.in_out }}
+        {% if tx.notes %}
+            <div style="color:#666; margin-top:0.25rem;">
+                {{ tx.notes }}
+            </div>
+        {% endif %}
+    </div>
 
-<div class="row" style="margin:.75rem 0;">
-  <strong>{{ tx.date|date:"Y-m-d" }}</strong> — {{ tx.merchant }} — {{ tx.amount }} {{ tx.currency }} — {{ tx.in_out }}
-  <div style="color:#666">{{ tx.notes }}</div>
-</div>
+    <form method="post" style="margin-bottom:1.5rem;">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
 
-<form method="post">
-  {% csrf_token %}
-  <input type="hidden" name="next" value="{{ next }}">
+        <div class="row" style="margin:.75rem 0;">
+            <label style="display:block; width:100%; font-size:0.9rem;">
+                {% trans "Category" %}
+                <select name="category_fk" style="width:100%; margin-top:0.25rem; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+                    <option value="">— {% trans "none" %} —</option>
+                    {% for c in categories %}
+                        <option value="{{ c.id }}"
+                                {% if tx.category_fk and tx.category_fk.id == c.id %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
 
-  <div class="row" style="margin:.75rem 0;">
-  <label>{% trans "Category" %}
-  <select name="category_fk" style="width:100%;">
-    <option value="">— {% trans "none" %} —</option>
-    {% for c in categories %}
-      <option value="{{ c.id }}" {% if tx.category_fk and tx.category_fk.id == c.id %}selected{% endif %}>
-        {{ c.name }}
-      </option>
-    {% endfor %}
-  </select>
-</label>
+        <div class="row" style="margin:.75rem 0;">
+            <label style="display:block; width:100%; font-size:0.9rem;">
+                {% trans "User note" %}
+                <textarea name="user_note" rows="4"
+                          style="width:100%; margin-top:0.25rem; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
+                          placeholder="{% trans 'Add context…' %}">{{ tx.user_note }}</textarea>
+            </label>
+        </div>
 
-  </div>
-
-  <div class="row" style="margin:.75rem 0;">
-    <label>{% trans "User note" %}
-      <textarea name="user_note" rows="4" style="width:100%;" placeholder="{% trans 'Add context…' %}">{{ tx.user_note }}</textarea>
-    </label>
-  </div>
-
-  <div class="row" style="margin:.75rem 0;">
-    <button>{% trans "Save" %}</button>
-    <a href="{{ next }}" style="margin-left:.5rem">{% trans "Cancel" %}</a>
-  </div>
-</form>
-  <div>
-    <h3 style="margin:0 0 .5rem;">{% trans "Delete this transaction" %}</h3>
-    <p style="color:#666; margin:.25rem 0 .75rem;">
-      {% trans "Deleting hides it from lists and charts, and prevents re-importing the same row. You can restore it later from" %} <a href="/deleted/">{% trans "Deleted" %}</a>.
-    </p>
-
-    <form method="post" action="{% url 'tx_delete' tx.id %}" onsubmit="return confirm('{% trans "Delete this transaction?" %}');" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{{ request.GET.next|default:'/' }}">
-      <input type="text" name="note" placeholder="{% trans 'Optional reason (e.g., pass-through transfer)' %}" maxlength="200" style="flex:1; min-width:260px; padding:.4rem;">
-      <button type="submit" style="background:#c62828; color:#fff; border:1px solid #b71c1c;">{% trans "Delete" %}</button>
+        <div class="row" style="margin:.75rem 0;">
+            <button class="btn btn-primary">
+                {% trans "Save" %}
+            </button>
+            <a href="{{ next }}" style="margin-left:.5rem; font-size:0.9rem; color:var(--text-medium); text-decoration:none;">
+                {% trans "Cancel" %}
+            </a>
+        </div>
     </form>
-  </div>
-</div>
 
+    <div style="border-top:1px solid #e2e8f0; padding-top:1rem; margin-top:0.5rem;">
+        <h3 style="margin:0 0 .5rem; font-size:1rem;">
+            {% trans "Delete this transaction" %}
+        </h3>
+        <p style="color:#666; margin:.25rem 0 .75rem; font-size:0.9rem;">
+            {% trans "Deleting hides it from lists and charts, and prevents re-importing the same row. You can restore it later from" %}
+            <a href="/deleted/">{% trans "Deleted" %}</a>.
+        </p>
+
+        <form method="post"
+              action="{% url 'tx_delete' tx.id %}"
+              onsubmit="return confirm('{% trans "Delete this transaction?" %}');"
+              style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'/' }}">
+            <input type="text"
+                   name="note"
+                   placeholder="{% trans 'Optional reason (e.g., pass-through transfer)' %}"
+                   maxlength="200"
+                   style="flex:1; min-width:260px; padding:.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
+            <button type="submit"
+                    style="background:#c62828; color:#fff; border:1px solid #b71c1c; border-radius:8px; padding:0.45rem 1rem; cursor:pointer;">
+                {% trans "Delete" %}
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}

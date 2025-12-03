@@ -1,156 +1,199 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Low-confidence review" %} · MoneyCoach{% endblock %}
+
 {% block content %}
-<h2>{% trans "Low-confidence (needs your decision)" %}</h2>
+<div class="card">
+    <h2 class="card-title">{% trans "Low-confidence (needs your decision)" %}</h2>
 
-{% if page_obj and page_obj.object_list %}
-  <p class="meta">
-    {% blocktrans with total=total num=page_obj.number pages=page_obj.paginator.num_pages %}
-    Total: {{ total }} · Page {{ num }} of {{ pages }}
-    {% endblocktrans %}
-  </p>
+    {% if page_obj and page_obj.object_list %}
+        <p class="meta" style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-light);">
+            {% blocktrans with total=total num=page_obj.number pages=page_obj.paginator.num_pages %}
+            Total: {{ total }} · Page {{ num }} of {{ pages }}
+            {% endblocktrans %}
+        </p>
 
-  <form method="post" action="/review/low/apply/" id="lowConfForm">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <form method="post" action="/review/low/apply/" id="lowConfForm" style="margin-top:1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="changes_json" id="changes_json">
 
-    <input type="hidden" name="changes_json" id="changes_json">
+            <div style="overflow-x:auto;">
+                <table>
+                    <tr>
+                        <th>{% trans "date" %}</th>
+                        <th>{% trans "merchant" %}</th>
+                        <th>{% trans "amount" %}</th>
+                        <th>{% trans "in_out" %}</th>
+                        <th>{% trans "notes" %}</th>
+                        <th>{% trans "current" %}</th>
+                        <th>{% trans "AI suggested" %}</th>
+                        <th>{% trans "confidence" %}</th>
+                        <th>{% trans "choose" %}</th>
+                    </tr>
+                    {% for t in page_obj.object_list %}
+                        <tr data-row="{{ t.id }}">
+                            <td>{{ t.date|date:"Y-m-d" }}</td>
+                            <td>{{ t.merchant }}</td>
+                            <td>{{ t.amount }} {{ t.currency }}</td>
+                            <td>{{ t.in_out }}</td>
+                            <td>{{ t.notes }}</td>
+                            <td>
+                                {% if t.category_fk %}
+                                    {{ t.category_fk.name }}
+                                {% else %}
+                                    {{ t.category|default:"—" }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.ai_suggested_fk %}
+                                    {{ t.ai_suggested_fk.name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.ai_confidence %}
+                                    {{ t.ai_confidence|floatformat:2 }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <select class="cat-select" data-tx="{{ t.id }}">
+                                    <option value="">— {% trans "choose" %} —</option>
+                                    {% for c in categories %}
+                                        <option value="{{ c.id }}"
+                                            {% if t.ai_suggested_fk and t.ai_suggested_fk.id == c.id %}selected{% endif %}>
+                                            {{ c.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
 
-    <table>
-      <tr>
-        <th>{% trans "date" %}</th>
-        <th>{% trans "merchant" %}</th>
-        <th>{% trans "amount" %}</th>
-        <th>{% trans "in_out" %}</th>
-        <th>{% trans "notes" %}</th>
-        <th>{% trans "current" %}</th>
-        <th>{% trans "AI suggested" %}</th>
-        <th>{% trans "confidence" %}</th>
-        <th>{% trans "choose" %}</th>
-      </tr>
-      {% for t in page_obj.object_list %}
-        <tr data-row="{{ t.id }}">
-          <td>{{ t.date|date:"Y-m-d" }}</td>
-          <td>{{ t.merchant }}</td>
-          <td>{{ t.amount }} {{ t.currency }}</td>
-          <td>{{ t.in_out }}</td>
-          <td>{{ t.notes }}</td>
-          <td>
-            {% if t.category_fk %}{{ t.category_fk.name }}{% else %}{{ t.category|default:"—" }}{% endif %}
-          </td>
-          <td>{% if t.ai_suggested_fk %}{{ t.ai_suggested_fk.name }}{% else %}—{% endif %}</td>
-          <td>{% if t.ai_confidence %}{{ t.ai_confidence|floatformat:2 }}{% else %}—{% endif %}</td>
-          <td>
-            <select class="cat-select" data-tx="{{ t.id }}">
-              <option value="">— {% trans "choose" %} —</option>
-              {% for c in categories %}
-                <option value="{{ c.id }}"
-                  {% if t.ai_suggested_fk and t.ai_suggested_fk.id == c.id %}selected{% endif %}>
-                  {{ c.name }}
-                </option>
-              {% endfor %}
-            </select>
-          </td>
-        </tr>
-      {% endfor %}
-    </table>
+            <p class="pager" style="margin-top:1rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1">« {% trans "first" %}</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">‹ {% trans "prev" %}</a>
+                {% endif %}
+                <strong style="margin:0 0.5rem;">
+                    {% trans "Page" %} {{ page_obj.number }}
+                </strong>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">{% trans "next" %} ›</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}">{% trans "last" %} »</a>
+                {% endif %}
+            </p>
 
-    <p class="pager">
-      {% if page_obj.has_previous %}
-        <a href="?page=1">« {% trans "first" %}</a>
-        <a href="?page={{ page_obj.previous_page_number }}">‹ {% trans "prev" %}</a>
-      {% endif %}
-      <strong>{% trans "Page" %} {{ page_obj.number }}</strong>
-      {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">{% trans "next" %} ›</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}">{% trans "last" %} »</a>
-      {% endif %}
-    </p>
+            <div style="
+                position:sticky;
+                bottom:0;
+                background:#ffffff;
+                border-top:1px solid #e2e8f0;
+                padding:.75rem 0;
+                margin-top:0.75rem;
+                display:flex;
+                gap:1rem;
+                align-items:center;
+                z-index:100;
+                box-shadow:0 -2px 5px rgba(0,0,0,0.04);
+            ">
+                <strong id="pendingCount">
+                    0 {% trans "selected" %}
+                </strong>
+                <button id="applyBtn"
+                        style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+                    {% trans "Apply All Saved" %}
+                </button>
+                <button type="button" id="clearBtn"
+                        style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+                    {% trans "Clear" %}
+                </button>
+            </div>
+        </form>
 
-    <div style="position:sticky; bottom:0; background:#fff; border-top:1px solid #ccc; padding:.75rem; display:flex; gap:1rem; align-items:center; z-index:100; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
-       <strong id="pendingCount">0 {% trans "selected" %}</strong>
-       <button id="applyBtn" style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">{% trans "Apply All Saved" %}</button>
-       <button type="button" id="clearBtn" style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">{% trans "Clear" %}</button>
-    </div>
-  </form>
+        <script>
+            // Unique key for this user so we don't mix up data if testing multiple users
+            const userKey = 'mc_low_conf_u{{ request.user.id }}';
 
-  <script>
-    // Unique key for this user so we don't mix up data if testing multiple users
-    const userKey = 'mc_low_conf_u{{ request.user.id }}';
-
-    function loadChanges() {
-        try { return JSON.parse(localStorage.getItem(userKey) || '{}'); }
-        catch(e){ return {}; }
-    }
-
-    function saveChanges(obj) {
-        localStorage.setItem(userKey, JSON.stringify(obj));
-    }
-
-    function refreshUI() {
-       const changes = loadChanges();
-       const count = Object.keys(changes).length;
-       // Translated "selected"
-       document.getElementById('pendingCount').textContent = count + ' {% trans "selected" %}';
-
-       // Update selects on the current page
-       document.querySelectorAll('.cat-select').forEach(sel => {
-           const tid = sel.dataset.tx;
-           if (changes[tid]) {
-               sel.value = changes[tid];
-               // Highlight rows that have a pending change
-               sel.closest('tr').style.background = '#f0f8ff';
-           } else {
-               sel.closest('tr').style.background = '';
-           }
-       });
-    }
-
-    // Event Listeners for every dropdown
-    document.querySelectorAll('.cat-select').forEach(sel => {
-        sel.addEventListener('change', () => {
-            const changes = loadChanges();
-            if (sel.value) {
-                changes[sel.dataset.tx] = sel.value;
-            } else {
-                // If user selects blank, remove from pending
-                delete changes[sel.dataset.tx];
+            function loadChanges() {
+                try { return JSON.parse(localStorage.getItem(userKey) || '{}'); }
+                catch(e){ return {}; }
             }
-            saveChanges(changes);
+
+            function saveChanges(obj) {
+                localStorage.setItem(userKey, JSON.stringify(obj));
+            }
+
+            function refreshUI() {
+               const changes = loadChanges();
+               const count = Object.keys(changes).length;
+               // Translated "selected"
+               document.getElementById('pendingCount').textContent = count + ' {% trans "selected" %}';
+
+               // Update selects on the current page
+               document.querySelectorAll('.cat-select').forEach(sel => {
+                   const tid = sel.dataset.tx;
+                   if (changes[tid]) {
+                       sel.value = changes[tid];
+                       // Highlight rows that have a pending change
+                       sel.closest('tr').style.background = '#f0f8ff';
+                   } else {
+                       sel.closest('tr').style.background = '';
+                   }
+               });
+            }
+
+            // Event Listeners for every dropdown
+            document.querySelectorAll('.cat-select').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const changes = loadChanges();
+                    if (sel.value) {
+                        changes[sel.dataset.tx] = sel.value;
+                    } else {
+                        // If user selects blank, remove from pending
+                        delete changes[sel.dataset.tx];
+                    }
+                    saveChanges(changes);
+                    refreshUI();
+                });
+            });
+
+            // Form Submit Handler
+            document.getElementById('lowConfForm').addEventListener('submit', (e) => {
+                const changes = loadChanges();
+                if (Object.keys(changes).length === 0) {
+                    e.preventDefault();
+                    alert("{% trans 'No changes selected.' %}");
+                    return;
+                }
+                // Put the JSON into the hidden field
+                document.getElementById('changes_json').value = JSON.stringify(changes);
+
+                // Clear storage so it doesn't persist after a successful apply
+                localStorage.removeItem(userKey);
+            });
+
+            // Clear Button Handler
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                if(confirm("{% trans 'Clear all saved selections?' %}")) {
+                    localStorage.removeItem(userKey);
+                    location.reload();
+                }
+            });
+
+            // Initialize on page load
             refreshUI();
-        });
-    });
+        </script>
 
-    // Form Submit Handler
-    document.getElementById('lowConfForm').addEventListener('submit', (e) => {
-        const changes = loadChanges();
-        if (Object.keys(changes).length === 0) {
-            e.preventDefault();
-            alert("{% trans 'No changes selected.' %}");
-            return;
-        }
-        // Put the JSON into the hidden field
-        document.getElementById('changes_json').value = JSON.stringify(changes);
-
-        // Clear storage so it doesn't persist after a successful apply
-        // (The backend will handle the apply)
-        localStorage.removeItem(userKey);
-    });
-
-    // Clear Button Handler
-    document.getElementById('clearBtn').addEventListener('click', () => {
-        if(confirm("{% trans 'Clear all saved selections?' %}")) {
-            localStorage.removeItem(userKey);
-            location.reload();
-        }
-    });
-
-    // Initialize on page load
-    refreshUI();
-  </script>
-
-{% else %}
-  <p style="opacity:.7">{% trans "No low-confidence items 🎉" %}</p>
-{% endif %}
+    {% else %}
+        <p style="opacity:.7; margin:0;">
+            {% trans "No low-confidence items 🎉" %}
+        </p>
+    {% endif %}
+</div>
 {% endblock %}

@@ -348,24 +348,30 @@ def profile(request):
     }
     return render(request, "profile.html", ctx)
 
+
+
 @login_required
 @require_POST
 def onboarding_mark_done(request):
     step = (request.POST.get("step") or "").strip()
+
     state, _ = OnboardingState.objects.get_or_create(user=request.user)
+
+    updated_fields = []
 
     if step == "categories":
         state.categories_done = True
-        # also keep session if you want:
-        request.session["onboarding_categories_done"] = True
-
+        updated_fields.append("categories_done")
     elif step == "ready":
         state.ready_dismissed = True
-        request.session["onboarding_ready_dismissed"] = True
+        updated_fields.append("ready_dismissed")
+    else:
+        # Unknown step – just bounce back without changing anything
+        return redirect(request.META.get("HTTP_REFERER") or "overview")
 
-    # (If later you add explicit buttons for "upload", "balance", "teach_ai", mark them here.)
+    updated_fields.append("updated_at")
+    state.save(update_fields=updated_fields)
 
-    state.save(update_fields=["categories_done", "ready_dismissed", "updated_at"])
-    messages.success(request, "Thanks! We’ve saved your onboarding progress.")
-    return redirect(request.META.get("HTTP_REFERER") or "upload")
+    messages.success(request, "Thanks! We've saved your onboarding progress.")
+    return redirect(request.META.get("HTTP_REFERER") or "overview")
 

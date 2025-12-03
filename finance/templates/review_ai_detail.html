@@ -1,68 +1,130 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "AI Run" %} {{ run.id }}{% endblock %}
+
 {% block content %}
-<h2>{% trans "AI Run" %} — {{ run.kind }} — {{ run.started_at|date:"Y-m-d H:i" }}</h2>
-<p class="meta">
-  {% trans "Status" %}: <strong>{{ run.status }}</strong> | {% trans "Mode" %}: {{ run.mode }} |
-  {% trans "Considered" %}: {{ run.considered }}, {% trans "Applied" %}: {{ run.applied }}, {% trans "Parked" %}: {{ run.parked }}
-  {% if run.finished_at %}| {% trans "Finished" %}: {{ run.finished_at|date:"Y-m-d H:i" }}{% endif %}
-</p>
-{% if run.log_text %}<pre style="background:#f8f8f8; padding:.5rem; border:1px solid #eee; border-radius:6px;">{{ run.log_text }}</pre>{% endif %}
+<div class="card">
+    <h2 class="card-title" style="margin-bottom:0.25rem;">
+        {% trans "AI Run" %} — {{ run.kind }} — {{ run.started_at|date:"Y-m-d H:i" }}
+    </h2>
 
-<form method="get" style="margin:.5rem 0;">
-  <label>{% trans "Filter:" %}
-    <select name="action" onchange="this.form.submit()">
-      <option value="">{% trans "All" %}</option>
-      <option value="applied" {% if action == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
-      <option value="parked" {% if action == "parked" %}selected{% endif %}>{% trans "Parked" %}</option>
-      <option value="skipped" {% if action == "skipped" %}selected{% endif %}>{% trans "Skipped" %}</option>
-    </select>
-  </label>
-</form>
-
-<table>
-  <thead>
-    <tr>
-      <th>{% trans "Tx" %}</th>
-      <th>{% trans "Old → New / Suggested" %}</th>
-      <th>{% trans "Confidence" %}</th>
-      <th>{% trans "Reason" %}</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for it in page_obj %}
-    <tr>
-      <td>#{{ it.transaction_id }} — {{ it.transaction.date }} — {{ it.transaction.merchant|default:"—" }}</td>
-      <td>
-        {% if it.action == "applied" %}
-          {{ it.old_category_fk.name|default:"—" }} → <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
-        {% elif it.action == "parked" %}
-          {% trans "suggestion:" %} <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
-        {% else %}
-          {{ it.action|capfirst }}
+    <p class="meta" style="margin-top:0; font-size:0.85rem; color:var(--text-light);">
+        {% trans "Status" %}: <strong>{{ run.status }}</strong> |
+        {% trans "Mode" %}: {{ run.mode }} |
+        {% trans "Considered" %}: {{ run.considered }},
+        {% trans "Applied" %}: {{ run.applied }},
+        {% trans "Parked" %}: {{ run.parked }}
+        {% if run.finished_at %}
+            | {% trans "Finished" %}: {{ run.finished_at|date:"Y-m-d H:i" }}
         {% endif %}
-      </td>
-      <td>{% if it.confidence %}{{ it.confidence }}{% else %}—{% endif %}</td>
-      <td style="max-width:480px">{{ it.reason|default:"" }}</td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="4">{% trans "No items." %}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+    </p>
 
-<p class="meta">
-  {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=total %}
-  Showing {{ start }}–{{ end }} of {{ total }}.
-  {% endblocktrans %}
-</p>
-{% if page_obj.has_other_pages %}
-  <p>
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&action={{ action }}">{% trans "Previous" %}</a>{% endif %}
-    {% if page_obj.has_next %}<a style="margin-left:.75rem" href="?page={{ page_obj.next_page_number }}&action={{ action }}">{% trans "Next" %}</a>{% endif %}
-  </p>
-{% endif %}
+    {% if run.log_text %}
+        <pre style="
+            background:#f8fafc;
+            padding:0.75rem 1rem;
+            border:1px solid #e2e8f0;
+            border-radius:8px;
+            font-size:0.85rem;
+            margin-top:0.75rem;
+            white-space:pre-wrap;
+        ">{{ run.log_text }}</pre>
+    {% endif %}
 
-<p style="margin-top:1rem;"><a href="{% url 'review_ai_runs' %}">{% trans "← Back to all runs" %}</a></p>
+    <form method="get" style="margin:1rem 0; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <label>
+            <span style="font-size:0.9rem; margin-right:0.25rem;">{% trans "Filter:" %}</span>
+            <select name="action" onchange="this.form.submit()"
+                    style="padding:0.35rem 0.6rem; border-radius:8px; border:1px solid #e2e8f0;">
+                <option value="">{% trans "All" %}</option>
+                <option value="applied" {% if action == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
+                <option value="parked" {% if action == "parked" %}selected{% endif %}>{% trans "Parked" %}</option>
+                <option value="skipped" {% if action == "skipped" %}selected{% endif %}>{% trans "Skipped" %}</option>
+            </select>
+        </label>
+    </form>
+
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>{% trans "Tx" %}</th>
+                    <th>{% trans "Old → New / Suggested" %}</th>
+                    <th>{% trans "Confidence" %}</th>
+                    <th>{% trans "Reason" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for it in page_obj %}
+                <tr>
+                    <td>
+                        #{{ it.transaction_id }} —
+                        {{ it.transaction.date }} —
+                        {{ it.transaction.merchant|default:"—" }}
+                    </td>
+                    <td>
+                        {% if it.action == "applied" %}
+                            {{ it.old_category_fk.name|default:"—" }}
+                            → <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
+                        {% elif it.action == "parked" %}
+                            {% trans "suggestion:" %}
+                            <strong>{{ it.new_category_fk.name|default:"—" }}</strong>
+                        {% else %}
+                            {{ it.action|capfirst }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if it.confidence %}
+                            {{ it.confidence }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td style="max-width:480px;">
+                        {{ it.reason|default:"" }}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">
+                        {% trans "No items." %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <p class="meta" style="margin:0; font-size:0.85rem; color:var(--text-light);">
+            {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=total %}
+            Showing {{ start }}–{{ end }} of {{ total }}.
+            {% endblocktrans %}
+        </p>
+
+        {% if page_obj.has_other_pages %}
+            <p style="margin:0; font-size:0.9rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&action={{ action }}"
+                       style="text-decoration:none; color:var(--primary-teal);">
+                        {% trans "Previous" %}
+                    </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&action={{ action }}"
+                       style="margin-left:.75rem; text-decoration:none; color:var(--primary-teal);">
+                        {% trans "Next" %}
+                    </a>
+                {% endif %}
+            </p>
+        {% endif %}
+    </div>
+
+    <p style="margin-top:1rem;">
+        <a href="{% url 'review_ai_runs' %}"
+           style="text-decoration:none; color:var(--primary-teal); font-size:0.9rem;">
+            {% trans "← Back to all runs" %}
+        </a>
+    </p>
+</div>
 {% endblock %}
