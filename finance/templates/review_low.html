@@ -60,7 +60,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <select class="cat-select" data-tx="{{ t.id }}">
+                                <select class="cat-select"
+                                        data-tx="{{ t.id }}"
+                                        data-default="{% if t.ai_suggested_fk %}{{ t.ai_suggested_fk.id }}{% endif %}">
                                     <option value="">— {% trans "choose" %} —</option>
                                     {% for c in categories %}
                                         <option value="{{ c.id }}"
@@ -102,8 +104,9 @@
                 z-index:100;
                 box-shadow:0 -2px 5px rgba(0,0,0,0.04);
             ">
-                <strong id="pendingCount">
-                    0 {% trans "selected" %}
+                <strong>
+                    <span id="changedCount">0</span> {% trans "changed" %} /
+                    <span id="pendingCount">0</span> {% trans "ready" %}
                 </strong>
                 <button id="applyBtn"
                         style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
@@ -122,7 +125,7 @@
 
             function loadChanges() {
                 try { return JSON.parse(localStorage.getItem(userKey) || '{}'); }
-                catch(e){ return {}; }
+                catch (e) { return {}; }
             }
 
             function saveChanges(obj) {
@@ -130,22 +133,50 @@
             }
 
             function refreshUI() {
-               const changes = loadChanges();
-               const count = Object.keys(changes).length;
-               // Translated "selected"
-               document.getElementById('pendingCount').textContent = count + ' {% trans "selected" %}';
+                let changes = loadChanges();
+                let updated = false;
 
-               // Update selects on the current page
-               document.querySelectorAll('.cat-select').forEach(sel => {
-                   const tid = sel.dataset.tx;
-                   if (changes[tid]) {
-                       sel.value = changes[tid];
-                       // Highlight rows that have a pending change
-                       sel.closest('tr').style.background = '#f0f8ff';
-                   } else {
-                       sel.closest('tr').style.background = '';
-                   }
-               });
+                // Record AI suggestion (or current selection) as "accepted" by default
+                // for every row on this page, unless we've explicitly changed/cleared it before.
+                document.querySelectorAll('.cat-select').forEach(sel => {
+                    const tid = sel.dataset.tx;
+                    if (!changes[tid] && sel.value) {
+                        changes[tid] = sel.value;
+                        updated = true;
+                    }
+                });
+
+                if (updated) {
+                    saveChanges(changes);
+                }
+
+                const pendingEl = document.getElementById('pendingCount');
+                const changedEl = document.getElementById('changedCount');
+
+                let total = Object.keys(changes).length;
+                let changed = 0;
+
+                // Apply stored values, count changed, and highlight only changed ones
+                document.querySelectorAll('.cat-select').forEach(sel => {
+                    const tid = sel.dataset.tx;
+                    const def = sel.dataset.default || "";
+                    const val = changes[tid] || "";
+
+                    if (val) {
+                        sel.value = val;
+                    }
+
+                    if (val && val !== def) {
+                        // user-changed vs AI default -> highlight
+                        sel.closest('tr').style.background = '#f0f8ff';
+                        changed++;
+                    } else {
+                        sel.closest('tr').style.background = '';
+                    }
+                });
+
+                if (pendingEl) pendingEl.textContent = total;
+                if (changedEl) changedEl.textContent = changed;
             }
 
             // Event Listeners for every dropdown
@@ -165,13 +196,26 @@
 
             // Form Submit Handler
             document.getElementById('lowConfForm').addEventListener('submit', (e) => {
-                const changes = loadChanges();
+                let changes = loadChanges();
+
+                // Make sure latest state of THIS page is reflected:
+                // - if select has a value -> include it
+                // - if select is blank -> remove it (leave as low-confidence)
+                document.querySelectorAll('.cat-select').forEach(sel => {
+                    const tid = sel.dataset.tx;
+                    if (sel.value) {
+                        changes[tid] = sel.value;
+                    } else {
+                        delete changes[tid];
+                    }
+                });
+
                 if (Object.keys(changes).length === 0) {
                     e.preventDefault();
                     alert("{% trans 'No changes selected.' %}");
                     return;
                 }
-                // Put the JSON into the hidden field
+
                 document.getElementById('changes_json').value = JSON.stringify(changes);
 
                 // Clear storage so it doesn't persist after a successful apply
@@ -180,7 +224,7 @@
 
             // Clear Button Handler
             document.getElementById('clearBtn').addEventListener('click', () => {
-                if(confirm("{% trans 'Clear all saved selections?' %}")) {
+                if (confirm("{% trans 'Clear all saved selections?' %}")) {
                     localStorage.removeItem(userKey);
                     location.reload();
                 }
