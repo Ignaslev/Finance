@@ -165,6 +165,7 @@
                 <th style="text-align:right;">{% trans "Amount" %}</th>
                 <th>{% trans "Account" %}</th>
                 <th>{% trans "Category" %}</th>
+                <th>{% trans "Set by" %}</th>
                 <th>{% trans "Edit" %}</th>
               </tr>
           </thead>
@@ -182,6 +183,7 @@
                   <span style="color:#aaa; font-size:0.8em;">{{ t.currency }}</span>
               </td>
               <td style="color:#666;">{{ t.money_source.name }}</td>
+
               <td>
                 <select class="cat-select" data-tx="{{ t.id }}" data-initial="{% if t.category_fk %}{{ t.category_fk.id }}{% endif %}"
                         style="padding:0.2rem; border:1px solid #e2e8f0; border-radius:4px; max-width:150px;">
@@ -192,6 +194,23 @@
                 </select>
                 <span class="pending-dot" style="display:none; color:var(--primary-teal); font-size:1.2em; vertical-align:middle;">•</span>
               </td>
+
+              <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-light);">
+                {% if t.category_fk %}
+                  {% if t.category_source == "user" %}
+                    {% trans "User" %}
+                  {% elif t.category_source == "ai" %}
+                    {% trans "AI" %}
+                  {% elif t.category_source == "import" %}
+                    {% trans "Import" %}
+                  {% else %}
+                    —
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
               <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}" class="text-teal">{% trans "Edit" %}</a></td>
             </tr>
           {% endfor %}

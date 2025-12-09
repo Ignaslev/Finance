@@ -35,40 +35,6 @@
     {% endif %}
 </div>
 
-{% if goals %}
-<div class="card" style=" border:1px solid #e1f0e1;">
-  <div class="flex justify-between items-center mb-4">
-    <div class="card-title" style="margin:0;">{% trans "Savings Goals" %}</div>
-    <a href="{% url 'profile' %}" class="text-teal" style="font-size:0.9rem;">{% trans "Manage" %}</a>
-  </div>
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
-    {% for g in goals %}
-      <div style="border:1px solid #d1e7d1; border-radius:10px; padding:1rem; background:#ffffff;">
-        <div style="display:flex; justify-content:space-between; gap:.5rem; margin-bottom:0.5rem;">
-          <div style="font-weight:600; color:#2e7d32;">{{ g.name }}</div>
-        </div>
-        <div style="margin-bottom:0.5rem; font-size:.95em; color:#333;">
-          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
-        </div>
-        <div style="height:8px; background:#eef6ee; border-radius:999px; overflow:hidden; margin-bottom:0.5rem;">
-          <div style="height:100%; width:{% if g.pct > 100 %}100{% else %}{{ g.pct|stringformat:'f' }}{% endif %}%; background:#2e7d32;"></div>
-        </div>
-        <div style="font-size:.85em; color:#555;">
-          <strong>{{ g.pct|floatformat:0 }}%</strong>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<div class="card">
-    <div class="card-title">{% trans "Net Worth History" %}</div>
-    <div style="height:320px; width:100%;">
-        <canvas id="netWorthChart"></canvas>
-    </div>
-</div>
-
 <div class="card">
     <div class="flex justify-between items-center mb-4">
         <div class="card-title" style="margin:0;">{% trans "Accounts & Assets" %}</div>
@@ -101,6 +67,42 @@
         </table>
     </div>
 </div>
+
+
+
+<div class="card">
+    <div class="card-title">{% trans "Net Worth History" %}</div>
+    <div style="height:320px; width:100%;">
+        <canvas id="netWorthChart"></canvas>
+    </div>
+</div>
+
+{% if goals %}
+<div class="card" style=" border:1px solid #e1f0e1;">
+  <div class="flex justify-between items-center mb-4">
+    <div class="card-title" style="margin:0;">{% trans "Savings Goals" %}</div>
+    <a href="{% url 'profile' %}" class="text-teal" style="font-size:0.9rem;">{% trans "Manage" %}</a>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+    {% for g in goals %}
+      <div style="border:1px solid #d1e7d1; border-radius:10px; padding:1rem; background:#ffffff;">
+        <div style="display:flex; justify-content:space-between; gap:.5rem; margin-bottom:0.5rem;">
+          <div style="font-weight:600; color:#2e7d32;">{{ g.name }}</div>
+        </div>
+        <div style="margin-bottom:0.5rem; font-size:.95em; color:#333;">
+          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
+        </div>
+        <div style="height:8px; background:#eef6ee; border-radius:999px; overflow:hidden; margin-bottom:0.5rem;">
+          <div style="height:100%; width:{% if g.pct > 100 %}100{% else %}{{ g.pct|stringformat:'f' }}{% endif %}%; background:#2e7d32;"></div>
+        </div>
+        <div style="font-size:.85em; color:#555;">
+          <strong>{{ g.pct|floatformat:0 }}%</strong>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="card">
   <div class="card-title">{% trans "Income vs Spending" %}</div>

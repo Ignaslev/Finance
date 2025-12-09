@@ -157,9 +157,12 @@ def profile(request):
                 acc.save(update_fields=["manual_balance", "balance_updated_at"])
 
                 # Compute total effective (post-change), as you already do
-                ledger_map = _ledger_balance_by_source(request.user)  # existing helper
+                ledger_map = _ledger_balance_by_source(request.user)
                 total_effective = Decimal("0")
                 for a in MoneySource.objects.filter(user=request.user, is_active=True):
+                    # IMPORTANT: do NOT include investments in the cash snapshot
+                    if a.type == "investment":
+                        continue
                     eff = a.manual_balance if a.manual_balance is not None else ledger_map.get(a.id, Decimal("0"))
                     total_effective += (eff or Decimal("0"))
 
@@ -347,7 +350,6 @@ def profile(request):
         "goals": goals,
     }
     return render(request, "profile.html", ctx)
-
 
 
 @login_required

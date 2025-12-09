@@ -108,6 +108,21 @@ def overview(request):
         if d not in history_map: history_map[d] = {'cash': 0, 'assets': 0}
         history_map[d]['assets'] = p.total
 
+    # Fallback: if there are no asset snapshots at all in the window,
+    # treat current investment balances as a flat assets line.
+    if not port_snaps.exists():
+        # Sum investment account balances from the accounts list we already built
+        fallback_assets = sum(
+            (acc.effective_balance or Decimal("0"))
+            for acc in accounts
+            if acc.type == 'investment'
+        )
+
+        if fallback_assets > 0 and history_map:
+            for d in history_map:
+                history_map[d]['assets'] = fallback_assets
+
+
     graph_dates = []
     graph_values = []
 

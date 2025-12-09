@@ -115,8 +115,8 @@
         <a href="{% url 'assets_dashboard' %}" class="b-item {% active_link 'assets_dashboard' %}">
             <i class="ph ph-chart-line-up"></i><span>{% trans "Invest" %}</span>
         </a>
-        <a href="{% url 'tx_add' %}" class="b-item b-add">
-            <div class="add-circle"><i class="ph ph-plus"></i></div>
+        <a href="{% url 'statistics' %}" class="b-item {% active_link 'statistics' %}">
+            <i class="ph ph-chart-bar"></i><span>{% trans "Statistics" %}</span>
         </a>
         <a href="{% url 'upload' %}" class="b-item {% active_link 'upload' %}">
             <i class="ph ph-list-dashes"></i><span>{% trans "Txns" %}</span>
@@ -143,11 +143,8 @@
                 </div>
             </div>
 
-            <div class="menu-grid">
-                <a href="{% url 'statistics' %}" class="menu-item">
-                    <div class="icon-box" style="background:#e6fffa; color:#00cea6;"><i class="ph ph-chart-bar"></i></div>
-                    <span>{% trans "Statistics" %}</span>
-                </a>
+            <div class="menu-grid" style="display:flex; justify-content:center; gap:3rem; flex-wrap:wrap;">
+
                 <a href="{% url 'reports' %}" class="menu-item">
                     <div class="icon-box" style="background:#ebf8ff; color:#3182ce;"><i class="ph ph-file-text"></i></div>
                     <span>{% trans "Reports" %}</span>

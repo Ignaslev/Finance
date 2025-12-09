@@ -386,7 +386,27 @@ def upload(request):
                     description=r.get("description") or r.get("notes") or r.get("merchant") or "",
                 )
 
+                # 1) Fingerprint-based dedupe
                 if fp in existing_fps:
+                    db_dups += 1
+                    continue
+
+                # 2) Extra safety: signature-based dedupe
+                merchant_norm = (r.get("merchant") or "").strip()
+                cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
+
+                sig_exists = Transaction.objects.filter(
+                    user=request.user,
+                    money_source=import_src,
+                    date=r["date"],
+                    amount=r["amount"],
+                    currency=cur_norm,
+                    in_out=r.get("in_out"),
+                    merchant__iexact=merchant_norm,
+                    is_deleted=False,
+                ).exists()
+
+                if sig_exists:
                     db_dups += 1
                     continue
 
@@ -394,9 +414,9 @@ def upload(request):
                     user=request.user,
                     money_source=import_src,
                     date=r["date"],
-                    merchant=r.get("merchant") or "",
-                    amount=r.get("amount"),
-                    currency=(r.get("currency") or "EUR").strip() or "EUR",
+                    merchant=merchant_norm,
+                    amount=r["amount"],
+                    currency=cur_norm,
                     in_out=r.get("in_out"),
                     notes=r.get("notes") or "",
                     user_note="",
