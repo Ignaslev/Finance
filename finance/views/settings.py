@@ -12,7 +12,7 @@ from datetime import date as _date
 from calendar import monthrange
 from collections import defaultdict
 
-from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState
+from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile
 from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
 from django.conf import settings
 
@@ -88,6 +88,14 @@ def profile(request):
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
 
+        # Preferences
+        if action == "pref_tax":
+            prof, _created = UserProfile.objects.get_or_create(user=request.user)
+            prof.exclude_investment_tax = bool(request.POST.get("exclude_investment_tax"))
+            prof.save(update_fields=["exclude_investment_tax"])
+            messages.success(request, "Preferences saved.")
+            return redirect("profile")
+
         # Accounts
         if action == "add":
             name = (request.POST.get("name") or "").strip()
@@ -142,31 +150,26 @@ def profile(request):
             acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
 
             if raw == "":
-                # Clear manual balance (no snapshot here, same as your current logic)
                 acc.manual_balance = None
                 acc.balance_updated_at = timezone.now()
                 acc.save(update_fields=["manual_balance", "balance_updated_at"])
                 messages.success(request, "Manual balance cleared.")
                 return redirect("profile")
 
-            # Save manual balance and record a global snapshot for anomaly tracking
             try:
                 val = Decimal(raw)
                 acc.manual_balance = val
                 acc.balance_updated_at = timezone.now()
                 acc.save(update_fields=["manual_balance", "balance_updated_at"])
 
-                # Compute total effective (post-change), as you already do
                 ledger_map = _ledger_balance_by_source(request.user)
                 total_effective = Decimal("0")
                 for a in MoneySource.objects.filter(user=request.user, is_active=True):
-                    # IMPORTANT: do NOT include investments in the cash snapshot
                     if a.type == "investment":
                         continue
                     eff = a.manual_balance if a.manual_balance is not None else ledger_map.get(a.id, Decimal("0"))
                     total_effective += (eff or Decimal("0"))
 
-                # Grab the previous snapshot BEFORE creating a new one
                 prev_snap = (BalanceSnapshot.objects
                              .filter(user=request.user)
                              .order_by("-timestamp")
@@ -180,15 +183,12 @@ def profile(request):
                     note=f"Snapshot after setting manual balance for {acc.name}",
                 )
 
-                # Compare vs ledger delta and log anomaly if needed
-                # (helper is already in your codebase; we’re reusing it)
                 discrepancy = _maybe_log_balance_anomaly(
                     request.user, prev_snap, new_snap,
                     note="After setbalance on Profile"
                 )
 
                 if prev_snap is None:
-                    # First-ever snapshot for this user
                     messages.success(request, "Manual balance saved and an initial snapshot was recorded.")
                 else:
                     if discrepancy:
@@ -259,6 +259,8 @@ def profile(request):
             return redirect("profile")
 
     # ---------- GET ----------
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
+
     accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
 
     tx_sums = (
@@ -321,7 +323,6 @@ def profile(request):
             "id": c.id, "name": c.name, "color": c.color, "cap": c.monthly_cap, "suggested": suggested,
         })
 
-    # Goals (active + paused)
     goals_qs = (
         SavingsGoal.objects
         .filter(user=request.user)
@@ -341,6 +342,8 @@ def profile(request):
         })
 
     ctx = {
+        "exclude_investment_tax": prof.exclude_investment_tax,
+
         "accounts": accounts,
         "total_accounts_balance": float(total_effective),
         "type_choices": MoneySource.TYPE_CHOICES,

@@ -289,4 +289,27 @@
     </div>
 </div>
 
+<div class="card">
+  <div class="card-title">{% trans "Preferences" %}</div>
+
+  <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid #edf2f7;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="pref_tax">
+
+    <label style="display:flex; align-items:flex-start; gap:.75rem; cursor:pointer;">
+      <input type="checkbox" name="exclude_investment_tax" value="1" {% if exclude_investment_tax %}checked{% endif %} style="margin-top:.2rem;">
+      <div>
+        <div class="text-dark" style="font-weight:700;">{% trans "Exclude 15% tax from investments" %}</div>
+        <div class="text-medium" style="margin-top:.25rem; font-size:0.9rem;">
+          {% trans "If enabled, the app will show your investment values after subtracting 15% (flat estimate) in Overview and Statistics. The Portfolio page will always show full value." %}
+        </div>
+      </div>
+    </label>
+
+    <div class="flex justify-end" style="margin-top:1rem;">
+      <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+    </div>
+  </form>
+</div>
+
 {% endblock %}

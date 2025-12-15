@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils.crypto import get_random_string
 
 # ----- Existing choices -----
 # ----- Category choices come from settings -----
@@ -374,10 +375,13 @@ from django.utils.crypto import get_random_string
 
 class UserProfile(models.Model):
     """
-    Stores app-specific user settings (e.g. API keys).
+    Stores app-specific user settings (e.g. API keys and display preferences).
     """
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     android_webhook_secret = models.CharField(max_length=64, unique=True, blank=True)
+
+    # If True: show investment values after subtracting 15% (flat estimate)
+    exclude_investment_tax = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.android_webhook_secret:

@@ -10,7 +10,7 @@ from decimal import Decimal
 from calendar import monthrange
 import json, os
 
-from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal
+from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal, UserProfile
 
 
 
@@ -23,10 +23,12 @@ def home(request):
 
 @login_required
 def overview(request):
-    # 1. ACCOUNTS & COMPOSITION
-    # We need to calculate "Live Balance":
-    # Live = Manual_Anchor + (Income_Since_Anchor - Spending_Since_Anchor)
+    # Preference: exclude 15% tax from investment values (display only)
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
+    tax_on = bool(prof.exclude_investment_tax)
+    tax_factor = Decimal("0.85") if tax_on else Decimal("1.0")
 
+    # 1. ACCOUNTS & COMPOSITION
     accounts = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("type", "name"))
 
     comp_totals = defaultdict(Decimal)
@@ -36,23 +38,20 @@ def overview(request):
         # 1. Determine Anchor
         if acc.manual_balance is not None:
             anchor_val = acc.manual_balance
-            # If we have a timestamp for the manual set, use it. Else assume really old.
             anchor_date = acc.balance_updated_at or datetime.min.replace(tzinfo=dt_timezone.utc)
         else:
             anchor_val = Decimal("0")
             anchor_date = datetime.min.replace(tzinfo=dt_timezone.utc)
 
-        # 2. Calculate Delta since Anchor (Only for Non-Investment accounts)
-        # Investment accounts are auto-calculated by the asset engine, so we trust manual_balance.
+        # 2. Calculate Live Balance
         if acc.type == 'investment':
             live_balance = anchor_val
         else:
-            # Sum transactions strictly AFTER the anchor update
             delta_qs = Transaction.objects.filter(
                 user=request.user,
                 money_source=acc,
                 is_deleted=False,
-                created_at__gt=anchor_date  # Use created_at for precision vs manual entry time
+                created_at__gt=anchor_date
             ).aggregate(
                 inc=Sum('amount', filter=Q(in_out='in')),
                 out=Sum('amount', filter=Q(in_out='out'))
@@ -60,6 +59,10 @@ def overview(request):
             plus = delta_qs['inc'] or Decimal("0")
             minus = delta_qs['out'] or Decimal("0")
             live_balance = anchor_val + plus - minus
+
+        # Apply tax factor ONLY to investment balances, and only when positive
+        if tax_on and acc.type == "investment" and live_balance > 0:
+            live_balance = live_balance * tax_factor
 
         acc.effective_balance = live_balance
 
@@ -91,27 +94,30 @@ def overview(request):
     start_date = timezone.now().date() - timedelta(days=days_to_graph)
 
     bal_snaps = BalanceSnapshot.objects.filter(user=request.user, timestamp__date__gte=start_date).order_by('timestamp')
-    port_snaps = PortfolioSnapshot.objects.filter(user=request.user, timestamp__date__gte=start_date).order_by(
-        'timestamp')
+    port_snaps = PortfolioSnapshot.objects.filter(user=request.user, timestamp__date__gte=start_date).order_by('timestamp')
 
     history_map = {}
 
     # Fill Cash History
     for b in bal_snaps:
         d = b.timestamp.date() if hasattr(b.timestamp, 'date') else b.timestamp
-        if d not in history_map: history_map[d] = {'cash': 0, 'assets': 0}
+        if d not in history_map:
+            history_map[d] = {'cash': 0, 'assets': 0}
         history_map[d]['cash'] = b.amount
 
-    # Fill Asset History
+    # Fill Asset History (apply tax factor here for graph + net worth history)
     for p in port_snaps:
         d = p.timestamp.date() if hasattr(p.timestamp, 'date') else p.timestamp
-        if d not in history_map: history_map[d] = {'cash': 0, 'assets': 0}
-        history_map[d]['assets'] = p.total
+        if d not in history_map:
+            history_map[d] = {'cash': 0, 'assets': 0}
+        assets_val = p.total
+        if tax_on and assets_val > 0:
+            assets_val = assets_val * tax_factor
+        history_map[d]['assets'] = assets_val
 
     # Fallback: if there are no asset snapshots at all in the window,
-    # treat current investment balances as a flat assets line.
+    # treat current investment balances as a flat assets line (already tax-adjusted in acc.effective_balance)
     if not port_snaps.exists():
-        # Sum investment account balances from the accounts list we already built
         fallback_assets = sum(
             (acc.effective_balance or Decimal("0"))
             for acc in accounts
@@ -121,7 +127,6 @@ def overview(request):
         if fallback_assets > 0 and history_map:
             for d in history_map:
                 history_map[d]['assets'] = fallback_assets
-
 
     graph_dates = []
     graph_values = []
@@ -136,8 +141,10 @@ def overview(request):
         for i in range(delta.days + 1):
             d = min_d + timedelta(days=i)
             if d in history_map:
-                if history_map[d]['cash'] > 0: last_cash = history_map[d]['cash']
-                if history_map[d]['assets'] > 0: last_assets = history_map[d]['assets']
+                if history_map[d]['cash'] > 0:
+                    last_cash = history_map[d]['cash']
+                if history_map[d]['assets'] > 0:
+                    last_assets = history_map[d]['assets']
 
             day_total = last_cash + last_assets
             if day_total > 0:
@@ -157,7 +164,8 @@ def overview(request):
     for row in by_month:
         if row["month"]:
             val = row["month"]
-            if hasattr(val, 'date'): val = val.date()
+            if hasattr(val, 'date'):
+                val = val.date()
             months_set.add(val.replace(day=1))
 
     months = sorted(months_set)
@@ -166,9 +174,11 @@ def overview(request):
     totals_out = {m: Decimal("0") for m in months}
 
     for row in by_month:
-        if not row["month"]: continue
+        if not row["month"]:
+            continue
         val = row["month"]
-        if hasattr(val, 'date'): val = val.date()
+        if hasattr(val, 'date'):
+            val = val.date()
         mk = val.replace(day=1)
         amt = row["total"] or Decimal("0")
         if row["in_out"] == Transaction.IN:
@@ -191,9 +201,11 @@ def overview(request):
     for row in qs_cat:
         if row["month"]:
             val = row["month"]
-            if hasattr(val, 'date'): val = val.date()
+            if hasattr(val, 'date'):
+                val = val.date()
             cat_months_set.add(val.replace(day=1))
-        if row["category_fk__name"]: cat_names_set.add(row["category_fk__name"])
+        if row["category_fk__name"]:
+            cat_names_set.add(row["category_fk__name"])
 
     cat_months = sorted(set(months) | cat_months_set)
     cat_labels = [m.strftime("%Y-%m") for m in cat_months]
@@ -201,9 +213,11 @@ def overview(request):
 
     data_map = defaultdict(lambda: {m: Decimal("0") for m in cat_months})
     for row in qs_cat:
-        if not row["month"]: continue
+        if not row["month"]:
+            continue
         val = row["month"]
-        if hasattr(val, 'date'): val = val.date()
+        if hasattr(val, 'date'):
+            val = val.date()
         mk = val.replace(day=1)
         cname = row["category_fk__name"]
         if mk and cname:
@@ -211,7 +225,6 @@ def overview(request):
 
     series_by_cat = {cname: [float(data_map[cname][m]) for m in cat_months] for cname in cat_names}
 
-    # Merchant Breakdown
     qs_merchant = (
         tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
         .annotate(month=TruncMonth("date"))
@@ -220,9 +233,11 @@ def overview(request):
     )
     breakdown_by_cat_month = {}
     for row in qs_merchant:
-        if not row["month"]: continue
+        if not row["month"]:
+            continue
         val = row["month"]
-        if hasattr(val, 'date'): val = val.date()
+        if hasattr(val, 'date'):
+            val = val.date()
         mk = val.replace(day=1)
         month_key = mk.strftime("%Y-%m")
 
@@ -242,9 +257,7 @@ def overview(request):
         for m in per_month:
             per_month[m] = sorted(per_month[m], key=lambda x: (-x["total"], x["merchant"]))[:12]
 
-    # Budgets
-    capped_qs = Category.objects.filter(user=request.user, monthly_cap__isnull=False).exclude(monthly_cap=0).order_by(
-        "name")
+    capped_qs = Category.objects.filter(user=request.user, monthly_cap__isnull=False).exclude(monthly_cap=0).order_by("name")
     budget_has_caps = capped_qs.exists()
     months_for_budgets = sorted({_date(d.year, d.month, 1) for d in tx_base.values_list("date", flat=True)})
     if not months_for_budgets:
@@ -272,7 +285,6 @@ def overview(request):
 
     budget_selected_key = budget_month_keys[-1] if budget_month_keys else ""
 
-    # Goals
     eff_map = {acc.id: acc.effective_balance for acc in accounts}
     goals = []
     for g in SavingsGoal.objects.filter(user=request.user, is_active=True).prefetch_related("accounts"):
@@ -303,7 +315,7 @@ def overview(request):
         "cat_month_labels_json": json.dumps(cat_labels),
         "series_by_cat_json": json.dumps(series_by_cat),
         "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
-        "month_bounds_json": "{}",
+        "month_bounds_json": "{}",  # unchanged
 
         "goals": goals,
         "budget_all_json": json.dumps(budget_all),

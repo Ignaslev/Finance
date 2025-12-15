@@ -10,7 +10,7 @@ from decimal import Decimal
 from calendar import monthrange
 import json
 
-from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot
+from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot, UserProfile
 from finance.services import _advisor_build_payload, _advisor_call_model
 # Move _reconcile_global to utils or keep here if private
 from finance.utils import _reconcile_global # If you moved it
@@ -21,6 +21,11 @@ from finance.utils import _reconcile_global # If you moved it
 def statistics(request):
     user = request.user
     today = timezone.localtime().date()
+
+    # Preference: exclude 15% tax from investment values (display only, not portfolio page)
+    prof, _created = UserProfile.objects.get_or_create(user=user)
+    tax_on = bool(prof.exclude_investment_tax)
+    tax_factor = Decimal("0.85") if tax_on else Decimal("1.0")
 
     # ==========================================
     # 1. RUNWAY SIMULATOR (New Logic)
@@ -46,6 +51,11 @@ def statistics(request):
     for acc in all_sources_sim:
         if acc.id in inc_src_ids:
             bal = acc.manual_balance if acc.manual_balance is not None else Decimal("0")
+
+            # Apply tax factor ONLY to investment values, and only when positive
+            if tax_on and acc.type == "investment" and bal > 0:
+                bal = bal * tax_factor
+
             total_net_worth += bal
 
     # Calculate Burn Rate (Filtered, Last 90 Days)
@@ -72,10 +82,8 @@ def statistics(request):
 
     base = Transaction.objects.filter(user=user, is_deleted=False)
 
-    mom_this = base.filter(in_out=Transaction.OUT, date__gte=this_month_start).aggregate(s=Sum("amount"))[
-                   "s"] or Decimal("0")
-    mom_last = base.filter(in_out=Transaction.OUT, date__gte=last_month_start, date__lte=last_month_end).aggregate(
-        s=Sum("amount"))["s"] or Decimal("0")
+    mom_this = base.filter(in_out=Transaction.OUT, date__gte=this_month_start).aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    mom_last = base.filter(in_out=Transaction.OUT, date__gte=last_month_start, date__lte=last_month_end).aggregate(s=Sum("amount"))["s"] or Decimal("0")
     mom_diff = mom_this - mom_last
 
     # ==========================================
@@ -85,6 +93,10 @@ def statistics(request):
     if not base.exists():
         return render(request, "statistics.html", {
             "empty_state": True,
+
+            # Preference flag
+            "exclude_investment_tax": tax_on,
+
             # Pass Runway vars even on empty state
             "runway_months": float(runway_months),
             "avg_monthly_burn": float(avg_monthly_burn),
@@ -110,15 +122,19 @@ def statistics(request):
     )
 
     def _mk(val):
-        if isinstance(val, datetime): d = val.date(); return _date(d.year, d.month, 1)
-        if isinstance(val, _date): return _date(val.year, val.month, 1)
+        if isinstance(val, datetime):
+            d = val.date()
+            return _date(d.year, d.month, 1)
+        if isinstance(val, _date):
+            return _date(val.year, val.month, 1)
         return None
 
     month_map_in, month_map_out = {}, {}
     months_set = set()
     for r in by_month:
         mk = _mk(r["m"])
-        if not mk: continue
+        if not mk:
+            continue
         months_set.add(mk)
         if r["in_out"] == Transaction.IN:
             month_map_in[mk] = (month_map_in.get(mk, Decimal("0")) + (r["total"] or Decimal("0")))
@@ -162,10 +178,12 @@ def statistics(request):
         return d.strftime("%Y-%m")
 
     def month_start_from_key(k: str) -> _date:
-        y, m = map(int, k.split("-")); return _date(y, m, 1)
+        y, m = map(int, k.split("-"))
+        return _date(y, m, 1)
 
     def month_end_from_key(k: str) -> _date:
-        y, m = map(int, k.split("-")); return _date(y, m, monthrange(y, m)[1])
+        y, m = map(int, k.split("-"))
+        return _date(y, m, monthrange(y, m)[1])
 
     this_month_key = key_from_date(_date(today.year, today.month, 1))
     months_keys = [key_from_date(m) for m in all_months]
@@ -185,8 +203,10 @@ def statistics(request):
     def is_valid_key(k):
         return isinstance(k, str) and _re.match(r"^\d{4}-\d{2}$", k)
 
-    if not is_valid_key(start_key): start_key = default_start_key
-    if not is_valid_key(end_key): end_key = default_end_key
+    if not is_valid_key(start_key):
+        start_key = default_start_key
+    if not is_valid_key(end_key):
+        end_key = default_end_key
 
     start_date = month_start_from_key(start_key)
     end_date = month_end_from_key(end_key)
@@ -194,7 +214,8 @@ def statistics(request):
         start_date, end_date = end_date, start_date
         start_key, end_key = end_key, start_key
     months_in_range = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
-    if months_in_range < 1: months_in_range = 1
+    if months_in_range < 1:
+        months_in_range = 1
 
     all_categories = list(Category.objects.filter(user=user).order_by("name").values("id", "name"))
     selected_cat_ids = {int(x) for x in request.GET.getlist("cats") if str(x).isdigit()}
@@ -247,14 +268,16 @@ def statistics(request):
 
     last90_start = today - timedelta(days=89)
     wday_totals = [Decimal("0")] * 7
-    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).filter(cat_q).only("date",
-                                                                                                              "amount")
+    qs_wday = base.filter(in_out=Transaction.OUT, date__gte=last90_start, date__lte=today).filter(cat_q).only("date", "amount")
     for t in qs_wday:
         wday_totals[t.date.weekday()] += (t.amount or Decimal("0"))
     weekday_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weekday_values = [float(x) for x in wday_totals]
 
     ctx = {
+        # Preference flag
+        "exclude_investment_tax": tax_on,
+
         # Runway Vars
         "runway_months": float(runway_months),
         "avg_monthly_burn": float(avg_monthly_burn),
@@ -306,6 +329,7 @@ def statistics(request):
         "include_uncat": include_uncat,
     }
     return render(request, "statistics.html", ctx)
+
 
 @login_required
 def reports(request):
