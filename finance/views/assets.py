@@ -130,55 +130,87 @@ def assets_dashboard(request):
 @login_required
 @require_POST
 def asset_add(request):
-    # The search dropdown now puts the Database ID into 'symbol_input' hidden field
-    # We should probably rename that field in HTML to 'asset_id' for clarity,
-    # but let's check what your HTML sends.
+    """
+    Adds a holding for an existing Asset.
 
-    # In your HTML: <input type="hidden" name="symbol_input" id="...">
-    # The JS sets this to item.id.
+    SECURITY / DATA INTEGRITY:
+    - Must submit an existing Asset ID (symbol_input).
+    - Must match the asset_type the form claims to be adding (crypto/stock).
+    - Quantity must be a positive Decimal.
+    """
+    from django.utils.translation import gettext as _
 
-    asset_id = request.POST.get('symbol_input')  # This is now the DB ID
-    qty_raw = request.POST.get('quantity', '').replace(',', '.')
-    asset_type = request.POST.get('asset_type')
+    asset_id_raw = (request.POST.get('symbol_input') or '').strip()
+    qty_raw = (request.POST.get('quantity', '') or '').strip().replace(',', '.')
+    form_asset_type = (request.POST.get('asset_type') or '').strip()
 
-    if not asset_id or not qty_raw:
-        messages.error(request, "Please select an asset from the list.")
+    if not asset_id_raw:
+        messages.error(request, _("Please select an asset from the list."))
+        return redirect('assets_dashboard')
+
+    if form_asset_type not in ('crypto', 'stock'):
+        messages.error(request, _("Invalid asset type."))
         return redirect('assets_dashboard')
 
     try:
-        # 1. Get Asset from DB
-        asset = Asset.objects.get(id=asset_id)
+        asset_id = int(asset_id_raw)
+    except (TypeError, ValueError):
+        messages.error(request, _("Invalid asset selected."))
+        return redirect('assets_dashboard')
 
-        # 2. Find/Create Source
-        source_name = "Crypto Assets" if asset.asset_type == 'crypto' else "Stock Assets"
-        source, _ = MoneySource.objects.get_or_create(
-            user=request.user, name=source_name,
+    try:
+        qty = Decimal(qty_raw)
+    except Exception:
+        messages.error(request, _("Invalid quantity."))
+        return redirect('assets_dashboard')
+
+    if qty <= 0:
+        messages.error(request, _("Quantity must be greater than 0."))
+        return redirect('assets_dashboard')
+
+    try:
+        asset = Asset.objects.get(id=asset_id)
+    except Asset.DoesNotExist:
+        messages.error(request, _("Invalid asset selected."))
+        return redirect('assets_dashboard')
+
+    if asset.asset_type != form_asset_type:
+        messages.error(request, _("Invalid asset selected."))
+        return redirect('assets_dashboard')
+
+    try:
+        # IMPORTANT: do NOT overwrite gettext "_" with a boolean from get_or_create
+        source_name = _("Crypto Assets") if asset.asset_type == 'crypto' else _("Stock Assets")
+        source, created_source = MoneySource.objects.get_or_create(
+            user=request.user,
+            name=source_name,
             defaults={'type': 'investment', 'is_active': True}
         )
 
-        # 3. Save Holding
-        qty = Decimal(qty_raw)
-        holding, created = AssetHolding.objects.get_or_create(
-            user=request.user, asset=asset, money_source=source,
-            defaults={'quantity': 0}
+        holding, created_holding = AssetHolding.objects.get_or_create(
+            user=request.user,
+            asset=asset,
+            money_source=source,
+            defaults={'quantity': Decimal("0")}
         )
-        holding.quantity += qty
+        holding.quantity = (holding.quantity or Decimal("0")) + qty
         holding.save()
 
-        # 4. Update Balance
-        total_val = sum(h.value_eur for h in source.holdings.all())
+        total_val = sum(
+            (h.value_eur for h in source.holdings.select_related('asset').all()),
+            Decimal("0")
+        )
         source.manual_balance = total_val
         source.balance_updated_at = timezone.now()
         source.save()
 
-        messages.success(request, f"Added {qty} {asset.symbol}.")
+        messages.success(request, _("Added %(qty)s %(sym)s.") % {"qty": qty, "sym": asset.symbol})
 
-    except Asset.DoesNotExist:
-        messages.error(request, "Invalid asset selected.")
     except Exception as e:
-        messages.error(request, f"Error: {e}")
+        messages.error(request, _("Error: %(err)s") % {"err": str(e)})
 
     return redirect('assets_dashboard')
+
 
 @login_required
 def asset_edit(request, pk):
@@ -203,27 +235,44 @@ def asset_edit(request, pk):
 
 @login_required
 def api_search_asset(request):
-    query = request.GET.get('q', '').strip()
-    atype = request.GET.get('type', 'stock')
+    """
+    Returns assets for dropdown search.
 
-    if len(query) < 1:
+    Behavior:
+    - If q is empty: return a default list (Top N) for that asset_type.
+    - If q is provided: return matching results.
+    - Optional `limit` parameter (default 50, max 200).
+    """
+    query = (request.GET.get('q') or '').strip()
+    atype = (request.GET.get('type') or 'stock').strip()
+    limit_raw = (request.GET.get('limit') or '').strip()
+
+    if atype not in ('crypto', 'stock'):
         return JsonResponse({'results': []})
 
-    # CHANGED: Remove .order_by('symbol')
-    # We default to database insertion order (which is Rank order for Cryptos)
-    # or explicitly order by ID.
-    results_qs = Asset.objects.filter(
-        asset_type=atype
-    ).filter(
-        Q(symbol__icontains=query) | Q(name__icontains=query)
-    ).order_by('id')[:10]  # <--- Changed to 'id' to keep Top coins first
+    try:
+        limit = int(limit_raw) if limit_raw else 50
+    except ValueError:
+        limit = 50
+    limit = max(1, min(limit, 200))
 
-    results = []
-    for asset in results_qs:
-        results.append({
-            'symbol': asset.symbol,
-            'name': asset.name,
-            'id': asset.id,
-        })
+    qs = Asset.objects.filter(asset_type=atype)
+
+    # Default ordering: crypto by id (rank-ish), stocks by symbol
+    if atype == 'crypto':
+        qs = qs.order_by('id')
+    else:
+        qs = qs.order_by('symbol')
+
+    if query:
+        qs = qs.filter(Q(symbol__icontains=query) | Q(name__icontains=query))
+
+    results_qs = qs[:limit]
+
+    results = [{
+        'symbol': a.symbol,
+        'name': a.name,
+        'id': a.id,
+    } for a in results_qs]
 
     return JsonResponse({'results': results})
