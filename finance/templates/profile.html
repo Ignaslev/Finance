@@ -122,6 +122,80 @@
   </div>
 </div>
 
+{# --- Categories management card (simple: add + delete inside Profile) --- #}
+<div class="card">
+  <div class="card-title">{% trans "Categories" %}</div>
+
+  <form method="post"
+        action="{% url 'profile' %}"
+        style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.25rem; border:1px solid #edf2f7;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="cat_add">
+
+    <div style="display:flex; gap:2rem; align-items:end; flex-wrap:wrap;">
+      <div style="flex-grow:1; max-width:420px;">
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">
+          {% trans "New category name" %}
+        </label>
+        <input name="name"
+               required
+               placeholder="{% trans 'New category name' %}"
+               style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem;">
+          {% trans "Add" %}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>{% trans "Name" %}</th>
+          <th style="min-width:10rem;">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in categories %}
+          <tr>
+            <td style="font-weight:500;">{{ c.name }}</td>
+            <td>
+              {% if c.name != "Other" %}
+                <form method="post"
+                      action="{% url 'profile' %}"
+                      style="margin:0; display:inline;"
+                      onsubmit="return confirm('{% trans "Reassign to Other and delete this category?" %}');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="cat_delete">
+                  <input type="hidden" name="cat_id" value="{{ c.id }}">
+
+                  <button type="submit"
+                          class="btn"
+                          style="padding:0.3rem 0.7rem; font-size:0.85rem; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+                    {% trans "Delete" %}
+                  </button>
+                </form>
+              {% else %}
+                <span style="opacity:.45;">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="2" style="opacity:.7; padding:2rem; text-align:center;">
+              {% trans "No categories yet." %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
 <div class="card">
     <div class="flex justify-between items-center mb-4">
@@ -175,7 +249,6 @@
       </table>
     </div>
 </div>
-
 
 <div class="card">
     <div class="card-title">{% trans "Savings Goals" %}</div>

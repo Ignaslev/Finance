@@ -190,7 +190,7 @@ def overview(request):
     spending_series = [float(totals_out[m]) for m in months]
     net_rows = [{"month": m.strftime("%Y-%m"), "net": float(totals_in[m] - totals_out[m])} for m in months]
 
-    # 4. CATEGORIES & BUDGETS
+    # 4. CATEGORIES & (caps moved into category chart)
     qs_cat = (
         tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
         .annotate(month=TruncMonth("date"))
@@ -257,34 +257,13 @@ def overview(request):
         for m in per_month:
             per_month[m] = sorted(per_month[m], key=lambda x: (-x["total"], x["merchant"]))[:12]
 
-    capped_qs = Category.objects.filter(user=request.user, monthly_cap__isnull=False).exclude(monthly_cap=0).order_by("name")
-    budget_has_caps = capped_qs.exists()
-    months_for_budgets = sorted({_date(d.year, d.month, 1) for d in tx_base.values_list("date", flat=True)})
-    if not months_for_budgets:
-        today = timezone.localdate()
-        months_for_budgets = [_date(today.year, today.month, 1)]
+    # Cap map for category chart (keyed by category name to match existing frontend keys)
+    cap_by_cat = {}
+    for c in Category.objects.filter(user=request.user):
+        cap = c.monthly_cap or Decimal("0")
+        cap_by_cat[c.name] = float(cap) if cap > 0 else 0
 
-    budget_month_keys = [m.strftime("%Y-%m") for m in months_for_budgets]
-    budget_all = {}
-
-    for m in months_for_budgets:
-        start = _date(m.year, m.month, 1)
-        end = _date(m.year, m.month, monthrange(m.year, m.month)[1])
-        spent_rows = (
-            tx_base.filter(in_out=Transaction.OUT, date__gte=start, date__lte=end, category_fk__in=capped_qs)
-            .values("category_fk").annotate(total=Sum("amount"))
-        )
-        spent_map = {r["category_fk"]: (r["total"] or Decimal("0")) for r in spent_rows}
-        labels_b, spent_b, caps_b = [], [], []
-        for c in capped_qs:
-            labels_b.append(c.name)
-            caps_b.append(float(c.monthly_cap))
-            spent_b.append(float(spent_map.get(c.id, Decimal("0"))))
-        key = start.strftime("%Y-%m")
-        budget_all[key] = {"labels": labels_b, "spent": spent_b, "caps": caps_b}
-
-    budget_selected_key = budget_month_keys[-1] if budget_month_keys else ""
-
+    # Savings goals
     eff_map = {acc.id: acc.effective_balance for acc in accounts}
     goals = []
     for g in SavingsGoal.objects.filter(user=request.user, is_active=True).prefetch_related("accounts"):
@@ -316,13 +295,11 @@ def overview(request):
         "series_by_cat_json": json.dumps(series_by_cat),
         "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
         "month_bounds_json": "{}",  # unchanged
+        "cap_by_cat_json": json.dumps(cap_by_cat),
 
         "goals": goals,
-        "budget_all_json": json.dumps(budget_all),
-        "budget_month_keys": budget_month_keys,
-        "budget_selected_key": budget_selected_key,
-        "budget_has_caps": budget_has_caps,
 
         "now_val": timezone.now(),
     }
     return render(request, "overview.html", ctx)
+

@@ -1,16 +1,54 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Edit category" %} · MoneyCoach{% endblock %}
+{% block title %}{% trans "Edit category" %} · Money Compass{% endblock %}
 {% block content %}
-<h2>{% trans "Edit category" %}</h2>
 
-<form method="post">
-  {% csrf_token %}
-  <p><label>{% trans "Name" %} <input name="name" value="{{ cat.name }}" required></label></p>
-  <p><label>{% trans "Color" %} <input name="color" value="{{ cat.color }}" placeholder="#RRGGBB"></label></p>
-  <p>
-    <button>{% trans "Save" %}</button>
-    <a href="/categories/" style="margin-left:.5rem">{% trans "Cancel" %}</a>
-  </p>
-</form>
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">{% trans "Edit category" %}</h2>
+  <a href="{% url 'category_list' %}"
+     class="btn"
+     style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#edf2f7; color:var(--text-medium); text-decoration:none;">
+    {% trans "Back" %}
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-title">{% trans "Category" %}: {{ cat.name }}</div>
+
+  <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid #edf2f7;">
+    {% csrf_token %}
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem;">
+      <div>
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">
+          {% trans "Name" %}
+        </label>
+        <input name="name"
+               value="{{ cat.name }}"
+               required
+               style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+      </div>
+
+      <div>
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">
+          {% trans "Color" %}
+        </label>
+        <input name="color"
+               value="{{ cat.color }}"
+               placeholder="#RRGGBB"
+               style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+      </div>
+    </div>
+
+    <div class="flex justify-end" style="margin-top:1rem; gap:.5rem;">
+      <a href="{% url 'category_list' %}" class="btn" style="background:#edf2f7; text-decoration:none;">
+        {% trans "Cancel" %}
+      </a>
+      <button type="submit" class="btn btn-primary">
+        {% trans "Save" %}
+      </button>
+    </div>
+  </form>
+</div>
+
 {% endblock %}

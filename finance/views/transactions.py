@@ -10,7 +10,7 @@ import io, csv, json
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
-from finance.models import Transaction, Category, MoneySource, OnboardingState, AiRun
+from finance.models import Transaction, Category, MoneySource, OnboardingState, AiRun, UserProfile
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
@@ -202,7 +202,27 @@ def upload(request):
     if not sources:
         primary_src = MoneySource.objects.create(user=request.user, name="Primary account", type="bank", is_active=True)
         sources = [primary_src]
-    default_src = sources[0]
+
+    # --- NEW: persisted default import source from UserProfile (DB), fallback to first active ---
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
+    default_src = None
+    default_src_id = getattr(prof, "default_import_source_id", None)
+
+    if default_src_id:
+        # Prefer using the already-fetched sources list
+        default_src = next((s for s in sources if s.id == default_src_id), None)
+        if default_src is None:
+            # Safety: if not in list for any reason, re-fetch if active
+            try:
+                default_src = MoneySource.objects.get(id=default_src_id, user=request.user, is_active=True)
+            except MoneySource.DoesNotExist:
+                default_src = None
+
+    if default_src is None:
+        default_src = sources[0]
+    else:
+        # Ensure default is the first option without changing template logic
+        sources = [default_src] + [s for s in sources if s.id != default_src.id]
 
     src_param = (request.GET.get("src") or "").strip()
     active_src = None
@@ -587,6 +607,7 @@ def upload(request):
         ctx["last_ai_pre"] = last_ai_pre
 
     return render(request, "upload.html", ctx)
+
 
 # ----------------------------- Soft delete -----------------------------
 

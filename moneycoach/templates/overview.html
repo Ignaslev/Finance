@@ -134,7 +134,7 @@
 <div class="card">
   <div class="card-title">{% trans "Spending per Category" %}</div>
   {% if cat_names %}
-    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 1rem;">
+    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
       {% for cname in cat_names %}
         <button class="cat-btn" data-cat="{{ cname }}" style="padding:0.35rem 0.6rem; border:1px solid #e2e8f0; border-radius:6px; background:#f7fafc; cursor:pointer; font-size:0.85rem;">
             {{ cname }}
@@ -144,6 +144,12 @@
           <option value="bar">Bar</option><option value="line">Line</option>
       </select>
     </div>
+
+    <!-- Cap notice (only shown when selected category has no cap) -->
+    <div id="catCapNotice" style="display:none; margin:0 0 0.9rem; font-size:0.9rem; color:#64748b;">
+      {% trans "No cap set," %} <a href="{% url 'profile' %}" class="text-teal" style="text-decoration:none;">{% trans "set it up here" %}</a>.
+    </div>
+
     <div style="max-width:1000px; margin:0 auto 1.25rem;"><canvas id="catChart"></canvas></div>
     <div id="catBreakdown">
       <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.5rem 0;">
@@ -155,19 +161,6 @@
   {% else %}
     <p style="opacity:0.7; padding:1rem;">{% trans "No categorized spending yet." %}</p>
   {% endif %}
-</div>
-
-<div class="card">
-  <div class="flex justify-between items-center mb-4">
-      <div class="card-title" style="margin:0;">{% trans "Budgets vs Spent" %}</div>
-      <div id="budgetMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
-  </div>
-  <div id="budgetEmpty" style="display:none; margin-top:0.6rem; color:#666; font-size:0.95em;">
-      {% trans "You haven't set any caps yet." %}
-  </div>
-  <div style="max-width:1000px; margin:0.75rem auto 0;">
-      <canvas id="budgetChart"></canvas>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -218,37 +211,108 @@
         }
     })();
 
-    // 3. CATEGORY CHART
+    // 3. CATEGORY CHART (+ cap line per category if cap exists)
     (function(){
         const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
         const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
         const breakdown = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
+        const capByCat = {{ cap_by_cat_json|default:"{}"|safe }};
 
         if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
 
         const ctx = document.getElementById('catChart').getContext('2d');
         const typeSelect = document.getElementById('catChartType');
         const buttons = Array.from(document.querySelectorAll('.cat-btn'));
+        const capNotice = document.getElementById('catCapNotice');
+
         let currentCat = buttons.length ? buttons[0].dataset.cat : null;
 
-        function getDS(cat) { return { label: cat, data: seriesByCat[cat] || [], backgroundColor:'#3182ce', borderColor:'#3182ce' }; }
+        function capFor(cat) {
+            const v = capByCat && Object.prototype.hasOwnProperty.call(capByCat, cat) ? capByCat[cat] : 0;
+            const n = Number(v || 0);
+            return (isFinite(n) && n > 0) ? n : 0;
+        }
 
-        let chart = new Chart(ctx, { type: 'bar', data: { labels: catMonths, datasets: [getDS(currentCat)] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
+        function getSpentDS(cat, chartType) {
+            return {
+                label: cat,
+                data: seriesByCat[cat] || [],
+                backgroundColor: '#3182ce',
+                borderColor: '#3182ce',
+                type: chartType,
+            };
+        }
+
+        function getCapDS(capVal) {
+            return {
+                label: '{% trans "Cap" %}',
+                data: Array(catMonths.length).fill(capVal),
+                type: 'line',
+                borderColor: '#d32f2f',
+                backgroundColor: '#d32f2f',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                tension: 0,
+            };
+        }
+
+        function updateCapNotice(cat) {
+            const capVal = capFor(cat);
+            if (capVal > 0) {
+                capNotice.style.display = 'none';
+            } else {
+                capNotice.style.display = 'block';
+            }
+        }
+
+        let chartType = (typeSelect && typeSelect.value) ? typeSelect.value : 'bar';
+
+        function buildDatasets(cat, spentType) {
+            const ds = [getSpentDS(cat, spentType)];
+            const capVal = capFor(cat);
+            if (capVal > 0) ds.push(getCapDS(capVal));
+            return ds;
+        }
+
+        let chart = new Chart(ctx, {
+            type: chartType,
+            data: { labels: catMonths, datasets: buildDatasets(currentCat, chartType) },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: true } }
+            }
+        });
 
         buttons.forEach(b => {
             b.addEventListener('click', () => {
                 currentCat = b.dataset.cat;
-                chart.data.datasets = [getDS(currentCat)];
+
+                const t = (typeSelect && typeSelect.value) ? typeSelect.value : 'bar';
+                chart.data.datasets = buildDatasets(currentCat, t);
                 chart.update();
-                buttons.forEach(x => x.style.background='#f7fafc');
-                b.style.background='#e2e8f0';
+
+                buttons.forEach(x => x.style.background = '#f7fafc');
+                b.style.background = '#e2e8f0';
+
+                updateCapNotice(currentCat);
                 renderMonthButtons();
             });
         });
+
         typeSelect.addEventListener('change', () => {
             const type = typeSelect.value;
             chart.destroy();
-            chart = new Chart(ctx, { type: type, data: { labels: catMonths, datasets: [getDS(currentCat)] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
+            chart = new Chart(ctx, {
+                type: type,
+                data: { labels: catMonths, datasets: buildDatasets(currentCat, type) },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: true } }
+                }
+            });
         });
 
         function renderMonthButtons() {
@@ -272,69 +336,17 @@
                 html += `<tr><td>${r.merchant}</td><td>${r.total.toFixed(2)}</td><td>${r.count}</td><td>${r.avg.toFixed(2)}</td><td><a href="/?q=${encodeURIComponent(r.merchant)}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
             html += '</tbody></table>';
-            if(!rows.length) html='<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
+            if(!rows.length) html = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
             wrap.innerHTML = html;
         }
-        renderMonthButtons();
-    })();
 
-    // 4. BUDGETS (Lines)
-    (function(){
-        const budgetAll = {{ budget_all_json|default:"{}"|safe }};
-        const keys = {{ budget_month_keys|default:"[]"|safe }};
-        const hasCaps = {{ budget_has_caps|yesno:"true,false" }};
-
-        if(!hasCaps) { document.getElementById('budgetEmpty').style.display='block'; document.getElementById('budgetChart').style.display='none'; return; }
-
-        const ctx = document.getElementById('budgetChart').getContext('2d');
-        let activeKey = keys.length ? keys[keys.length-1] : null;
-        let chart = null;
-        const btnWrap = document.getElementById('budgetMonthButtons');
-        keys.forEach(k => {
-            const b = document.createElement('button');
-            b.textContent = k;
-            b.style.cssText = "padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer;";
-            b.onclick = () => draw(k);
-            btnWrap.appendChild(b);
-        });
-
-        const capLinePlugin = {
-            id: 'capLine',
-            afterDatasetsDraw(chart) {
-                const { ctx, scales: { x, y } } = chart;
-                const dataset = chart.data.datasets[1];
-                const meta = chart.getDatasetMeta(1);
-                ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = '#d32f2f';
-                meta.data.forEach((point, index) => {
-                    const value = dataset.data[index];
-                    if (value > 0) {
-                        const xPos = point.x;
-                        const yPos = y.getPixelForValue(value);
-                        ctx.beginPath(); ctx.moveTo(xPos - 20, yPos); ctx.lineTo(xPos + 20, yPos); ctx.stroke();
-                    }
-                });
-                ctx.restore();
-            }
-        };
-
-        function draw(key) {
-            const data = budgetAll[key];
-            if(!data) return;
-            if(chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.labels,
-                    datasets: [
-                        { label: '{% trans "Spent" %}', data: data.spent, backgroundColor: '#3182ce', barPercentage: 0.6 },
-                        { label: '{% trans "Cap" %}', data: data.caps, type: 'scatter', pointRadius: 0 }
-                    ]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: true } } },
-                plugins: [capLinePlugin]
-            });
+        // Initial UI state
+        if (buttons.length) {
+            buttons.forEach(x => x.style.background = '#f7fafc');
+            buttons[0].style.background = '#e2e8f0';
         }
-        if(activeKey) draw(activeKey);
+        updateCapNotice(currentCat);
+        renderMonthButtons();
     })();
 </script>
 {% endblock %}

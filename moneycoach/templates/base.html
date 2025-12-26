@@ -70,7 +70,7 @@
         <div class="container">
             <span>{{ onboarding.text }}</span>
 
-                        <div style="display:flex; gap: 0.5rem; align-items: center;">
+            <div style="display:flex; gap: 0.5rem; align-items: center;">
                 {% if onboarding.cta_href %}
                     <a href="{{ onboarding.cta_href }}" class="btn-light">
                         {{ onboarding.cta_text }}
@@ -83,15 +83,15 @@
                         {% csrf_token %}
                         <input type="hidden" name="step" value="{{ onboarding.code }}">
                         <button type="submit" class="btn-light" style="opacity: 0.8; cursor: pointer;">
-                            I'm Done
+                            {% trans "I'm Done" %}
                         </button>
                     </form>
                 {% endif %}
             </div>
-
         </div>
     </div>
-    {% endif %}
+{% endif %}
+
 
     <div class="container">
         {% if messages %}

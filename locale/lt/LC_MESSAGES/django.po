@@ -898,3 +898,44 @@ msgstr "Taupymo tikslų dar nėra."
 
 msgid "Investment"
 msgstr "Investicinė"
+
+# --- Onboarding banner ---
+msgid "Welcome! Let’s get you set up. First, check your categories, edit or add what you need."
+msgstr "Sveiki! Pradėkime nuo pagrindų. Pirmiausia peržiūrėkite kategorijas – pakoreguokite arba pridėkite, ko reikia."
+
+msgid "Open Categories"
+msgstr "Atidaryti kategorijas"
+
+msgid "Next: Upload a CSV file from your bank of your transactions to begin."
+msgstr "Kitas žingsnis: įkelkite banko operacijų CSV failą, kad pradėtumėte."
+
+msgid "Go to Upload"
+msgstr "Eiti į įkėlimą"
+
+msgid "Now set a manual balance snapshot so we have a reference point for balances."
+msgstr "Dabar nustatykite rankinį likučio „snapshot“, kad turėtume atskaitos tašką likučiams skaičiuoti."
+
+msgid "Set a Balance"
+msgstr "Nustatyti likutį"
+
+msgid "Almost there! Please label at least %(min)s transactions so AI can learn your habits. You’ve labeled %(count)s so far."
+msgstr "Jau beveik! Pažymėkite bent %(min)s operacijų, kad AI išmoktų jūsų įpročius. Šiuo metu pažymėjote %(count)s."
+
+msgid "Teach AI"
+msgstr "Mokyti AI"
+
+msgid "You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"
+msgstr "Viskas paruošta automatiniai kategorizacijai. Stebėkite AI rezultatus ir pakoreguokite, jei reikia – taip jis vis gerės."
+
+msgid "I'm Done"
+msgstr "Viskas"
+
+msgid "Thanks! We've saved your onboarding progress."
+msgstr "Ačiū! Išsaugojome jūsų onboarding pažangą."
+
+# --- Overview cap notice (category chart) ---
+msgid "No cap set,"
+msgstr "Limitas nenustatytas,"
+
+msgid "set it up here"
+msgstr "nustatykite čia"

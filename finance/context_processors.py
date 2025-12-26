@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Sum
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 from .models import (
     Transaction,
@@ -38,7 +39,7 @@ def onboarding(request):
       2) upload       – shown until any transactions exist
       3) balance      – shown until any BalanceSnapshot exists
       4) teach_ai     – shown until user labels reach MIN_USER_LABELS
-      5) ready        – shows “Auto-categorize” + “I’m done”, then never show again
+      5) ready        – shows final message + “I’m done”, then never show again
 
     Persistent behavior:
       - Uses OnboardingState to persist across logins.
@@ -52,7 +53,7 @@ def onboarding(request):
     ensure_default_categories(request.user)
 
     # Load persisted state (or create)
-    state, _ = OnboardingState.objects.get_or_create(user=request.user)
+    state, _created = OnboardingState.objects.get_or_create(user=request.user)
 
     # If the user dismissed the final step, never show again
     if state.ready_dismissed:
@@ -67,8 +68,8 @@ def onboarding(request):
     if not state.categories_done:
         return {
             "onboarding": {
-                "text": "Welcome! Let’s get you set up. First, check your categories, edit or add what you need.",
-                "cta_text": "Open Categories",
+                "text": _("Welcome! Let’s get you set up. First, check your categories, edit or add what you need."),
+                "cta_text": _("Open Categories"),
                 "cta_href": reverse("category_list"),
                 "code": "categories",
             },
@@ -79,8 +80,8 @@ def onboarding(request):
     if not has_tx:
         return {
             "onboarding": {
-                "text": "Next: Upload a CSV file from your bank of your transactions to begin.",
-                "cta_text": "Go to Upload",
+                "text": _("Next: Upload a CSV file from your bank of your transactions to begin."),
+                "cta_text": _("Go to Upload"),
                 "cta_href": reverse("upload"),
                 "code": "upload",
             },
@@ -91,8 +92,8 @@ def onboarding(request):
     if not has_balance:
         return {
             "onboarding": {
-                "text": "Now set a manual balance snapshot so we have a reference point for balances.",
-                "cta_text": "Set a Balance",
+                "text": _("Now set a manual balance snapshot so we have a reference point for balances."),
+                "cta_text": _("Set a Balance"),
                 "cta_href": reverse("profile"),
                 "code": "balance",
             },
@@ -103,18 +104,21 @@ def onboarding(request):
     if user_labels < MIN_USER_LABELS:
         return {
             "onboarding": {
-                "text": f"Almost there! Please label at least { MIN_USER_LABELS } transactions so AI can learn your habits. You’ve labeled { user_labels } so far.",
-                "cta_text": "Teach AI",
+                "text": _(
+                    "Almost there! Please label at least %(min)s transactions so AI can learn your habits. "
+                    "You’ve labeled %(count)s so far."
+                ) % {"min": MIN_USER_LABELS, "count": user_labels},
+                "cta_text": _("Teach AI"),
                 "cta_href": reverse("teach_ai"),
                 "code": "teach_ai",
             },
             "onboarding_min_user_labels": MIN_USER_LABELS,
         }
 
-    # --- 5) Ready (shows until dismissed; no /ai/full here — we use the launcher)
+    # --- 5) Ready (shows until dismissed)
     return {
         "onboarding": {
-            "text": "You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!",
+            "text": _("You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"),
             "cta_text": None,
             "cta_href": None,
             "code": "ready",

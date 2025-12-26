@@ -383,6 +383,14 @@ class UserProfile(models.Model):
     # If True: show investment values after subtracting 15% (flat estimate)
     exclude_investment_tax = models.BooleanField(default=False)
 
+    default_import_source = models.ForeignKey(
+        "finance.MoneySource",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
     def save(self, *args, **kwargs):
         if not self.android_webhook_secret:
             self.android_webhook_secret = get_random_string(length=32)

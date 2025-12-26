@@ -85,15 +85,51 @@ def category_delete(request, pk):
 
 @login_required
 def profile(request):
+    from django.utils.translation import gettext as _
+
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
+
+        # ----------------------------
+        # Categories (inside Profile)
+        # ----------------------------
+        if action == "cat_add":
+            name = (request.POST.get("name") or "").strip()
+            if not name:
+                messages.error(request, _("Name cannot be empty."))
+                return redirect("profile")
+
+            # Prevent duplicates
+            created = False
+            obj, created = Category.objects.get_or_create(user=request.user, name=name)
+            if created:
+                messages.success(request, _("Category added."))
+            else:
+                messages.info(request, _("Category already exists."))
+            return redirect("profile")
+
+        if action == "cat_delete":
+            cat_id = request.POST.get("cat_id")
+            cat = get_object_or_404(Category, id=cat_id, user=request.user)
+
+            if cat.name == "Other":
+                messages.error(request, _("“Other” cannot be deleted."))
+                return redirect("profile")
+
+            other, _o = Category.objects.get_or_create(user=request.user, name="Other")
+            with dbtx.atomic():
+                Transaction.objects.filter(user=request.user, category_fk=cat).update(category_fk=other)
+                cat.delete()
+
+            messages.success(request, _("Category deleted."))
+            return redirect("profile")
 
         # Preferences
         if action == "pref_tax":
             prof, _created = UserProfile.objects.get_or_create(user=request.user)
             prof.exclude_investment_tax = bool(request.POST.get("exclude_investment_tax"))
             prof.save(update_fields=["exclude_investment_tax"])
-            messages.success(request, "Preferences saved.")
+            messages.success(request, _("Preferences saved."))
             return redirect("profile")
 
         # Accounts
@@ -101,13 +137,13 @@ def profile(request):
             name = (request.POST.get("name") or "").strip()
             typ  = (request.POST.get("type") or "").strip()
             if not name or typ not in dict(MoneySource.TYPE_CHOICES):
-                messages.error(request, "Provide a valid name and type.")
+                messages.error(request, _("Provide a valid name and type."))
                 return redirect("profile")
             if MoneySource.objects.filter(user=request.user, name=name).exists():
-                messages.error(request, "Account with this name already exists.")
+                messages.error(request, _("Account with this name already exists."))
                 return redirect("profile")
             MoneySource.objects.create(user=request.user, name=name, type=typ, is_active=True)
-            messages.success(request, "Account added.")
+            messages.success(request, _("Account added."))
             return redirect("profile")
 
         if action == "rename":
@@ -117,13 +153,13 @@ def profile(request):
             if new_name:
                 exists = MoneySource.objects.filter(user=request.user, name=new_name).exclude(id=acc.id).exists()
                 if exists:
-                    messages.error(request, f'Another account named “{new_name}” already exists.')
+                    messages.error(request, _('Another account named “%(name)s” already exists.') % {"name": new_name})
                 else:
                     acc.name = new_name
                     acc.save(update_fields=["name", "updated_at"])
-                    messages.success(request, "Account renamed.")
+                    messages.success(request, _("Account renamed."))
             else:
-                messages.error(request, "Name cannot be empty.")
+                messages.error(request, _("Name cannot be empty."))
             return redirect("profile")
 
         if action == "toggle":
@@ -131,14 +167,21 @@ def profile(request):
             acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
             acc.is_active = not acc.is_active
             acc.save(update_fields=["is_active", "updated_at"])
-            messages.success(request, ("Activated" if acc.is_active else "Deactivated") + f' “{acc.name}”.')
+            messages.success(request, (_("Activated") if acc.is_active else _("Deactivated")) + f' “{acc.name}”.')
             return redirect("profile")
 
         if action == "setdefault":
             acc_id = request.POST.get("id")
             try:
                 acc = MoneySource.objects.get(id=int(acc_id), user=request.user, is_active=True)
+
+                prof, _created = UserProfile.objects.get_or_create(user=request.user)
+                prof.default_import_source = acc
+                prof.save(update_fields=["default_import_source"])
+
+                # Keep session too (optional/backward-compat), but DB is the real persistence now
                 request.session["default_src_id"] = acc.id
+
                 messages.success(request, f'“{acc.name}” set as default import account.')
             except (MoneySource.DoesNotExist, ValueError):
                 messages.error(request, "Account not found or inactive.")
@@ -153,7 +196,7 @@ def profile(request):
                 acc.manual_balance = None
                 acc.balance_updated_at = timezone.now()
                 acc.save(update_fields=["manual_balance", "balance_updated_at"])
-                messages.success(request, "Manual balance cleared.")
+                messages.success(request, _("Manual balance cleared."))
                 return redirect("profile")
 
             try:
@@ -189,19 +232,19 @@ def profile(request):
                 )
 
                 if prev_snap is None:
-                    messages.success(request, "Manual balance saved and an initial snapshot was recorded.")
+                    messages.success(request, _("Manual balance saved and an initial snapshot was recorded."))
                 else:
                     if discrepancy:
                         sign = "+" if discrepancy >= 0 else "−"
                         messages.warning(
                             request,
-                            f"Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by "
-                            f"{sign}{abs(discrepancy):.2f} EUR."
+                            _("Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by %(diff)s EUR.") %
+                            {"diff": f"{sign}{abs(discrepancy):.2f}"}
                         )
                     else:
-                        messages.success(request, "Manual balance saved and a global snapshot was recorded.")
+                        messages.success(request, _("Manual balance saved and a global snapshot was recorded."))
             except (InvalidOperation, TypeError):
-                messages.error(request, "Enter a valid number.")
+                messages.error(request, _("Enter a valid number."))
             return redirect("profile")
 
         # Category caps
@@ -212,7 +255,7 @@ def profile(request):
             if raw == "":
                 cat.monthly_cap = None
                 cat.save(update_fields=["monthly_cap"])
-                messages.success(request, f'Removed cap for “{cat.name}”.')
+                messages.success(request, _('Removed cap for “%(name)s”.') % {"name": cat.name})
             else:
                 try:
                     val = Decimal(raw)
@@ -220,9 +263,9 @@ def profile(request):
                         raise InvalidOperation
                     cat.monthly_cap = val
                     cat.save(update_fields=["monthly_cap"])
-                    messages.success(request, f'Saved cap for “{cat.name}”.')
+                    messages.success(request, _('Saved cap for “%(name)s”.') % {"name": cat.name})
                 except (InvalidOperation, TypeError):
-                    messages.error(request, "Enter a valid non-negative number.")
+                    messages.error(request, _("Enter a valid non-negative number."))
             return redirect("profile")
 
         # Savings goals
@@ -240,7 +283,7 @@ def profile(request):
                     g.accounts.add(a)
                 except MoneySource.DoesNotExist:
                     pass
-            messages.success(request, "Goal created.")
+            messages.success(request, _("Goal created."))
             return redirect("profile")
 
         if action == "goal_toggle":
@@ -248,14 +291,14 @@ def profile(request):
             g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
             g.is_active = not g.is_active
             g.save(update_fields=["is_active", "updated_at"])
-            messages.success(request, ("Activated" if g.is_active else "Paused") + f' “{g.name}”.')
+            messages.success(request, (_("Activated") if g.is_active else _("Paused")) + f' “{g.name}”.')
             return redirect("profile")
 
         if action == "goal_delete":
             gid = request.POST.get("goal_id")
             g = get_object_or_404(SavingsGoal, id=gid, user=request.user)
             g.delete()
-            messages.success(request, "Goal deleted.")
+            messages.success(request, _("Goal deleted."))
             return redirect("profile")
 
     # ---------- GET ----------
@@ -347,12 +390,16 @@ def profile(request):
         "accounts": accounts,
         "total_accounts_balance": float(total_effective),
         "type_choices": MoneySource.TYPE_CHOICES,
-        "default_id": request.session.get("default_src_id"),
+        "default_id": prof.default_import_source_id,
         "caps_rows": caps_rows,
         "caps_window_note": f"Based on average spending across {m3[0][0]:04d}-{m3[0][1]:02d} to {m3[-1][0]:04d}-{m3[-1][1]:02d}.",
         "goals": goals,
+
+        # Categories for the Profile categories card
+        "categories": cats,
     }
     return render(request, "profile.html", ctx)
+
 
 
 @login_required
@@ -377,6 +424,8 @@ def onboarding_mark_done(request):
     updated_fields.append("updated_at")
     state.save(update_fields=updated_fields)
 
-    messages.success(request, "Thanks! We've saved your onboarding progress.")
+    from django.utils.translation import gettext as _
+    messages.success(request, _("Thanks! We've saved your onboarding progress."))
+
     return redirect(request.META.get("HTTP_REFERER") or "overview")
 
