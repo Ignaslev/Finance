@@ -10,6 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env (safe for local dev; in prod use real env vars)
 load_dotenv(BASE_DIR / ".env")
 
+def env_list(name, default=""):
+    raw = os.getenv(name, default) or ""
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
+
 def env(name, default=None, *, required=False):
     value = os.getenv(name, default)
     if required and value is None:
@@ -22,8 +27,13 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dev-key-change-me", requi
 DEBUG = env("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes", "on")
 
 # Allow all hosts in production (Railway handles routing), or restrict if preferred
-ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["https://*.railway.app", "https://*.up.railway.app"]
+# Default: safe for local dev; in prod set DJANGO_ALLOWED_HOSTS and DJANGO_CSRF_TRUSTED_ORIGINS
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://localhost,http://127.0.0.1"
+)
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -133,6 +143,56 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-# TESTING ONLY
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "no-reply@moneycoach.local"
+# ----------------------------
+# Email configuration
+# ----------------------------
+# Allow running DEBUG=False on staging while still using console email.
+EMAIL_MODE = env("EMAIL_MODE", "console").lower()  # console | smtp
+
+if EMAIL_MODE == "smtp":
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = env("EMAIL_HOST", required=True)
+    EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER", required=True)
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", required=True)
+    EMAIL_USE_TLS = env("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes", "on")
+    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", required=True)
+else:
+    # Default: console backend (safe for staging/dev)
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@moneycoach.local")
+
+
+
+# ---------------------------------------------------------
+# Production security hardening
+# ---------------------------------------------------------
+IS_PROD = not DEBUG
+
+# If you're behind a proxy/load balancer (Railway, etc.)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Only redirect to HTTPS in production (turn on once HTTPS is confirmed working)
+SECURE_SSL_REDIRECT = env("DJANGO_SECURE_SSL_REDIRECT", "True").lower() in ("1", "true", "yes", "on") if IS_PROD else False
+
+# Cookies over HTTPS only (prod)
+SESSION_COOKIE_SECURE = IS_PROD
+CSRF_COOKIE_SECURE = IS_PROD
+
+# Sensible defaults
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Django needs JS access sometimes; keep default behavior
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Security headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+
+if IS_PROD:
+    SECURE_HSTS_SECONDS = int(env("DJANGO_HSTS_SECONDS", "60"))  # start with 60s
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env("DJANGO_HSTS_INCLUDE_SUBDOMAINS", "False").lower() in ("1","true","yes","on")
+    SECURE_HSTS_PRELOAD = env("DJANGO_HSTS_PRELOAD", "False").lower() in ("1","true","yes","on")
+else:
+    SECURE_HSTS_SECONDS = 0

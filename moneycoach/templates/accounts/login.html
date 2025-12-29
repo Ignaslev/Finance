@@ -8,26 +8,10 @@
   <div class="card" style="padding:2rem; border-radius:18px;">
     <h2 class="text-dark" style="margin:0 0 1.25rem 0;">{% trans "Login" %}</h2>
 
-    {# Messages (success/error/info) #}
-    {% if messages %}
-      <div style="margin-bottom:1rem;">
-        {% for message in messages %}
-          <div class="card"
-               style="padding:.75rem 1rem; margin-bottom:.5rem;
-                      {% if message.tags == 'error' %}background:#fff5f5; border:1px solid #feb2b2; color:#c53030;{% endif %}
-                      {% if message.tags == 'success' %}background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;{% endif %}
-                      {% if message.tags == 'info' %}background:#eef6ff; border:1px solid #cfe3ff; color:#1e3a8a;{% endif %}
-                      {% if message.tags == 'warning' %}background:#fffbeb; border:1px solid #fde68a; color:#92400e;{% endif %}
-                      ">
-            {{ message }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    {# Form errors #}
+    {# Non-field errors only (messages are rendered in base.html already) #}
     {% if form and form.non_field_errors %}
-      <div class="card" style="padding:.75rem 1rem; margin-bottom:1rem; background:#fff5f5; border:1px solid #feb2b2; color:#c53030;">
+      <div class="card"
+           style="padding:.75rem 1rem; margin-bottom:1rem; background:#fff5f5; border:1px solid #feb2b2; color:#c53030;">
         {{ form.non_field_errors }}
       </div>
     {% endif %}
@@ -45,7 +29,7 @@
           autocomplete="email"
           required
           value="{% if form %}{{ form.username.value|default_if_none:'' }}{% else %}{{ request.POST.username|default_if_none:'' }}{% endif %}"
-          style="width:100%; box-sizing:border-box; padding:0.65rem 0.8rem; border:1px solid #e2e8f0; border-radius:10px; background:#eef6ff;"
+          style="width:100%; box-sizing:border-box; display:block; padding:0.65rem 0.8rem; border:1px solid #e2e8f0; border-radius:10px; background:#eef6ff;"
         >
         {% if form and form.username.errors %}
           <div style="margin-top:.35rem; color:#c53030; font-size:.9rem;">
@@ -63,7 +47,7 @@
           name="password"
           autocomplete="current-password"
           required
-          style="width:100%; box-sizing:border-box; padding:0.65rem 0.8rem; border:1px solid #e2e8f0; border-radius:10px; background:#eef6ff;"
+          style="width:100%; box-sizing:border-box; display:block; padding:0.65rem 0.8rem; border:1px solid #e2e8f0; border-radius:10px; background:#eef6ff;"
         >
         {% if form and form.password.errors %}
           <div style="margin-top:.35rem; color:#c53030; font-size:.9rem;">
@@ -72,7 +56,8 @@
         {% endif %}
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem; border-radius:12px;">
+      <button type="submit" class="btn btn-primary"
+              style="width:100%; box-sizing:border-box; display:block; padding:0.85rem; border-radius:12px;">
         {% trans "Login" %}
       </button>
 
@@ -88,7 +73,6 @@
           {% trans "Forgot password?" %}
         </a>
       </div>
-      
     </form>
   </div>
 </div>
