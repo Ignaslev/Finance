@@ -60,10 +60,31 @@
             </div>
         </div>
         {% else %}
-        <div class="nav-links">
-            <a href="{% url 'login' %}" class="nav-item">{% trans "Log In" %}</a>
-        </div>
+          <div class="nav-links" style="display:flex; align-items:center; gap:1rem;">
+              {# Language switch (public) #}
+              <form action="{% url 'set_language' %}" method="post" style="margin:0; display:flex; gap:.35rem; align-items:center;">
+                  {% csrf_token %}
+                  <input name="next" type="hidden" value="{{ request.get_full_path }}">
+
+                  <button type="submit" name="language" value="en"
+                          style="background:none; border:none; cursor:pointer; font-size:0.85rem;
+                                 {% if LANGUAGE_CODE == 'en' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
+                      EN
+                  </button>
+                  <span style="color:#e2e8f0;">|</span>
+                  <button type="submit" name="language" value="lt"
+                          style="background:none; border:none; cursor:pointer; font-size:0.85rem;
+                                 {% if LANGUAGE_CODE == 'lt' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
+                      LT
+                  </button>
+              </form>
+
+              {# Auth links #}
+              <a href="{% url 'login' %}" class="nav-item">{% trans "Log In" %}</a>
+              <a href="{% url 'register' %}" class="nav-item">{% trans "Register" %}</a>
+          </div>
         {% endif %}
+
     </nav>
    {% if onboarding %}
     <div class="onboarding-banner">
@@ -168,5 +189,6 @@
         }
     </script>
     {% endif %}
+
 </body>
 </html>

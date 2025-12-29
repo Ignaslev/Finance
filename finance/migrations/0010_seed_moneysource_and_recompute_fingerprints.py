@@ -3,7 +3,7 @@ from django.db.models import F
 from django.db import migrations
 
 def forwards(apps, schema_editor):
-    User = apps.get_model("auth", "User")
+    User = apps.get_model("accounts", "User")
     MoneySource = apps.get_model("finance", "MoneySource")
     Transaction = apps.get_model("finance", "Transaction")
 

@@ -903,3 +903,14 @@ td {
     box-shadow: 0 4px 12px rgba(0, 206, 166, 0.25);
 }
 
+.auth-card {
+  max-width: 520px;
+  margin: 3rem auto;
+  padding: 2rem;
+}
+
+.auth-field input,
+.auth-field select {
+  width: 100%;
+  box-sizing: border-box;
+}

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "finance",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -111,8 +112,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # --- APP CONSTANTS ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/overview/"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "overview"   # optional but recommended
 LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_CATEGORIES = [
@@ -123,3 +124,15 @@ DEFAULT_CATEGORIES = [
 
 TEACH_AI_UNLOCK = 20
 AI_AUTOCAT_COOLDOWN_MIN = 10
+
+AUTH_USER_MODEL = "accounts.User"
+
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.EmailBackend",              # email login
+    "django.contrib.auth.backends.ModelBackend",   # keep username login possible (admin etc.)
+]
+
+
+# TESTING ONLY
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@moneycoach.local"

@@ -7,6 +7,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("i18n/", include("django.conf.urls.i18n")),
     path("", include("finance.urls")),  # delegates /... to finance.urls
+    path("accounts/", include("accounts.urls")),
+
 ]
 
 if settings.DEBUG:
