@@ -196,3 +196,5 @@ if IS_PROD:
     SECURE_HSTS_PRELOAD = env("DJANGO_HSTS_PRELOAD", "False").lower() in ("1","true","yes","on")
 else:
     SECURE_HSTS_SECONDS = 0
+
+REQUIRE_EMAIL_VERIFICATION = env("REQUIRE_EMAIL_VERIFICATION", "True").lower() in ("1", "true", "yes", "on")
