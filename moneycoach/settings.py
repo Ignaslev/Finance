@@ -21,6 +21,13 @@ def env(name, default=None, *, required=False):
         raise ImproperlyConfigured(f"Missing required env var: {name}")
     return value
 
+def env_bool(name, default=False):
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
 SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dev-key-change-me", required=False)
 
 # Default to False in production
@@ -169,15 +176,16 @@ else:
 # ---------------------------------------------------------
 IS_PROD = not DEBUG
 
-# If you're behind a proxy/load balancer (Railway, etc.)
+# If you're behind a proxy/load balancer (nginx, Railway, etc.)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Only redirect to HTTPS in production (turn on once HTTPS is confirmed working)
-SECURE_SSL_REDIRECT = env("DJANGO_SECURE_SSL_REDIRECT", "True").lower() in ("1", "true", "yes", "on") if IS_PROD else False
+# IMPORTANT:
+# While you are still on plain HTTP (no TLS), keep these False in .env.
+# Later, when HTTPS is enabled, flip them to True.
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", IS_PROD)
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", IS_PROD)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", IS_PROD)
 
-# Cookies over HTTPS only (prod)
-SESSION_COOKIE_SECURE = IS_PROD
-CSRF_COOKIE_SECURE = IS_PROD
 
 # Sensible defaults
 SESSION_COOKIE_HTTPONLY = True
