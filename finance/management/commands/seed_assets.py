@@ -196,5 +196,4 @@ class Command(BaseCommand):
                 },
             )
             count += 1
-
         self.stdout.write(self.style.SUCCESS(f"ETFs seeded/updated: {count} tickers."))
