@@ -160,14 +160,23 @@ if EMAIL_MODE == "smtp":
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = env("EMAIL_HOST", required=True)
     EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+
+    # Support both STARTTLS (587) and SSL (465)
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
+    EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+
+    # TLS and SSL must not both be True
+    if EMAIL_USE_SSL:
+        EMAIL_USE_TLS = False
+
     EMAIL_HOST_USER = env("EMAIL_HOST_USER", required=True)
     EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", required=True)
-    EMAIL_USE_TLS = env("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes", "on")
     DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", required=True)
 else:
     # Default: console backend (safe for staging/dev)
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
     DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@moneycoach.local")
+
 
 
 
