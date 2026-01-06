@@ -189,3 +189,26 @@ def _reconcile_global(user):
         })
     segs.sort(key=lambda s: s["spotted_at"], reverse=True)
     return segs
+
+import re, unicodedata
+
+def normalize_name_tokens(s: str) -> list[str]:
+    if not s:
+        return []
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))  # remove diacritics
+    s = s.lower()
+    s = re.sub(r"[^a-z\s]", " ", s)  # remove punctuation, keep letters/spaces
+    s = re.sub(r"\s+", " ", s).strip()
+    tokens = [t for t in s.split(" ") if t and len(t) > 1]  # drop 1-letter initials
+    return tokens
+
+def looks_like_self_transfer(merchant: str, first_name: str, last_name: str) -> bool:
+    u_tokens = normalize_name_tokens(f"{first_name} {last_name}")
+    m_tokens = normalize_name_tokens(merchant)
+
+    if len(u_tokens) < 2 or len(m_tokens) < 2:
+        return False
+
+    # allow FIRST LAST vs LAST FIRST, and tolerate extra tokens in merchant
+    return all(t in m_tokens for t in u_tokens)

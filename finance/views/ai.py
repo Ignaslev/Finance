@@ -8,7 +8,7 @@ from django.utils import timezone
 import os, json
 
 from finance.models import Transaction, Category, AiRun, AiRunItem
-from finance.utils import ensure_default_categories, _normalize_merchant
+from finance.utils import ensure_default_categories, _normalize_merchant, looks_like_self_transfer
 from finance.services import _pick_examples, _call_openai_rows
 
 BATCH_SIZE = 50
@@ -22,6 +22,20 @@ def ai_dismiss_notification(request, run_id):
     run.save(update_fields=['notified_at'])
     return redirect(request.META.get('HTTP_REFERER') or 'upload')
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.utils import timezone
+import os, json
+
+from finance.models import Transaction, Category
+from finance.utils import ensure_default_categories, looks_like_self_transfer
+from finance.services import _pick_examples, _call_openai_rows
+
+BATCH_SIZE = 50
+AUTO_CHANGE_THRESHOLD = 0.90
+
+
 @login_required
 def ai_full_categorize(request):
     """
@@ -29,20 +43,15 @@ def ai_full_categorize(request):
       - mode=uncat (default): only truly uncategorized (no FK/blank)
       - mode=ai:              only AI-labeled
       - mode=all:             everything EXCEPT user-labeled
-    Rules added:
-      - Prefill all IN rows with empty category -> 'Income' (category_source='rule')
-      - Never assign 'Income' to OUT rows
-    Also respects batching & thresholds.
-    """
-    # Seed defaults
-    ensure_default_categories(request.user)
 
-    # If no key, render simple card (existing behavior)
-    if not os.getenv("OPENAI_API_KEY"):
-        return render(request, "ai_summary.html", {
-            "key_present": False, "total_candidates": 0, "applied": 0, "parked": 0,
-            "left_for_review": 0,
-        })
+    Rules:
+      1) Self-transfer rule (merchant matches user's name) -> 'Internal transfer'
+         - runs BEFORE Income rule
+      2) Prefill IN rows with empty category -> 'Income' (category_source='rule')
+      3) Never assign 'Income' to OUT rows
+    """
+    # Seed defaults (now includes "Internal transfer" in your DEFAULT_CATEGORIES)
+    ensure_default_categories(request.user)
 
     mode = request.GET.get("mode", "uncat")
 
@@ -59,28 +68,69 @@ def ai_full_categorize(request):
     else:
         base = Transaction.objects.none()
 
-    # ---------- HARD RULES: Income prefill for IN & empty ----------
-    INCOME_NAME = "Income"
+    # Build category map early for rule lookups
     cats_by_name = {c.name: c for c in Category.objects.filter(user=request.user)}
+
+    # ---------- HARD RULE 1: Internal transfer if merchant matches user's own name ----------
+    TRANSFER_NAME = "Internal transfer"
+    transfer_cat = cats_by_name.get(TRANSFER_NAME)
+
+    # Fallback for older users if category wasn't created for some reason
+    if transfer_cat is None:
+        transfer_cat = Category.objects.create(user=request.user, name=TRANSFER_NAME)
+        cats_by_name[TRANSFER_NAME] = transfer_cat
+
+    # Only apply if user has a meaningful name set (superuser often doesn't)
+    u_first = (getattr(request.user, "first_name", "") or "").strip()
+    u_last = (getattr(request.user, "last_name", "") or "").strip()
+
+    if transfer_cat and u_first and u_last:
+        # Only fill EMPTY categories; never override user labels
+        transfer_qs = (
+            Transaction.objects
+            .filter(user=request.user, is_deleted=False)
+            .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
+            .exclude(category_source="user")
+            .only("id", "merchant")
+        )
+
+        # Iterate because "looks_like_self_transfer" is Python-side logic
+        for t in transfer_qs:
+            if looks_like_self_transfer(t.merchant or "", u_first, u_last):
+                Transaction.objects.filter(id=t.id).update(
+                    category_fk=transfer_cat,
+                    category=transfer_cat.name,
+                    category_source="rule",
+                    ai_suggested_fk=None,
+                    ai_confidence=None,
+                    ai_reason="",
+                    updated_at=timezone.now(),
+                )
+
+    # ---------- HARD RULE 2: Income prefill for IN & empty (AFTER transfer rule) ----------
+    INCOME_NAME = "Income"
     income_cat = cats_by_name.get(INCOME_NAME)
 
     if income_cat:
-        prefill_qs = (
+        prefill_income_qs = (
             Transaction.objects
             .filter(user=request.user, is_deleted=False, in_out=Transaction.IN)
             .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
+            .exclude(category_source="user")
+            .only("id")
         )
-        for t in prefill_qs.only("id"):
-            t.category_fk = income_cat
-            t.category = income_cat.name
-            t.category_source = "rule"
-            t.ai_suggested_fk = None
-            t.ai_confidence = None
-            t.save(update_fields=[
-                "category_fk","category","category_source","ai_suggested_fk","ai_confidence","updated_at"
-            ])
+        for t in prefill_income_qs:
+            Transaction.objects.filter(id=t.id).update(
+                category_fk=income_cat,
+                category=income_cat.name,
+                category_source="rule",
+                ai_suggested_fk=None,
+                ai_confidence=None,
+                ai_reason="",
+                updated_at=timezone.now(),
+            )
 
-    # refresh after prefill if we're working on uncategorized
+    # refresh base after rule prefills if we're working on uncategorized
     if mode == "uncat":
         base = (Transaction.objects
                 .filter(user=request.user, is_deleted=False)
@@ -89,9 +139,25 @@ def ai_full_categorize(request):
 
     qs = base.order_by("date", "id").select_related("category_fk")
     total_candidates = qs.count()
+
+    # If no key, render simple card (existing behavior)
+    if not os.getenv("OPENAI_API_KEY"):
+        return render(request, "ai_summary.html", {
+            "key_present": False,
+            "total_candidates": total_candidates,
+            "applied": 0,
+            "parked": 0,
+            "left_for_review": Transaction.objects.filter(
+                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+            ).count(),
+        })
+
     if total_candidates == 0:
         return render(request, "ai_summary.html", {
-            "key_present": True, "total_candidates": 0, "applied": 0, "parked": 0,
+            "key_present": True,
+            "total_candidates": 0,
+            "applied": 0,
+            "parked": 0,
             "left_for_review": Transaction.objects.filter(
                 user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
             ).count(),
@@ -99,7 +165,6 @@ def ai_full_categorize(request):
 
     # Stamp last-run timestamp if not already set (so Review AI can show only the latest)
     if "last_ai_run_started_at" not in request.session:
-        from django.utils import timezone
         request.session["last_ai_run_started_at"] = timezone.now().isoformat()
 
     cats_map = {c.name: c for c in Category.objects.filter(user=request.user)}
@@ -120,6 +185,7 @@ def ai_full_categorize(request):
     for i in range(0, len(rows), BATCH_SIZE):
         batch = rows[i:i+BATCH_SIZE]
         examples = _pick_examples(request.user, limit=12)
+
         try:
             results = _call_openai_rows(request.user, batch, examples, cats_list)
         except Exception as e:
@@ -143,7 +209,6 @@ def ai_full_categorize(request):
             conf = float(res.get("confidence") or 0.0)
             reason = (res.get("reason") or "")[:500]
             suggested_fk = cats_map.get(suggested_name)
-
             if not suggested_fk:
                 continue
 
@@ -153,18 +218,14 @@ def ai_full_categorize(request):
 
             current_name = (t.category_fk.name if t.category_fk else (t.category or "")).strip()
 
-            # === LOGIC CHANGE STARTS HERE ===
-            # 1. Determine if this is a "Fresh Assignment" or a "Change"
+            # Determine if this is a "Fresh Assignment" or a "Change"
             is_new_assignment = (not current_name or current_name == "Other")
 
-            # 2. Set threshold: 0.70 for fresh assignments, 0.90 (AUTO_CHANGE_THRESHOLD) for overwrites
+            # Threshold: 0.70 for fresh assignments, 0.90 for overwrites
             apply_threshold = 0.70 if is_new_assignment else AUTO_CHANGE_THRESHOLD
 
-            # 3. Apply logic
             if is_new_assignment:
-                # CASE A: It's currently empty/Other.
                 if conf >= apply_threshold:
-                    # High confidence -> Apply immediately
                     t.category_fk = suggested_fk
                     t.category = suggested_fk.name
                     t.category_source = "ai"
@@ -177,7 +238,6 @@ def ai_full_categorize(request):
                     ])
                     applied += 1
                 else:
-                    # Low confidence -> Park for review
                     t.ai_suggested_fk = suggested_fk
                     t.ai_confidence = conf
                     t.ai_reason = reason
@@ -185,9 +245,7 @@ def ai_full_categorize(request):
                     parked += 1
                 continue
 
-            # CASE B: It already has a category (from Import or older AI run)
             if suggested_name == current_name:
-                # AI agrees with current category. Just update confidence.
                 if t.category_source == "ai":
                     t.ai_confidence = conf
                     t.ai_reason = reason
@@ -195,8 +253,6 @@ def ai_full_categorize(request):
                     t.save(update_fields=["ai_confidence", "ai_reason", "ai_suggested_fk", "updated_at"])
                 continue
 
-            # CASE C: AI disagrees with current category.
-            # Only change if confidence is very high (>= 0.90).
             if conf >= apply_threshold:
                 t.category_fk = suggested_fk
                 t.category = suggested_fk.name
@@ -209,15 +265,11 @@ def ai_full_categorize(request):
                     "ai_reason", "ai_suggested_fk", "updated_at"
                 ])
                 applied += 1
-            elif conf >= 0.70:  # Optional: if medium confidence, park it as a suggestion
+            elif conf >= 0.70:
                 t.ai_suggested_fk = suggested_fk
                 t.ai_confidence = conf
                 t.ai_reason = reason
                 t.save(update_fields=["ai_suggested_fk", "ai_confidence", "ai_reason", "updated_at"])
-                parked += 1
-            else:
-                # Too low to mention
-                pass
 
     left_for_review = Transaction.objects.filter(
         user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
@@ -230,6 +282,8 @@ def ai_full_categorize(request):
         "parked": parked,
         "left_for_review": left_for_review,
     })
+
+
 
 @login_required
 def ai_run_uncategorized(request):
