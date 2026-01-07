@@ -79,7 +79,6 @@ def _pick_examples(user, limit=EXAMPLES_TOTAL_CAP):
 
     return examples
 
-
 def _call_openai_rows(user, rows, examples, cats):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:

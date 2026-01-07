@@ -400,8 +400,6 @@ def profile(request):
     }
     return render(request, "profile.html", ctx)
 
-
-
 @login_required
 @require_POST
 def onboarding_mark_done(request):

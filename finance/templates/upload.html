@@ -36,24 +36,39 @@
 
 <div class="card">
     <div class="card-title">{% trans "Upload Statement" %}</div>
-    <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}" class="flex items-center gap-4" style="flex-wrap:wrap;">
-      {% csrf_token %}
-      <div style="flex-grow:1; max-width:300px;">
-          <label style="display:block; font-size:0.85rem; color:var(--text-light); margin-bottom:0.25rem;">{% trans "Target Account" %}</label>
-          <select name="import_src" required style="width:100%; padding:0.6rem; border:1px solid #e2e8f0; border-radius:8px;">
-            {% for s in sources %}
-              <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
-            {% endfor %}
-          </select>
-      </div>
-      <div style="flex-grow:1;">
-           <label style="display:block; font-size:0.85rem; color:var(--text-light); margin-bottom:0.25rem;">{% trans "File (CSV/Excel)" %}</label>
-           <input type="file" name="file" required style="padding:0.4rem 0;">
-      </div>
-      <div style="align-self:flex-end;">
-          <button class="btn btn-primary">{% trans "Upload" %}</button>
-      </div>
-    </form>
+        <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}" class="upload-form">
+  {% csrf_token %}
+
+  <div class="upload-field">
+    <label>{% trans "Target Account" %}</label>
+    <select name="import_src" required class="upload-control">
+      {% for s in sources %}
+        <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="upload-field">
+    <label>{% trans "Bank format" %}</label>
+    <select name="bank" class="upload-control">
+      {% for value,label in bank_choices %}
+        <option value="{{ value }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+
+  </div>
+
+  <div class="upload-field">
+    <label>{% trans "File (CSV/Excel)" %}</label>
+    <input type="file" name="file" required class="upload-control" />
+  </div>
+
+  <div class="upload-actions">
+    <button class="btn btn-primary">{% trans "Upload" %}</button>
+  </div>
+</form>
+
+
 </div>
 
 <div class="card">

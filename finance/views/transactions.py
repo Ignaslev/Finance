@@ -196,23 +196,99 @@ def uncategorized(request):
     page_obj = paginator.get_page(request.GET.get("page"))
     return render(request, "uncategorized.html", {"page_obj": page_obj, "total": paginator.count, "per_value": per})
 
+# views/upload.py (or wherever your upload view lives)
+
+import csv
+import io
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import redirect, render
+
+from django.conf import settings
+
+from finance.importers import IMPORTERS
+from finance.models import (
+    MoneySource,
+    Transaction,
+    Category,
+    AiRun,
+    OnboardingState,
+    UserProfile,
+)
+from finance.utils import (
+    parse_date,
+    parse_in_out,
+    parse_amount,
+    normalize_currency,
+    parse_date_filter,
+    parse_decimal_filter,
+    build_fingerprint_v2,
+    ensure_default_categories,
+)
+
+
+def _decode_upload_to_text(f) -> str:
+    raw = f.read()
+    try:
+        text = raw.decode("utf-8-sig")  # handles UTF-8 with BOM too
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _guess_delimiter(header_line: str) -> str:
+    # pick separator that yields the most columns
+    seps = [";", ",", "\t"]
+    best = ","
+    best_cols = 0
+    for sep in seps:
+        cols = len([c for c in header_line.split(sep)])
+        if cols > best_cols:
+            best_cols = cols
+            best = sep
+    return best
+
+
+def _extract_headers(text: str) -> set[str]:
+    # first non-empty line is assumed header
+    for line in text.split("\n"):
+        if line.strip():
+            delim = _guess_delimiter(line)
+            return {h.strip() for h in line.split(delim) if h.strip()}
+    return set()
+
+
+def _pick_best_importer(headers: set[str]):
+    best_imp = None
+    best_res = None
+    for imp in IMPORTERS.values():
+        res = imp.sniff(headers)
+        if best_res is None or res.score > best_res.score:
+            best_res = res
+            best_imp = imp
+    return best_imp, best_res
+
+
 @login_required
 def upload(request):
     sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
     if not sources:
-        primary_src = MoneySource.objects.create(user=request.user, name="Primary account", type="bank", is_active=True)
+        primary_src = MoneySource.objects.create(
+            user=request.user, name="Primary account", type="bank", is_active=True
+        )
         sources = [primary_src]
 
-    # --- NEW: persisted default import source from UserProfile (DB), fallback to first active ---
+    # --- persisted default import source from UserProfile (DB), fallback to first active ---
     prof, _created = UserProfile.objects.get_or_create(user=request.user)
     default_src = None
     default_src_id = getattr(prof, "default_import_source_id", None)
 
     if default_src_id:
-        # Prefer using the already-fetched sources list
         default_src = next((s for s in sources if s.id == default_src_id), None)
         if default_src is None:
-            # Safety: if not in list for any reason, re-fetch if active
             try:
                 default_src = MoneySource.objects.get(id=default_src_id, user=request.user, is_active=True)
             except MoneySource.DoesNotExist:
@@ -237,6 +313,24 @@ def upload(request):
     if stype and stype not in valid_types:
         stype = ""
 
+    # ---------------- importer helpers (RAW sniff + RAW parse) ----------------
+    def _pick_best_importer(raw: bytes, filename: str):
+        best_imp = None
+        best_res = None
+        best_score = -1
+
+        for imp in IMPORTERS.values():
+            try:
+                res = imp.sniff(raw=raw, filename=filename)
+            except Exception:
+                continue
+            if res.score > best_score:
+                best_score = res.score
+                best_imp = imp
+                best_res = res
+
+        return best_imp, best_res
+
     # -------------------- IMPORT (POST) --------------------
     if request.method == "POST" and request.FILES.get("file"):
         import_src_id = request.POST.get("import_src")
@@ -246,91 +340,60 @@ def upload(request):
             import_src = default_src
 
         f = request.FILES["file"]
-        name = (f.name or "").lower()
+        filename = (f.name or "")
+        name_lower = filename.lower()
+        bank = (request.POST.get("bank") or "auto").strip().lower()
 
         parsed_count = 0
         skipped_count = 0
-        rows = []
+        rows: list[dict] = []
 
         try:
-            if name.endswith(".csv"):
-                raw = f.read()
-                try:
-                    text = raw.decode("utf-8")
-                except UnicodeDecodeError:
-                    text = raw.decode("latin-1")
-                text = text.replace("\r\n", "\n").replace("\r", "\n")
-                lines = text.split("\n")
+            raw = f.read()
 
-                sample = text[:8192]
-                delimiter = None
-                try:
-                    dialect = csv.Sniffer().sniff(sample)
-                    delimiter = dialect.delimiter
-                except Exception:
-                    pass
-                if not delimiter:
-                    counts = {sep: sample.count(sep) for sep in (";", ",", "\t")}
-                    delimiter = max(counts, key=counts.get) if any(counts.values()) else ","  # <- fixed
+            # ---- CSV import via bank importers ----
+            if name_lower.endswith(".csv"):
+                if bank == "auto":
+                    importer, sniff = _pick_best_importer(raw, filename)
+                    if not importer or not sniff or not sniff.ok:
+                        messages.error(
+                            request,
+                            "Could not detect CSV format. Please choose the bank and try again."
+                        )
+                        return redirect("upload")
+                else:
+                    importer = IMPORTERS.get(bank)
+                    if not importer:
+                        messages.error(request, "Unknown bank format selected.")
+                        return redirect("upload")
 
-                header_idx = 0
-                for i, line in enumerate(lines[:20]):
-                    if line.count(delimiter) >= 3:
-                        header_idx = i
-                        break
-                sliced_text = "\n".join(lines[header_idx:])
-                reader = csv.DictReader(io.StringIO(sliced_text), delimiter=delimiter)
+                    sniff = importer.sniff(raw=raw, filename=filename)
+                    if not sniff.ok:
+                        sugg_imp, sugg = _pick_best_importer(raw, filename)
+                        suggestion = (sugg_imp.label if sugg_imp else "")
+                        messages.error(
+                            request,
+                            f"This file does not look like {importer.label}. "
+                            f"{('It looks like: ' + suggestion + '. ') if suggestion else ''}"
+                            "Please choose the correct bank and try again."
+                        )
+                        return redirect("upload")
 
-                def pick(d, *aliases):
-                    for a in aliases:
-                        a = a.strip().lower()
-                        for k in d.keys():
-                            if (k or "").strip().lower() == a:
-                                return d[k]
-                    return None
+                parsed = importer.parse_raw(raw=raw, filename=filename)
 
-                for r in reader:
-                    rr = {(k or "").strip(): r[k] for k in r.keys()}
+                # Defensive: allow either rows or (rows, meta)
+                if isinstance(parsed, tuple):
+                    rows = parsed[0] or []
+                else:
+                    rows = parsed or []
 
-                    date_val   = pick(rr, "data", "date", "operacijos data", "operation date", "transaction date")
-                    merchant   = pick(rr, "gavejas", "mokėtojas / gavėjas", "mokėtojo arba gavėjo pavadinimas",
-                                      "merchant", "description", "parduotuvė", "counterparty", "payee")
-                    amount_raw = pick(rr, "suma", "amount", "sum", "transaction amount", "suma sąskaitos valiuta")
-                    currency   = pick(rr, "valiuta", "currency", "sąskaitos valiuta")
-                    debcred    = pick(rr, "debetas/kreditas", "dr/cr", "dc", "d/k")
-                    trans_type = pick(rr, "transakcijos tipas", "transaction type", "tipas", "type")
-                    note       = pick(rr, "paskirtis", "note", "notes", "purpose", "details")
-                    # Optional:
-                    time_val   = pick(rr, "time", "operation time", "transaction time", "laikas")
-                    descr_val  = pick(rr, "description", "details", "purpose", "mokėjimo paskirtis", "mokėjimo paskirtis (description)")
+                parsed_count = len(rows)
 
-                    try:
-                        d = parse_date(date_val)
-                        in_out = parse_in_out(debcred, trans_type)
-                        amt = parse_amount(amount_raw)
-                        cur = normalize_currency(currency)
-                    except Exception:
-                        skipped_count += 1
-                        continue
-                    if not d or amt is None:
-                        skipped_count += 1
-                        continue
-
-                    rows.append({
-                        "date": d,
-                        "time": (str(time_val).strip() if time_val else ""),
-                        "merchant": (merchant or "").strip()[:200],
-                        "amount": amt,
-                        "currency": cur or "EUR",
-                        "in_out": in_out or "out",
-                        "notes": (note or "").strip()[:500],
-                        "description": (str(descr_val or note or merchant or "").strip())[:500],
-                    })
-                    parsed_count += 1
-
+            # ---- Excel import (keep your generic mapping) ----
             else:
                 import pandas as pd
-                df = pd.read_excel(f)
+
+                df = pd.read_excel(io.BytesIO(raw))
                 df.columns = [str(c).strip().lower() for c in df.columns]
 
                 def pick_row(row, *aliases):
@@ -342,14 +405,16 @@ def upload(request):
 
                 for _, r in df.iterrows():
                     date_val   = pick_row(r, "data", "date", "operacijos data", "operation date", "transaction date")
-                    merchant   = pick_row(r, "gavejas", "mokėtojas / gavėjas", "mokėtojo arba gavėjo pavadinimas",
-                                          "merchant", "description", "parduotuvė", "counterparty", "payee")
+                    merchant   = pick_row(
+                        r,
+                        "gavejas", "mokėtojas / gavėjas", "mokėtojo arba gavėjo pavadinimas",
+                        "merchant", "description", "parduotuvė", "counterparty", "payee"
+                    )
                     amount_raw = pick_row(r, "suma", "amount", "sum", "transaction amount", "suma sąskaitos valiuta")
                     currency   = pick_row(r, "valiuta", "currency", "sąskaitos valiuta")
                     debcred    = pick_row(r, "debetas/kreditas", "dr/cr", "dc", "d/k")
                     trans_type = pick_row(r, "transakcijos tipas", "transaction type", "tipas", "type")
                     note       = pick_row(r, "paskirtis", "note", "notes", "purpose", "details")
-                    # Optional:
                     time_val   = pick_row(r, "time", "operation time", "transaction time", "laikas")
                     descr_val  = pick_row(r, "description", "details", "purpose", "mokėjimo paskirtis", "mokėjimo paskirtis (description)")
 
@@ -361,6 +426,7 @@ def upload(request):
                     except Exception:
                         skipped_count += 1
                         continue
+
                     if not d or amt is None:
                         skipped_count += 1
                         continue
@@ -379,13 +445,11 @@ def upload(request):
 
             # ---------------- DB-only dedupe using fingerprint v2 ----------------
             existing_fps = set(
-                Transaction.objects
-                .filter(user=request.user)
-                .values_list("fingerprint", flat=True)
+                Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
             )
 
             db_dups = 0
-            blocked_deleted = 0  # keep if you later want to count deleted-blocks
+            blocked_deleted = 0
             to_create = []
 
             for r in rows:
@@ -411,7 +475,7 @@ def upload(request):
                     db_dups += 1
                     continue
 
-                # 2) Extra safety: signature-based dedupe
+                # 2) Signature-based safety dedupe
                 merchant_norm = (r.get("merchant") or "").strip()
                 cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
 
@@ -457,23 +521,20 @@ def upload(request):
                 added = len(created_fps)
 
             msg = (
-                f'Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. '
-                f'Added {added} new transaction{"s" if added != 1 else ""}. '
-                f'(DB dups: {db_dups}, blocked by deleted: {blocked_deleted}.) '
+                f"Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. "
+                f"Added {added} new transaction{'s' if added != 1 else ''}. "
+                f"(DB dups: {db_dups}, blocked by deleted: {blocked_deleted}.) "
             )
             if added > 0:
                 messages.success(request, msg, extra_tags="safe")
             else:
                 messages.info(request, msg, extra_tags="safe")
 
-            # ---- enqueue auto-categorize if eligible (single place) ----
-            from django.conf import settings as dj_settings
-            from finance.models import AiRun, OnboardingState as OBState
-
-            TEACH_AI_UNLOCK = getattr(dj_settings, "TEACH_AI_UNLOCK", 20)
+            # ---- enqueue auto-categorize if eligible ----
+            TEACH_AI_UNLOCK = getattr(settings, "TEACH_AI_UNLOCK", 20)
             try:
                 state = request.user.onboarding_state
-            except OBState.DoesNotExist:
+            except OnboardingState.DoesNotExist:
                 state = None
 
             if state and state.categories_done:
@@ -484,7 +545,7 @@ def upload(request):
                 if labeled >= TEACH_AI_UNLOCK and has_uncat:
                     AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
 
-            # Redirect
+            # Redirect (preserve filters)
             qs_params = []
             if active_src:
                 qs_params.append(f"src={active_src.id}")
@@ -501,9 +562,11 @@ def upload(request):
             return redirect("upload")
 
     # -------------------- LIST (GET) --------------------
-    qs = (Transaction.objects
-          .filter(user=request.user, is_deleted=False)
-          .select_related("category_fk", "money_source"))
+    qs = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False)
+        .select_related("category_fk", "money_source")
+    )
 
     if active_src:
         qs = qs.filter(money_source=active_src)
@@ -538,10 +601,12 @@ def upload(request):
 
     qs = qs.order_by("-date", "-id")
 
-    uncat_count = (Transaction.objects
-                   .filter(user=request.user, is_deleted=False)
-                   .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
-                   .count())
+    uncat_count = (
+        Transaction.objects
+        .filter(user=request.user, is_deleted=False)
+        .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
+        .count()
+    )
     low_conf_count = Transaction.objects.filter(
         user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
     ).count()
@@ -555,7 +620,6 @@ def upload(request):
 
     categories = Category.objects.filter(user=request.user).order_by("name")
 
-    # Onboarding sidebar state (model-backed)
     ensure_default_categories(request.user)
     income_exists = Category.objects.filter(user=request.user, name="Income").exists()
     try:
@@ -570,6 +634,8 @@ def upload(request):
         user=request.user, is_deleted=False, category_source="user"
     ).count()
     ai_locked = (has_any_tx and user_labels_count < MIN_USER_LABELS)
+
+    bank_choices = [("auto", "Auto-detect")] + [(k, imp.label) for k, imp in IMPORTERS.items()]
 
     ctx = {
         "page_obj": page_obj,
@@ -592,6 +658,7 @@ def upload(request):
         "stype": stype,
         "type_choices": MoneySource.TYPE_CHOICES,
         "default_account_name": default_src.name,
+        "bank_choices": bank_choices,
         "onboarding_state": {
             "categories_done": cats_done,
             "has_income": income_exists,
