@@ -2,197 +2,131 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MoneyCompass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-29 13:03+0000\n"
-"PO-Revision-Date: 2025-11-29 13:10+0200\n"
+"POT-Creation-Date: 2026-02-12 09:22+0000\n"
+"PO-Revision-Date: 2026-02-12 09:30+0200\n"
 "Last-Translator: You <you@example.com>\n"
 "Language-Team: Lithuanian\n"
 "Language: lt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: moneycoach/settings.py:137
-msgid "English"
-msgstr "Anglų"
+# --- Onboarding banner ---
+#: finance/context_processors.py:71
+msgid ""
+"Welcome! Let’s get you set up. First, check your categories, edit or add "
+"what you need."
+msgstr ""
+"Sveiki! Pradėkime nuo pagrindų. Pirmiausia peržiūrėkite kategorijas – "
+"pakoreguokite arba pridėkite, ko reikia."
 
-#: moneycoach/settings.py:138
-msgid "Lithuanian"
-msgstr "Lietuvių"
+#: finance/context_processors.py:72
+msgid "Open Categories"
+msgstr "Atidaryti kategorijas"
 
-#: moneycoach/templates/base.html:23 moneycoach/templates/overview.html:7
-msgid "Dashboard"
-msgstr "Apžvalga"
+#: finance/context_processors.py:83
+msgid "Next: Upload a CSV file from your bank of your transactions to begin."
+msgstr "Kitas žingsnis: įkelkite banko operacijų CSV failą, kad pradėtumėte."
 
-#: finance/templates/statistics.html:3 finance/templates/statistics.html:7
-#: moneycoach/templates/base.html:24 moneycoach/templates/base.html:120
-msgid "Statistics"
-msgstr "Statistika"
+#: finance/context_processors.py:84
+msgid "Go to Upload"
+msgstr "Eiti į įkėlimą"
 
-#: finance/templates/reports.html:3 finance/templates/reports.html:7
-#: moneycoach/templates/base.html:25 moneycoach/templates/base.html:124
-msgid "Reports"
-msgstr "Ataskaitos"
+#: finance/context_processors.py:95
+msgid ""
+"Now set a manual balance snapshot so we have a reference point for balances."
+msgstr ""
+"Dabar nustatykite rankinį likučio „snapshot“, kad turėtume atskaitos tašką "
+"likučiams skaičiuoti."
 
-#: finance/templates/assets.html:3 finance/templates/assets.html:7
-#: moneycoach/templates/base.html:26
-msgid "Portfolio"
-msgstr "Portfelis"
+#: finance/context_processors.py:96
+msgid "Set a Balance"
+msgstr "Nustatyti likutį"
 
-#: finance/templates/statistics.html:44 finance/templates/upload.html:7
-#: moneycoach/templates/base.html:27
-msgid "Transactions"
-msgstr "Operacijos"
+#: finance/context_processors.py:108
+#, python-format
+msgid ""
+"Almost there! Please label at least %(min)s transactions so AI can learn "
+"your habits. You’ve labeled %(count)s so far."
+msgstr ""
+"Jau beveik! Pažymėkite bent %(min)s operacijų, kad AI išmoktų jūsų įpročius. "
+"Šiuo metu pažymėjote %(count)s."
 
-#: finance/templates/profile.html:3 finance/templates/profile.html:7
-#: moneycoach/templates/base.html:55
-msgid "Profile"
-msgstr "Profilis"
+#: finance/context_processors.py:111 finance/templates/teach_ai.html:3
+#: finance/templates/teach_ai.html:7
+msgid "Teach AI"
+msgstr "Mokyti AI"
 
-#: moneycoach/templates/base.html:58 moneycoach/templates/base.html:133
-msgid "Log Out"
-msgstr "Atsijungti"
+#: finance/context_processors.py:121
+msgid ""
+"You're ready to auto-categorize. Keep an eye on AI results and correct "
+"anything — it will keep improving!"
+msgstr ""
+"Viskas paruošta automatiniai kategorizacijai. Stebėkite AI rezultatus ir "
+"pakoreguokite, jei reikia – taip jis vis gerės."
 
-#: moneycoach/templates/base.html:64
-msgid "Log In"
-msgstr "Prisijungti"
+#: finance/templates/ai_error.html:3
+msgid "AI Error"
+msgstr "AI klaida"
 
-#: moneycoach/templates/base.html:84
-msgid "Home"
-msgstr "Pagrindinis"
+#: finance/templates/ai_error.html:15
+msgid "Auto-categorization Error"
+msgstr "Automatinės kategorizacijos klaida"
 
-#: moneycoach/templates/base.html:87 moneycoach/templates/overview.html:86
-msgid "Invest"
-msgstr "Investicijos"
+#: finance/templates/ai_error.html:19
+msgid "Error Details:"
+msgstr "Klaidos detalės:"
 
-#: moneycoach/templates/base.html:93
-msgid "Txns"
-msgstr "Operacijos"
+#: finance/templates/ai_error.html:25
+msgid "Stopped while processing batch"
+msgstr "Sustabdyta apdorojant paketą"
 
-#: moneycoach/templates/base.html:97
-msgid "Menu"
-msgstr "Meniu"
+#: finance/templates/ai_error.html:31 finance/templates/suggest_done.html:14
+msgid "Back to Upload"
+msgstr "Grįžti į įkėlimą"
 
-#: moneycoach/templates/base.html:128
-msgid "Settings"
-msgstr "Nustatymai"
+#: finance/templates/ai_error.html:35
+msgid "Try Again"
+msgstr "Bandyti dar kartą"
 
-#: moneycoach/templates/base.html:135
-msgid "Close"
-msgstr "Uždaryti"
+#: finance/templates/ai_summary.html:3 finance/templates/ai_summary.html:5
+#: finance/templates/review_ai.html:18 finance/templates/upload.html:25
+msgid "Auto-categorize"
+msgstr "Automatiškai kategorizuoti"
 
-#: moneycoach/templates/overview.html:3
-msgid "Overview"
-msgstr "Apžvalga"
+#: finance/templates/ai_summary.html:7
+msgid "AI key loaded"
+msgstr "AI raktas įkeltas"
 
-#: finance/templates/assets.html:9 moneycoach/templates/overview.html:12
-msgid "Total Net Worth"
-msgstr "Grynasis Turtas"
+#: finance/templates/ai_summary.html:10
+msgid "Set <code>OPENAI_API_KEY</code> in your .env to run auto-categorize."
+msgstr "Norint paleisti automatinę kategorizaciją, nustatykite <code>OPENAI_API_KEY</code> savo .env faile."
 
-#: finance/templates/profile.html:178 moneycoach/templates/overview.html:41
-msgid "Savings Goals"
-msgstr "Taupymo Tikslai"
+#: finance/templates/ai_summary.html:13
+msgid "Eligible rows sent"
+msgstr "Išsiųsta tinkamų eilučių"
 
-#: moneycoach/templates/overview.html:42 moneycoach/templates/overview.html:75
-msgid "Manage"
-msgstr "Valdyti"
+#: finance/templates/ai_summary.html:14
+msgid "Auto-applied (high confidence)"
+msgstr "Pritaikyta automatiškai (aukštas patikimumas)"
 
-#: moneycoach/templates/overview.html:66
-msgid "Net Worth History"
-msgstr "Turto Istorija"
+#: finance/templates/ai_summary.html:15
+msgid "Parked (low confidence)"
+msgstr "Atidėta (žemas patikimumas)"
 
-#: moneycoach/templates/overview.html:74
-msgid "Accounts & Assets"
-msgstr "Sąskaitos ir Turtas"
+#: finance/templates/ai_summary.html:16
+msgid "Left for review now"
+msgstr "Palikta peržiūrai"
 
-#: moneycoach/templates/overview.html:79
-msgid "Source"
-msgstr "Šaltinis"
+#: finance/templates/ai_summary.html:20
+msgid "⬅ Back to Upload"
+msgstr "⬅ Grįžti į įkėlimą"
 
-#: moneycoach/templates/overview.html:79
-msgid "Type"
-msgstr "Tipas"
-
-#: moneycoach/templates/overview.html:79
-msgid "Balance"
-msgstr "Likutis"
-
-#: moneycoach/templates/overview.html:88
-msgid "Bank"
-msgstr "Bankas"
-
-#: moneycoach/templates/overview.html:90
-msgid "Cash"
-msgstr "Grynieji"
-
-#: moneycoach/templates/overview.html:92
-msgid "Savings"
-msgstr "Taupyklė"
-
-#: moneycoach/templates/overview.html:98
-msgid "No accounts found."
-msgstr "Sąskaitų nerasta."
-
-#: moneycoach/templates/overview.html:106
-msgid "Income vs Spending"
-msgstr "Pajamos vs Išlaidos"
-
-#: moneycoach/templates/overview.html:113
-msgid "Net by Month"
-msgstr "Likutis pagal Mėnesį"
-
-#: moneycoach/templates/overview.html:116
-#: moneycoach/templates/overview.html:148
-msgid "Month"
-msgstr "Mėnuo"
-
-#: moneycoach/templates/overview.html:116
-msgid "Net"
-msgstr "Likutis"
-
-#: moneycoach/templates/overview.html:133
-msgid "Spending per Category"
-msgstr "Išlaidos pagal Kategoriją"
-
-#: moneycoach/templates/overview.html:154
-msgid "No categorized spending yet."
-msgstr "Nėra kategorizuotų išlaidų."
-
-#: moneycoach/templates/overview.html:160
-msgid "Budgets vs Spent"
-msgstr "Biudžetai vs Išlaidos"
-
-#: moneycoach/templates/overview.html:164
-msgid "You haven't set any caps yet."
-msgstr "Nėra nustatytų limitų."
-
-#: moneycoach/templates/overview.html:185
-msgid "Net Worth"
-msgstr "Grynasis Turtas"
-
-#: moneycoach/templates/overview.html:268
-msgid "#Tx"
-msgstr "#Op"
-
-#: moneycoach/templates/overview.html:268
-msgid "Avg"
-msgstr "Vid"
-
-#: moneycoach/templates/overview.html:270
-msgid "Open"
-msgstr "Atidaryti"
-
-#: moneycoach/templates/overview.html:273
-msgid "No data."
-msgstr "Nėra duomenų."
-
-#: moneycoach/templates/overview.html:327
-msgid "Spent"
-msgstr "Išleista"
-
-#: moneycoach/templates/overview.html:328
-msgid "Cap"
-msgstr "Limitas"
+#: finance/templates/ai_summary.html:21
+msgid "Review low-confidence"
+msgstr "Peržiūrėti žemo patikimumo"
 
 #: finance/templates/asset_add.html:3
 msgid "Add Asset"
@@ -239,458 +173,507 @@ msgid "Add to Portfolio"
 msgstr "Pridėti į Portfelį"
 
 #: finance/templates/asset_add.html:43 finance/templates/asset_edit.html:33
-#: finance/templates/assets.html:168 finance/templates/assets.html:198
-#: finance/templates/category_edit.html:13
-#: finance/templates/statistics.html:236 finance/templates/tx_add.html:83
-#: finance/templates/tx_edit.html:39
+#: finance/templates/assets.html:197 finance/templates/assets.html:240
+#: finance/templates/category_edit.html:45
+#: finance/templates/statistics.html:236 finance/templates/tx_add.html:118
+#: finance/templates/tx_edit.html:54
 msgid "Cancel"
 msgstr "Atšaukti"
 
-#: finance/templates/assets.html:23
+#: finance/templates/asset_edit.html:3 finance/templates/asset_edit.html:6
+msgid "Edit Asset"
+msgstr "Redaguoti turtą"
+
+#: finance/templates/asset_edit.html:15
+msgid "Current Price"
+msgstr "Dabartinė kaina"
+
+#: finance/templates/asset_edit.html:23
+msgid "Quantity Held"
+msgstr "Turimas kiekis"
+
+#: finance/templates/asset_edit.html:28
+msgid "Remove this asset from your portfolio?"
+msgstr "Pašalinti šį turtą iš portfelio?"
+
+#: finance/templates/asset_edit.html:29
+msgid "Remove Asset"
+msgstr "Pašalinti turtą"
+
+#: finance/templates/asset_edit.html:34
+msgid "Save Changes"
+msgstr "Išsaugoti pakeitimus"
+
+#: finance/templates/assets.html:3 finance/templates/assets.html:9
+#: moneycoach/templates/base.html:26
+msgid "Portfolio"
+msgstr "Portfelis"
+
+#: finance/templates/assets.html:12 moneycoach/templates/overview.html:12
+msgid "Total Net Worth"
+msgstr "Grynasis Turtas"
+
+#: finance/templates/assets.html:27 finance/views/assets.py:183
 msgid "Crypto Assets"
 msgstr "Kriptovaliutos"
 
-#: finance/templates/assets.html:27 finance/templates/assets.html:147
-#: finance/templates/assets.html:169
+#: finance/templates/assets.html:32 finance/templates/assets.html:164
+#: finance/templates/assets.html:198
 msgid "Add Crypto"
 msgstr "Pridėti Kripto"
 
-#: finance/templates/assets.html:36 finance/templates/assets.html:99
+#: finance/templates/assets.html:41 finance/templates/assets.html:110
 msgid "Asset"
 msgstr "Turtas"
 
-#: finance/templates/assets.html:37 finance/templates/assets.html:100
+#: finance/templates/assets.html:42 finance/templates/assets.html:111
 msgid "Price"
 msgstr "Kaina"
 
-#: finance/templates/assets.html:38 finance/templates/assets.html:101
+#: finance/templates/assets.html:43 finance/templates/assets.html:112
 msgid "Qty"
 msgstr "Kiekis"
 
-#: finance/templates/assets.html:39 finance/templates/assets.html:102
+#: finance/templates/assets.html:44 finance/templates/assets.html:113
 msgid "Value"
 msgstr "Vertė"
 
-#: finance/templates/assets.html:53 finance/templates/assets.html:116
-#: finance/templates/categories.html:28 finance/templates/upload.html:168
-#: finance/templates/upload.html:195
+#: finance/templates/assets.html:59 finance/templates/assets.html:128
+#: finance/templates/upload.html:184 finance/templates/upload.html:229
 msgid "Edit"
 msgstr "Redaguoti"
 
-#: finance/templates/assets.html:62 finance/templates/assets.html:125
+#: finance/templates/assets.html:69 finance/templates/assets.html:138
 msgid "Value Over Time"
 msgstr "Vertė Laike"
 
-#: finance/templates/assets.html:76
+#: finance/templates/assets.html:84
 msgid "No crypto assets yet."
 msgstr "Kripto turto dar nėra."
 
-#: finance/templates/assets.html:86
+#: finance/templates/assets.html:96
 msgid "Stocks & ETFs"
 msgstr "Akcijos ir ETF"
 
-#: finance/templates/assets.html:90 finance/templates/assets.html:199
+#: finance/templates/assets.html:101 finance/templates/assets.html:241
 msgid "Add Stock"
 msgstr "Pridėti Akciją"
 
-#: finance/templates/assets.html:139
+#: finance/templates/assets.html:153
 msgid "No stocks tracked yet."
 msgstr "Akcijų dar nėra."
 
-#: finance/templates/statistics.html:12
-msgid "No statistics yet — upload some transactions to get started."
-msgstr "Statistikos nėra — įkelkite operacijų."
+#: finance/templates/assets.html:165 finance/templates/assets.html:208
+msgid "Click the field to open the list. Type to filter. Then select an item."
+msgstr "Spustelėkite lauką, kad atidarytumėte sąrašą. Rašykite filtravimui. Tada pasirinkite įrašą."
 
-#: finance/templates/statistics.html:20
-msgid "All-time earned"
-msgstr "Viso uždirbta"
+#: finance/templates/assets.html:171
+msgid "Coin"
+msgstr "Moneta"
 
-#: finance/templates/statistics.html:24
-msgid "All-time spent"
-msgstr "Viso išleista"
+#: finance/templates/assets.html:177
+msgid "Search crypto…"
+msgstr "Ieškoti kripto…"
 
-#: finance/templates/statistics.html:28
-msgid "Lifetime net"
-msgstr "Viso likutis"
+#: finance/templates/assets.html:184 finance/templates/assets.html:227
+#: finance/templates/assets.html:262
+msgid "Start typing to search…"
+msgstr "Pradėkite rašyti, kad ieškotumėte…"
 
-#: finance/templates/statistics.html:38
-msgid "Avg / month (In)"
-msgstr "Vid / mėn (Pajamos)"
+#: finance/templates/assets.html:189
+msgid "Please select a coin from the list."
+msgstr "Prašome pasirinkti monetą iš sąrašo."
 
-#: finance/templates/statistics.html:40
-msgid "Avg / month (Out)"
-msgstr "Vid / mėn (Išlaidos)"
+#: finance/templates/assets.html:193 finance/templates/assets.html:236
+msgid "Quantity"
+msgstr "Kiekis"
 
-#: finance/templates/statistics.html:46
-msgid "Categorized"
-msgstr "Kategorizuota"
+#: finance/templates/assets.html:207
+msgid "Add Stock / ETF"
+msgstr "Pridėti Akciją / ETF"
 
-#: finance/templates/statistics.html:50
-msgid "Merchants"
-msgstr "Prekybininkai"
+#: finance/templates/assets.html:214
+msgid "Ticker"
+msgstr "Trumpinys"
 
-#: finance/templates/statistics.html:51
-msgid "total"
-msgstr "iš viso"
+#: finance/templates/assets.html:220
+msgid "Search stocks/ETFs…"
+msgstr "Ieškoti akcijų/ETF…"
 
-#: finance/templates/statistics.html:54
-msgid "Top:"
-msgstr "Top:"
+#: finance/templates/assets.html:232
+msgid "Please select a ticker from the list."
+msgstr "Prašome pasirinkti trumpinį iš sąrašo."
 
-#: finance/templates/statistics.html:64
-msgid "Financial Runway"
-msgstr "Finansinis Išgyvenimas"
+#: finance/templates/assets.html:263
+msgid "No results."
+msgstr "Rezultatų nėra."
 
-#: finance/templates/statistics.html:66
-msgid "CUSTOM VIEW"
-msgstr "PASIRINKTINAS"
+#: finance/templates/assets.html:264
+msgid "Please select from the list."
+msgstr "Prašome pasirinkti iš sąrašo."
 
-#: finance/templates/statistics.html:71
-msgid "Months"
-msgstr "Mėn."
+#: finance/templates/assets.html:386
+msgid "Searching…"
+msgstr "Ieškoma…"
 
-#: finance/templates/statistics.html:75
-msgid "Based on a burn rate of"
-msgstr "Pagal išlaidų vidurkį"
+#: finance/templates/categories.html:3 finance/templates/categories.html:7
+#: finance/templates/categories.html:16 finance/templates/profile.html:127
+msgid "Categories"
+msgstr "Kategorijos"
 
-#: finance/templates/statistics.html:75
-msgid "last 3 months avg"
-msgstr "paskutiniai 3 mėn"
+#: finance/templates/categories.html:11
+msgid "Back to Profile"
+msgstr "Grįžti į profilį"
 
-#: finance/templates/statistics.html:78
-msgid "Configure Scenario"
-msgstr "Konfigūruoti Scenarijų"
+#: finance/templates/categories.html:25 finance/templates/categories.html:29
+#: finance/templates/profile.html:138 finance/templates/profile.html:142
+msgid "New category name"
+msgstr "Naujos kategorijos pavadinimas"
 
-#: finance/templates/statistics.html:84
-msgid "vs Last Month"
-msgstr "vs Praeitą Mėn"
+#: finance/templates/categories.html:35 finance/templates/profile.html:148
+#: finance/templates/tx_add.html:115
+msgid "Add"
+msgstr "Pridėti"
 
-#: finance/templates/statistics.html:88
-msgid "Spending Less"
-msgstr "Išleidote Mažiau"
+#: finance/templates/categories.html:45 finance/templates/category_edit.html:24
+#: finance/templates/profile.html:158 finance/templates/profile.html:292
+msgid "Name"
+msgstr "Pavadinimas"
 
-#: finance/templates/statistics.html:91
-msgid "Spending More"
-msgstr "Išleidote Daugiau"
+#: finance/templates/categories.html:46 finance/templates/profile.html:47
+#: finance/templates/profile.html:159 finance/templates/profile.html:213
+#: finance/templates/profile.html:298
+msgid "Actions"
+msgstr "Veiksmai"
 
-#: finance/templates/statistics.html:100
-msgid "Category Share"
-msgstr "Kategorijų Dalis"
+#: finance/templates/categories.html:58 finance/templates/profile.html:171
+msgid "Reassign to Other and delete this category?"
+msgstr "Priskirti „Kita“ ir ištrinti šią kategoriją?"
 
-#: finance/templates/statistics.html:103
-msgid "Filter Categories"
-msgstr "Filtruoti Kategorijas"
+#: finance/templates/categories.html:63 finance/templates/profile.html:179
+#: finance/templates/profile.html:352 finance/templates/tx_edit.html:81
+msgid "Delete"
+msgstr "Ištrinti"
 
-#: finance/templates/statistics.html:130 finance/templates/teach_ai.html:36
-msgid "Apply"
-msgstr "Taikyti"
-
-#: finance/templates/statistics.html:142
-msgid "No spending in the selected period."
-msgstr "Nėra išlaidų pasirinktu laikotarpiu."
-
-#: finance/templates/statistics.html:152 moneycoach/templates/overview.html:268
-msgid "Total"
-msgstr "Viso"
-
-#: finance/templates/statistics.html:154
-msgid "Avg/Tx"
-msgstr "Vid/Op"
-
-#: finance/templates/statistics.html:155
-msgid "Cap (range)"
-msgstr "Limitas"
-
-#: finance/templates/statistics.html:157
-msgid "Avg/Mo"
-msgstr "Vid/Mėn"
-
-#: finance/templates/statistics.html:187
-msgid "View"
-msgstr "Peržiūrėti"
-
-#: finance/templates/statistics.html:197
-msgid "Weekday Spending (Last 90 Days)"
-msgstr "Savaitės Dienų Išlaidos (90 d.)"
-
-#: finance/templates/statistics.html:206
-msgid "Choose categories"
-msgstr "Pasirinkti kategorijas"
-
-#: finance/templates/statistics.html:215
-msgid "Select all"
-msgstr "Pasirinkti viską"
-
-#: finance/templates/statistics.html:216
-msgid "Select none"
-msgstr "Nieko"
-
+#: finance/templates/categories.html:74 finance/templates/profile.html:190
 #: finance/templates/statistics.html:226
 msgid "No categories yet."
 msgstr "Kategorijų dar nėra."
 
-#: finance/templates/statistics.html:232
-msgid "Include Uncategorized"
-msgstr "Įtraukti Nekategorizuotus"
+#: finance/templates/category_edit.html:3
+#: finance/templates/category_edit.html:7
+msgid "Edit category"
+msgstr "Redaguoti kategoriją"
 
-#: finance/templates/statistics.html:237
-msgid "Save Selection"
-msgstr "Išsaugoti"
+#: finance/templates/category_edit.html:11
+msgid "Back"
+msgstr "Atgal"
 
-#: finance/templates/statistics.html:246
-msgid "Runway Simulator"
-msgstr "Išgyvenimo Simuliatorius"
-
-#: finance/templates/statistics.html:251
-msgid ""
-"Select which assets (Net Worth) and which expenses (Burn Rate) to include in "
-"the calculation."
-msgstr ""
-"Pasirinkite, kurį turtą (Grynąjį Turtą) ir kurias išlaidas įtraukti į skaičiavimą."
-
-#: finance/templates/statistics.html:259
-msgid "Include Assets"
-msgstr "Įtraukti Turtą"
-
-#: finance/templates/statistics.html:272
-msgid "Include Spending"
-msgstr "Įtraukti Išlaidas"
-
-#: finance/templates/statistics.html:283 finance/templates/uncategorized.html:3
-#: finance/templates/uncategorized.html:7 finance/templates/upload.html:17
-msgid "Uncategorized"
-msgstr "Nekategorizuota"
-
-#: finance/templates/statistics.html:290 finance/templates/upload.html:130
-msgid "Reset"
-msgstr "Atstatyti"
-
-#: finance/templates/statistics.html:291
-msgid "Recalculate"
-msgstr "Perskaičiuoti"
-
-#: finance/templates/upload.html:3 finance/templates/upload.html:54
-msgid "Upload"
-msgstr "Įkelti"
-
-#: finance/templates/upload.html:8
-msgid "Add Manual"
-msgstr "Pridėti Rankiniu"
-
-#: finance/templates/upload.html:12
-msgid "AI-categorized"
-msgstr "AI Kategorizuota"
-
-#: finance/templates/upload.html:14
-msgid "Low-confidence"
-msgstr "Mažas Patikimumas"
-
-#: finance/templates/upload.html:26 finance/templates/upload.html:29
-#, python-format
-msgid "started for <strong>%(count)s</strong> items."
-msgstr "pradėta <strong>%(count)s</strong> įrašams."
-
-#: finance/templates/upload.html:32
-msgid "Started at"
-msgstr "Pradėta"
-
-#: finance/templates/upload.html:38
-msgid "Upload Statement"
-msgstr "Įkelti Išrašą"
-
-#: finance/templates/upload.html:42
-msgid "Target Account"
-msgstr "Sąskaita"
-
-#: finance/templates/upload.html:50
-msgid "File (CSV/Excel)"
-msgstr "Failas (CSV/Excel)"
-
-#: finance/templates/upload.html:61
-msgid "Filter & Search"
-msgstr "Filtruoti ir Ieškoti"
-
-#: finance/templates/upload.html:65
-msgid "All accounts"
-msgstr "Visos sąskaitos"
-
-#: finance/templates/upload.html:84
-msgid "Search"
-msgstr "Paieška"
-
-#: finance/templates/upload.html:85
-msgid "Merchant..."
-msgstr "Prekybininkas..."
-
-#: finance/templates/upload.html:89
-msgid "From"
-msgstr "Nuo"
-
-#: finance/templates/upload.html:94
-msgid "To"
-msgstr "Iki"
-
-#: finance/templates/upload.html:99
-msgid "Min Amount"
-msgstr "Min Suma"
-
-#: finance/templates/upload.html:104
-msgid "Max Amount"
-msgstr "Max Suma"
-
-#: finance/templates/teach_ai.html:13 finance/templates/tx_add.html:54
-#: finance/templates/upload.html:109
-msgid "Flow"
-msgstr "Srautas"
-
-#: finance/templates/review_ai.html:10 finance/templates/review_ai.html:17
-#: finance/templates/review_ai_detail.html:16 finance/templates/upload.html:111
-#: finance/templates/upload.html:120
-msgid "All"
-msgstr "Visi"
-
-#: finance/templates/tx_add.html:57 finance/templates/upload.html:112
-#: moneycoach/templates/overview.html:213
-msgid "Income"
-msgstr "Pajamos"
-
-#: finance/templates/tx_add.html:56 finance/templates/upload.html:113
-#: moneycoach/templates/overview.html:213
-msgid "Spending"
-msgstr "Išlaidos"
-
-#: finance/templates/profile.html:133 finance/templates/statistics.html:151
-#: finance/templates/teach_ai.html:15 finance/templates/tx_add.html:61
-#: finance/templates/tx_edit.html:18 finance/templates/upload.html:118
-#: finance/templates/upload.html:167
+#: finance/templates/category_edit.html:16 finance/templates/profile.html:210
+#: finance/templates/statistics.html:151 finance/templates/teach_ai.html:21
+#: finance/templates/tx_add.html:83 finance/templates/tx_edit.html:27
+#: finance/templates/upload.html:133 finance/templates/upload.html:182
 msgid "Category"
 msgstr "Kategorija"
 
-#: finance/templates/upload.html:129
-msgid "Filter"
-msgstr "Filtruoti"
+#: finance/templates/category_edit.html:34
+msgid "Color"
+msgstr "Spalva"
 
-#: finance/templates/upload.html:139
-#, python-format
-msgid "Total %(total)s items"
-msgstr "Viso %(total)s įrašų"
+#: finance/templates/category_edit.html:48 finance/templates/profile.html:88
+#: finance/templates/profile.html:236 finance/templates/profile.html:383
+#: finance/templates/tx_edit.html:51
+msgid "Save"
+msgstr "Išsaugoti"
 
-#: finance/templates/upload.html:148
-msgid "page"
-msgstr "psl."
+#: finance/templates/deleted.html:3 finance/templates/tx_edit.html:65
+#: finance/templates/upload.html:19
+msgid "Deleted"
+msgstr "Ištrinta"
 
-#: finance/templates/deleted.html:13 finance/templates/tx_add.html:27
-#: finance/templates/uncategorized.html:16 finance/templates/upload.html:163
+#: finance/templates/deleted.html:6
+msgid "Deleted Transactions"
+msgstr "Ištrintos operacijos"
+
+#: finance/templates/deleted.html:13 finance/templates/tx_add.html:29
+#: finance/templates/uncategorized.html:16 finance/templates/upload.html:178
 msgid "Date"
 msgstr "Data"
 
-#: finance/templates/deleted.html:14 finance/templates/teach_ai.html:12
-#: finance/templates/tx_add.html:40 finance/templates/uncategorized.html:17
-#: finance/templates/upload.html:164 moneycoach/templates/overview.html:268
+#: finance/templates/deleted.html:14 finance/templates/teach_ai.html:18
+#: finance/templates/tx_add.html:48 finance/templates/uncategorized.html:17
+#: finance/templates/upload.html:179 moneycoach/templates/overview.html:334
 msgid "Merchant"
 msgstr "Prekybininkas"
 
-#: finance/templates/tx_add.html:45 finance/templates/uncategorized.html:18
-#: finance/templates/upload.html:165
-msgid "Amount"
-msgstr "Suma"
+#: finance/templates/deleted.html:15 finance/templates/review_ai_detail.html:54
+msgid "Reason"
+msgstr "Priežastis"
 
-#: finance/templates/profile.html:42 finance/templates/tx_add.html:31
-#: finance/templates/upload.html:63 finance/templates/upload.html:166
+#: finance/templates/deleted.html:16 finance/templates/statistics.html:158
+#: finance/templates/uncategorized.html:19
+#: moneycoach/templates/overview.html:334
+msgid "Action"
+msgstr "Veiksmas"
+
+#: finance/templates/deleted.html:28
+msgid "Restore"
+msgstr "Atkurti"
+
+#: finance/templates/deleted.html:36
+msgid "No deleted items."
+msgstr "Ištrintų įrašų nėra."
+
+#: finance/templates/login.html:3 finance/templates/login.html:7
+#: finance/templates/login.html:44 moneycoach/templates/accounts/login.html:4
+#: moneycoach/templates/accounts/login.html:9
+#: moneycoach/templates/accounts/login.html:61
+#: moneycoach/templates/accounts/password_reset_complete.html:17
+#: moneycoach/templates/accounts/register.html:129
+msgid "Login"
+msgstr "Prisijungti"
+
+#: finance/templates/login.html:13
+msgid "Username"
+msgstr "Vartotojo vardas"
+
+#: finance/templates/login.html:29 moneycoach/templates/accounts/login.html:43
+#: moneycoach/templates/accounts/register.html:81
+msgid "Password"
+msgstr "Slaptažodis"
+
+#: finance/templates/login.html:49 moneycoach/templates/accounts/login.html:65
+msgid "New here?"
+msgstr "Naujas čia?"
+
+#: finance/templates/login.html:51 finance/templates/register.html:3
+#: finance/templates/register.html:57
+#: moneycoach/templates/accounts/login.html:67
+#: moneycoach/templates/accounts/register.html:4
+#: moneycoach/templates/accounts/register.html:9
+#: moneycoach/templates/base.html:84
+msgid "Register"
+msgstr "Registruotis"
+
+#: finance/templates/profile.html:3 finance/templates/profile.html:7
+#: moneycoach/templates/base.html:55
+msgid "Profile"
+msgstr "Profilis"
+
+# --- Missing Profile Page Translations ---
+#: finance/templates/profile.html:9 finance/templates/upload.html:216
+msgid "User"
+msgstr "Vartotojas"
+
+#: finance/templates/profile.html:14
+msgid "Accounts"
+msgstr "Sąskaitos"
+
+#: finance/templates/profile.html:21
+msgid "New Account Name"
+msgstr "Naujos sąskaitos pavadinimas"
+
+#: finance/templates/profile.html:22
+msgid "e.g. Revolut, SEB"
+msgstr "pvz. Revolut, SEB"
+
+#: finance/templates/profile.html:25 finance/templates/profile.html:43
+#: moneycoach/templates/overview.html:45
+msgid "Type"
+msgstr "Tipas"
+
+#: finance/templates/profile.html:33
+msgid "Add account"
+msgstr "Pridėti sąskaitą"
+
+#: finance/templates/profile.html:42 finance/templates/tx_add.html:36
+#: finance/templates/upload.html:78 finance/templates/upload.html:181
 msgid "Account"
 msgstr "Sąskaita"
 
-#: finance/templates/upload.html:203 finance/templates/upload.html:237
-msgid "pending"
-msgstr "laukiama"
+#: finance/templates/profile.html:44 finance/templates/profile.html:297
+#: finance/templates/review_ai.html:44
+#: finance/templates/review_ai_detail.html:12
+msgid "Status"
+msgstr "Būsena"
 
-#: finance/templates/upload.html:204
-msgid "Apply Changes"
-msgstr "Taikyti Pakeitimus"
+#: finance/templates/profile.html:45
+msgid "Default import"
+msgstr "Numatytasis importas"
 
-#: finance/templates/upload.html:205
-msgid "Discard"
-msgstr "Atmesti"
+#: finance/templates/profile.html:46
+msgid "Balance (EUR)"
+msgstr "Likutis (EUR)"
 
-#: finance/templates/upload.html:211
-msgid "Prev"
-msgstr "Atgal"
+#: finance/templates/profile.html:59 finance/templates/profile.html:333
+msgid "Active"
+msgstr "Aktyvus"
 
-#: finance/templates/review_ai.html:65
-#: finance/templates/review_ai_detail.html:63 finance/templates/upload.html:215
-msgid "Next"
-msgstr "Kitas"
+#: finance/templates/profile.html:61
+msgid "Inactive"
+msgstr "Neaktyvus"
 
-#: finance/templates/upload.html:221
-msgid "No transactions match your filter."
-msgstr "Jokių operacijų nerasta."
+#: finance/templates/profile.html:66
+msgid "Default"
+msgstr "Numatytasis"
 
-#: finance/templates/upload.html:274
-msgid "Discard changes?"
-msgstr "Atmesti pakeitimus?"
+#: finance/templates/profile.html:72
+msgid "Make default"
+msgstr "Padaryti numatytuoju"
 
-#: finance/templates/tx_add.html:3 finance/templates/tx_add.html:6
-msgid "Add transaction"
-msgstr "Pridėti operaciją"
+#: finance/templates/profile.html:92
+msgid "updated"
+msgstr "atnaujinta"
 
-#: finance/templates/tx_add.html:41
-msgid "e.g., Maxima, Lidl…"
-msgstr "pvz., Maxima"
+#: finance/templates/profile.html:103
+msgid "Rename"
+msgstr "Pervadinti"
 
-#: finance/templates/tx_add.html:46
-msgid "e.g., 23.45"
-msgstr "pvz., 23.45"
+#: finance/templates/profile.html:111
+msgid "Disable"
+msgstr "Išjungti"
 
-#: finance/templates/tx_add.html:49
-msgid "Currency"
-msgstr "Valiuta"
+#: finance/templates/profile.html:111
+msgid "Enable"
+msgstr "Įjungti"
 
-#: finance/templates/tx_add.html:63 finance/templates/tx_edit.html:20
-msgid "none"
-msgstr "jokia"
+#: finance/templates/profile.html:118
+msgid "No accounts yet."
+msgstr "Sąskaitų dar nėra."
 
-#: finance/templates/tx_add.html:71
-msgid "Notes (bank description etc.)"
-msgstr "Pastabos (aprašymas)"
+#: finance/templates/profile.html:202
+msgid "Category Caps (Monthly)"
+msgstr "Kategorijų limitai (Mėnesiniai)"
 
-#: finance/templates/tx_add.html:72 finance/templates/tx_add.html:77
-msgid "Optional"
-msgstr "Nebūtina"
+#: finance/templates/profile.html:211
+msgid "Monthly cap (EUR)"
+msgstr "Mėnesio limitas (EUR)"
 
-#: finance/templates/tx_add.html:76
-msgid "Your note"
-msgstr "Jūsų pastaba"
+#: finance/templates/profile.html:212
+msgid "Suggested avg (EUR)"
+msgstr "Siūlomas vidurkis (EUR)"
 
-#: finance/templates/tx_edit.html:3 finance/templates/tx_edit.html:6
-msgid "Edit transaction"
-msgstr "Redaguoti operaciją"
+#: finance/templates/profile.html:234
+msgid "No limit"
+msgstr "Be limito"
 
-#: finance/templates/tx_edit.html:32
-msgid "User note"
-msgstr "Vartotojo pastaba"
+#: finance/templates/profile.html:244
+msgid "Review stats"
+msgstr "Peržiūrėti statistiką"
 
-#: finance/templates/tx_edit.html:33
-msgid "Add context…"
-msgstr "Pridėti kontekstą..."
+#: finance/templates/profile.html:254 moneycoach/templates/overview.html:83
+msgid "Savings Goals"
+msgstr "Taupymo Tikslai"
 
-#: finance/templates/tx_edit.html:43
-msgid "Delete this transaction"
-msgstr "Ištrinti operaciją"
+#: finance/templates/profile.html:261
+msgid "Goal Name"
+msgstr "Tikslas"
 
-#: finance/templates/tx_edit.html:45
+#: finance/templates/profile.html:262
+msgid "e.g. Emergency fund"
+msgstr "pvz. Finansinė pagalvė"
+
+#: finance/templates/profile.html:265
+msgid "Target Amount (EUR)"
+msgstr "Siekiama suma (EUR)"
+
+#: finance/templates/profile.html:269
+msgid "Include balances from accounts:"
+msgstr "Įtraukti lėšas iš sąskaitų:"
+
+#: finance/templates/profile.html:279
 msgid ""
-"Deleting hides it from lists and charts, and prevents re-importing the same "
-"row. You can restore it later from"
+"Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal."
 msgstr ""
-"Ištrynimas paslepia įrašą. Atkurti galite iš"
+"Patarimas: Sujunkite kelias sąskaitas (pvz. Taupomoji + Grynieji) vienam "
+"tikslui."
 
-#: finance/templates/tx_edit.html:48
-msgid "Delete this transaction?"
-msgstr "Ištrinti?"
+#: finance/templates/profile.html:283
+msgid "Create Goal"
+msgstr "Sukurti tikslą"
 
-#: finance/templates/tx_edit.html:51
-msgid "Optional reason (e.g., pass-through transfer)"
-msgstr "Priežastis (nebūtina)"
+#: finance/templates/profile.html:293
+msgid "Accounts Linked"
+msgstr "Prisietos sąskaitos"
+
+#: finance/templates/profile.html:294
+msgid "Progress"
+msgstr "Progresas"
+
+#: finance/templates/profile.html:295
+msgid "Target"
+msgstr "Tikslas"
+
+#: finance/templates/profile.html:296
+msgid "ETA"
+msgstr "Prognozė"
+
+#: finance/templates/profile.html:326
+msgid "mo"
+msgstr "mėn."
+
+#: finance/templates/profile.html:335 finance/views/settings.py:294
+msgid "Paused"
+msgstr "Sustabdytas"
+
+#: finance/templates/profile.html:345
+msgid "Pause"
+msgstr "Sustabdyti"
+
+#: finance/templates/profile.html:345
+msgid "Activate"
+msgstr "Aktyvuoti"
+
+#: finance/templates/profile.html:348
+msgid "Delete this goal?"
+msgstr "Ištrinti šį tikslą?"
+
+#: finance/templates/profile.html:358
+msgid "No savings goals yet."
+msgstr "Taupymo tikslų dar nėra."
+
+#: finance/templates/profile.html:366
+msgid "Preferences"
+msgstr "Nuostatos"
+
+#: finance/templates/profile.html:375
+#, python-format
+msgid "Exclude 15%% tax from investments"
+msgstr "Atimti 15%% mokestį nuo investicijų"
+
+#: finance/templates/profile.html:377
+#, python-format
+msgid ""
+"If enabled, the app will show your investment values after subtracting 15%% "
+"(flat estimate) in Overview and Statistics. The Portfolio page will always "
+"show full value."
+msgstr ""
+"Jei įjungta, programėlė Apžvalgoje ir Statistikoje rodys investicijų vertę "
+"atėmus 15%% (fiksuotas įvertis). Portfelio puslapyje visada bus rodoma pilna "
+"vertė."
+
+#: finance/templates/register.html:7
+#: moneycoach/templates/accounts/register.html:123
+msgid "Create account"
+msgstr "Sukurti paskyrą"
+
+#: finance/templates/register.html:50
+msgid "Use at least 8 characters and avoid obvious passwords."
+msgstr "Naudokite bent 8 simbolius ir venkite lengvai atspėjamų slaptažodžių."
+
+#: finance/templates/register.html:62
+#: moneycoach/templates/accounts/register.html:127
+msgid "Already have an account?"
+msgstr "Jau turite paskyrą?"
+
+#: finance/templates/register.html:65
+msgid "Log in"
+msgstr "Prisijungti"
+
+#: finance/templates/reports.html:3 finance/templates/reports.html:7
+#: moneycoach/templates/base.html:25 moneycoach/templates/base.html:171
+msgid "Reports"
+msgstr "Ataskaitos"
 
 #: finance/templates/reports.html:12
 msgid "Select Period:"
@@ -768,174 +751,1058 @@ msgstr "Didžiausia išlaida:"
 msgid "No history recorded yet."
 msgstr "Nėra istorijos."
 
-# --- Missing Profile Page Translations ---
+#: finance/templates/review_ai.html:3 finance/templates/review_ai.html:8
+msgid "AI Runs"
+msgstr "AI paleidimai"
 
-msgid "User"
-msgstr "Vartotojas"
+#: finance/templates/review_ai.html:13
+msgid "Kind:"
+msgstr "Tipas:"
 
-msgid "Accounts"
-msgstr "Sąskaitos"
+#: finance/templates/review_ai.html:16 finance/templates/review_ai.html:30
+#: finance/templates/review_ai_detail.html:39 finance/templates/upload.html:126
+#: finance/templates/upload.html:135
+msgid "All"
+msgstr "Visi"
 
-msgid "New Account Name"
-msgstr "Naujos sąskaitos pavadinimas"
+#: finance/templates/review_ai.html:21 finance/templates/upload.html:28
+msgid "Recheck"
+msgstr "Patikrinti iš naujo"
 
-msgid "e.g. Revolut, SEB"
-msgstr "pvz. Revolut, SEB"
+#: finance/templates/review_ai.html:27
+msgid "Status:"
+msgstr "Būsena:"
 
-msgid "Add account"
-msgstr "Pridėti sąskaitą"
+#: finance/templates/review_ai.html:42
+msgid "Started"
+msgstr "Pradėta"
 
-msgid "Status"
-msgstr "Būsena"
+#: finance/templates/review_ai.html:43
+msgid "Kind"
+msgstr "Tipas"
 
-msgid "Default import"
-msgstr "Numatytasis importas"
+#: finance/templates/review_ai.html:45
+#: finance/templates/review_ai_detail.html:13
+msgid "Mode"
+msgstr "Režimas"
 
-msgid "Balance (EUR)"
-msgstr "Likutis (EUR)"
+#: finance/templates/review_ai.html:46
+msgid "Counts"
+msgstr "Kiekiai"
 
-msgid "Actions"
-msgstr "Veiksmai"
+#: finance/templates/review_ai.html:47
+#: finance/templates/review_ai_detail.html:18
+msgid "Finished"
+msgstr "Baigta"
 
-msgid "Active"
-msgstr "Aktyvus"
+#: finance/templates/review_ai.html:48 finance/templates/review_ai.html:78
+msgid "Details"
+msgstr "Detalės"
 
-msgid "Inactive"
-msgstr "Neaktyvus"
+#: finance/templates/review_ai.html:64
+msgid "considered"
+msgstr "įvertinta"
 
-msgid "Default"
-msgstr "Numatytasis"
+#: finance/templates/review_ai.html:65
+msgid "applied"
+msgstr "pritaikyta"
 
-msgid "Make default"
-msgstr "Padaryti numatytuoju"
+#: finance/templates/review_ai.html:66
+msgid "parked"
+msgstr "atidėta"
 
-msgid "Save"
+#: finance/templates/review_ai.html:85
+msgid "No runs yet."
+msgstr "Paleidimų dar nėra."
+
+#: finance/templates/review_ai.html:95
+#: finance/templates/review_ai_detail.html:100
+#, python-format
+msgid ""
+"\n"
+"            Showing %(start)s–%(end)s of %(total)s.\n"
+"            "
+msgstr ""
+"\n"
+"            Rodoma %(start)s–%(end)s iš %(total)s.\n"
+"            "
+
+#: finance/templates/review_ai.html:105
+#: finance/templates/review_ai_detail.html:110
+msgid "Previous"
+msgstr "Atgal"
+
+#: finance/templates/review_ai.html:111
+#: finance/templates/review_ai_detail.html:116
+#: finance/templates/upload.html:259
+msgid "Next"
+msgstr "Kitas"
+
+#: finance/templates/review_ai_detail.html:3
+#: finance/templates/review_ai_detail.html:8
+msgid "AI Run"
+msgstr "AI paleidimas"
+
+#: finance/templates/review_ai_detail.html:14
+msgid "Considered"
+msgstr "Įvertinta"
+
+#: finance/templates/review_ai_detail.html:15
+#: finance/templates/review_ai_detail.html:40
+msgid "Applied"
+msgstr "Pritaikyta"
+
+#: finance/templates/review_ai_detail.html:16
+#: finance/templates/review_ai_detail.html:41
+msgid "Parked"
+msgstr "Atidėta"
+
+#: finance/templates/review_ai_detail.html:36
+msgid "Filter:"
+msgstr "Filtras:"
+
+#: finance/templates/review_ai_detail.html:42
+msgid "Skipped"
+msgstr "Praleista"
+
+#: finance/templates/review_ai_detail.html:51
+msgid "Tx"
+msgstr "Op"
+
+#: finance/templates/review_ai_detail.html:52
+msgid "Old → New / Suggested"
+msgstr "Sena → Nauja / Siūloma"
+
+#: finance/templates/review_ai_detail.html:53
+msgid "Confidence"
+msgstr "Patikimumas"
+
+#: finance/templates/review_ai_detail.html:70
+msgid "suggestion:"
+msgstr "pasiūlymas:"
+
+#: finance/templates/review_ai_detail.html:90
+msgid "No items."
+msgstr "Įrašų nėra."
+
+#: finance/templates/review_ai_detail.html:126
+msgid "← Back to all runs"
+msgstr "← Grįžti į visus paleidimus"
+
+#: finance/templates/review_low.html:3
+msgid "Low-confidence review"
+msgstr "Žemo patikimumo peržiūra"
+
+#: finance/templates/review_low.html:7
+msgid "Low-confidence (needs your decision)"
+msgstr "Žemas patikimumas (reikia jūsų sprendimo)"
+
+#: finance/templates/review_low.html:11
+#, python-format
+msgid ""
+"\n"
+"            Total: %(total)s · Page %(num)s of %(pages)s\n"
+"            "
+msgstr ""
+"\n"
+"            Viso: %(total)s · Puslapis %(num)s iš %(pages)s\n"
+"            "
+
+#: finance/templates/review_low.html:24
+msgid "date"
+msgstr "data"
+
+#: finance/templates/review_low.html:25
+msgid "merchant"
+msgstr "prekybininkas"
+
+#: finance/templates/review_low.html:26
+msgid "amount"
+msgstr "suma"
+
+#: finance/templates/review_low.html:27
+msgid "in_out"
+msgstr "srautas"
+
+#: finance/templates/review_low.html:28
+msgid "notes"
+msgstr "pastabos"
+
+#: finance/templates/review_low.html:29
+msgid "current"
+msgstr "dabartinė"
+
+#: finance/templates/review_low.html:30
+msgid "AI suggested"
+msgstr "AI pasiūlė"
+
+#: finance/templates/review_low.html:31
+msgid "confidence"
+msgstr "patikimumas"
+
+#: finance/templates/review_low.html:32 finance/templates/review_low.html:66
+#: finance/templates/teach_ai.html:32
+msgid "choose"
+msgstr "pasirinkti"
+
+#: finance/templates/review_low.html:82
+msgid "first"
+msgstr "pirmas"
+
+#: finance/templates/review_low.html:83
+msgid "prev"
+msgstr "atgal"
+
+#: finance/templates/review_low.html:86
+msgid "Page"
+msgstr "Puslapis"
+
+#: finance/templates/review_low.html:89
+msgid "next"
+msgstr "pirmyn"
+
+#: finance/templates/review_low.html:90
+msgid "last"
+msgstr "paskutinis"
+
+#: finance/templates/review_low.html:108
+msgid "changed"
+msgstr "pakeista"
+
+#: finance/templates/review_low.html:109
+msgid "ready"
+msgstr "paruošta"
+
+#: finance/templates/review_low.html:113
+msgid "Apply All Saved"
+msgstr "Pritaikyti visus išsaugotus"
+
+#: finance/templates/review_low.html:117
+msgid "Clear"
+msgstr "Išvalyti"
+
+#: finance/templates/review_low.html:215
+msgid "No changes selected."
+msgstr "Nepasirinkta jokių pakeitimų."
+
+#: finance/templates/review_low.html:227
+msgid "Clear all saved selections?"
+msgstr "Išvalyti visus išsaugotus pasirinkimus?"
+
+#: finance/templates/review_low.html:239
+msgid "No low-confidence items 🎉"
+msgstr "Nėra žemo patikimumo įrašų 🎉"
+
+#: finance/templates/statistics.html:3 finance/templates/statistics.html:7
+#: moneycoach/templates/base.html:24 moneycoach/templates/base.html:140
+msgid "Statistics"
+msgstr "Statistika"
+
+#: finance/templates/statistics.html:12
+msgid "No statistics yet — upload some transactions to get started."
+msgstr "Statistikos nėra — įkelkite operacijų."
+
+#: finance/templates/statistics.html:20
+msgid "All-time earned"
+msgstr "Viso uždirbta"
+
+#: finance/templates/statistics.html:24
+msgid "All-time spent"
+msgstr "Viso išleista"
+
+#: finance/templates/statistics.html:28
+msgid "Lifetime net"
+msgstr "Viso likutis"
+
+#: finance/templates/statistics.html:38
+msgid "Avg / month (In)"
+msgstr "Vid / mėn (Pajamos)"
+
+#: finance/templates/statistics.html:40
+msgid "Avg / month (Out)"
+msgstr "Vid / mėn (Išlaidos)"
+
+#: finance/templates/statistics.html:44 finance/templates/upload.html:7
+#: moneycoach/templates/base.html:27
+msgid "Transactions"
+msgstr "Operacijos"
+
+#: finance/templates/statistics.html:46
+msgid "Categorized"
+msgstr "Kategorizuota"
+
+#: finance/templates/statistics.html:50
+msgid "Merchants"
+msgstr "Prekybininkai"
+
+#: finance/templates/statistics.html:51
+msgid "total"
+msgstr "iš viso"
+
+#: finance/templates/statistics.html:54
+msgid "Top:"
+msgstr "Top:"
+
+#: finance/templates/statistics.html:64
+msgid "Financial Runway"
+msgstr "Finansinis Išgyvenimas"
+
+#: finance/templates/statistics.html:66
+msgid "CUSTOM VIEW"
+msgstr "PASIRINKTINAS"
+
+#: finance/templates/statistics.html:71
+msgid "Months"
+msgstr "Mėn."
+
+#: finance/templates/statistics.html:75
+msgid "Based on a burn rate of"
+msgstr "Pagal išlaidų vidurkį"
+
+#: finance/templates/statistics.html:75
+msgid "last 3 months avg"
+msgstr "paskutiniai 3 mėn"
+
+#: finance/templates/statistics.html:78
+msgid "Configure Scenario"
+msgstr "Konfigūruoti Scenarijų"
+
+#: finance/templates/statistics.html:84
+msgid "vs Last Month"
+msgstr "vs Praeitą Mėn"
+
+#: finance/templates/statistics.html:88
+msgid "Spending Less"
+msgstr "Išleidote Mažiau"
+
+#: finance/templates/statistics.html:91
+msgid "Spending More"
+msgstr "Išleidote Daugiau"
+
+#: finance/templates/statistics.html:100
+msgid "Category Share"
+msgstr "Kategorijų Dalis"
+
+#: finance/templates/statistics.html:103
+msgid "Filter Categories"
+msgstr "Filtruoti Kategorijas"
+
+#: finance/templates/statistics.html:130 finance/templates/teach_ai.html:45
+msgid "Apply"
+msgstr "Taikyti"
+
+#: finance/templates/statistics.html:142
+msgid "No spending in the selected period."
+msgstr "Nėra išlaidų pasirinktu laikotarpiu."
+
+#: finance/templates/statistics.html:152 moneycoach/templates/overview.html:334
+msgid "Total"
+msgstr "Viso"
+
+#: finance/templates/statistics.html:154
+msgid "Avg/Tx"
+msgstr "Vid/Op"
+
+#: finance/templates/statistics.html:155
+msgid "Cap (range)"
+msgstr "Limitas"
+
+#: finance/templates/statistics.html:157
+msgid "Avg/Mo"
+msgstr "Vid/Mėn"
+
+#: finance/templates/statistics.html:187
+msgid "View"
+msgstr "Peržiūrėti"
+
+#: finance/templates/statistics.html:197
+msgid "Weekday Spending (Last 90 Days)"
+msgstr "Savaitės Dienų Išlaidos (90 d.)"
+
+#: finance/templates/statistics.html:206
+msgid "Choose categories"
+msgstr "Pasirinkti kategorijas"
+
+#: finance/templates/statistics.html:215
+msgid "Select all"
+msgstr "Pasirinkti viską"
+
+#: finance/templates/statistics.html:216
+msgid "Select none"
+msgstr "Nieko"
+
+#: finance/templates/statistics.html:232
+msgid "Include Uncategorized"
+msgstr "Įtraukti Nekategorizuotus"
+
+#: finance/templates/statistics.html:237
+msgid "Save Selection"
 msgstr "Išsaugoti"
 
-msgid "updated"
-msgstr "atnaujinta"
+#: finance/templates/statistics.html:246
+msgid "Runway Simulator"
+msgstr "Išgyvenimo Simuliatorius"
 
-msgid "Rename"
-msgstr "Pervadinti"
+#: finance/templates/statistics.html:251
+msgid ""
+"Select which assets (Net Worth) and which expenses (Burn Rate) to include in "
+"the calculation."
+msgstr ""
+"Pasirinkite, kurį turtą (Grynąjį Turtą) ir kurias išlaidas įtraukti į "
+"skaičiavimą."
 
-msgid "Disable"
-msgstr "Išjungti"
+#: finance/templates/statistics.html:259
+msgid "Include Assets"
+msgstr "Įtraukti Turtą"
 
-msgid "Enable"
-msgstr "Įjungti"
+#: finance/templates/statistics.html:272
+msgid "Include Spending"
+msgstr "Įtraukti Išlaidas"
 
-msgid "No accounts yet."
-msgstr "Sąskaitų dar nėra."
+#: finance/templates/statistics.html:283 finance/templates/uncategorized.html:3
+#: finance/templates/uncategorized.html:7 finance/templates/upload.html:17
+msgid "Uncategorized"
+msgstr "Nekategorizuota"
 
-msgid "Category Caps (Monthly)"
-msgstr "Kategorijų limitai (Mėnesiniai)"
+#: finance/templates/statistics.html:290 finance/templates/upload.html:145
+msgid "Reset"
+msgstr "Atstatyti"
 
-msgid "Monthly cap (EUR)"
-msgstr "Mėnesio limitas (EUR)"
+#: finance/templates/statistics.html:291
+msgid "Recalculate"
+msgstr "Perskaičiuoti"
 
-msgid "Suggested avg (EUR)"
-msgstr "Siūlomas vidurkis (EUR)"
-
-msgid "No limit"
-msgstr "Be limito"
-
-msgid "Review stats"
-msgstr "Peržiūrėti statistiką"
-
-msgid "Goal Name"
-msgstr "Tikslas"
-
-msgid "e.g. Emergency fund"
-msgstr "pvz. Finansinė pagalvė"
-
-msgid "Target Amount (EUR)"
-msgstr "Siekiama suma (EUR)"
-
-msgid "Include balances from accounts:"
-msgstr "Įtraukti lėšas iš sąskaitų:"
-
-msgid "Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal."
-msgstr "Patarimas: Sujunkite kelias sąskaitas (pvz. Taupomoji + Grynieji) vienam tikslui."
-
-msgid "Create Goal"
-msgstr "Sukurti tikslą"
-
-msgid "Name"
-msgstr "Pavadinimas"
-
-msgid "Accounts Linked"
-msgstr "Prisietos sąskaitos"
-
-msgid "Progress"
-msgstr "Progresas"
-
-msgid "Target"
-msgstr "Tikslas"
-
-msgid "ETA"
-msgstr "Prognozė"
-
-msgid "mo"
-msgstr "mėn."
-
-msgid "Paused"
-msgstr "Sustabdytas"
-
-msgid "Pause"
-msgstr "Sustabdyti"
-
-msgid "Activate"
-msgstr "Aktyvuoti"
-
-msgid "Delete this goal?"
-msgstr "Ištrinti šį tikslą?"
-
-msgid "Delete"
-msgstr "Ištrinti"
-
-msgid "No savings goals yet."
-msgstr "Taupymo tikslų dar nėra."
-
-msgid "Investment"
-msgstr "Investicinė"
-
-# --- Onboarding banner ---
-msgid "Welcome! Let’s get you set up. First, check your categories, edit or add what you need."
-msgstr "Sveiki! Pradėkime nuo pagrindų. Pirmiausia peržiūrėkite kategorijas – pakoreguokite arba pridėkite, ko reikia."
-
-msgid "Open Categories"
-msgstr "Atidaryti kategorijas"
-
-msgid "Next: Upload a CSV file from your bank of your transactions to begin."
-msgstr "Kitas žingsnis: įkelkite banko operacijų CSV failą, kad pradėtumėte."
-
-msgid "Go to Upload"
-msgstr "Eiti į įkėlimą"
-
-msgid "Now set a manual balance snapshot so we have a reference point for balances."
-msgstr "Dabar nustatykite rankinį likučio „snapshot“, kad turėtume atskaitos tašką likučiams skaičiuoti."
-
-msgid "Set a Balance"
-msgstr "Nustatyti likutį"
-
-msgid "Almost there! Please label at least %(min)s transactions so AI can learn your habits. You’ve labeled %(count)s so far."
-msgstr "Jau beveik! Pažymėkite bent %(min)s operacijų, kad AI išmoktų jūsų įpročius. Šiuo metu pažymėjote %(count)s."
-
-msgid "Teach AI"
-msgstr "Mokyti AI"
-
-msgid "You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"
-msgstr "Viskas paruošta automatiniai kategorizacijai. Stebėkite AI rezultatus ir pakoreguokite, jei reikia – taip jis vis gerės."
-
-msgid "I'm Done"
+#: finance/templates/suggest_done.html:3
+msgid "Done"
 msgstr "Viskas"
 
+#: finance/templates/suggest_done.html:5
+msgid "Changes applied"
+msgstr "Pakeitimai pritaikyti"
+
+#: finance/templates/suggest_done.html:7
+#, python-format
+msgid ""
+"\n"
+"    Updated <strong>%(count)s</strong> transactions.\n"
+"    "
+msgstr ""
+"\n"
+"    Atnaujinta <strong>%(count)s</strong> operacijų.\n"
+"    "
+
+#: finance/templates/suggest_done.html:13
+msgid "Back to Low-confidence"
+msgstr "Grįžti į žemo patikimumo"
+
+#: finance/templates/teach_ai.html:9
+msgid ""
+"Pick a category per merchant. This applies to all matching uncategorized "
+"transactions."
+msgstr "Pasirinkite kategoriją kiekvienam prekybininkui. Tai bus pritaikyta visoms atitinkančioms nekategorizuotoms operacijoms."
+
+#: finance/templates/teach_ai.html:19 finance/templates/tx_add.html:73
+#: finance/templates/upload.html:124
+msgid "Flow"
+msgstr "Srautas"
+
+#: finance/templates/teach_ai.html:20
+msgid "Occurrences"
+msgstr "Pasikartojimai"
+
+#: finance/templates/tx_add.html:3 finance/templates/tx_add.html:7
+msgid "Add transaction"
+msgstr "Pridėti operaciją"
+
+#: finance/templates/tx_add.html:51
+msgid "e.g., Maxima, Lidl…"
+msgstr "pvz., Maxima"
+
+#: finance/templates/tx_add.html:57 finance/templates/uncategorized.html:18
+#: finance/templates/upload.html:180
+msgid "Amount"
+msgstr "Suma"
+
+#: finance/templates/tx_add.html:60
+msgid "e.g., 23.45"
+msgstr "pvz., 23.45"
+
+#: finance/templates/tx_add.html:65
+msgid "Currency"
+msgstr "Valiuta"
+
+#: finance/templates/tx_add.html:77 finance/templates/upload.html:128
+#: moneycoach/templates/overview.html:208
+msgid "Spending"
+msgstr "Išlaidos"
+
+#: finance/templates/tx_add.html:78 finance/templates/upload.html:127
+#: moneycoach/templates/overview.html:208
+msgid "Income"
+msgstr "Pajamos"
+
+#: finance/templates/tx_add.html:87 finance/templates/tx_edit.html:29
+msgid "none"
+msgstr "jokia"
+
+#: finance/templates/tx_add.html:96
+msgid "Notes (bank description etc.)"
+msgstr "Pastabos (aprašymas)"
+
+#: finance/templates/tx_add.html:100 finance/templates/tx_add.html:109
+msgid "Optional"
+msgstr "Nebūtina"
+
+#: finance/templates/tx_add.html:105
+msgid "Your note"
+msgstr "Jūsų pastaba"
+
+#: finance/templates/tx_edit.html:3 finance/templates/tx_edit.html:7
+msgid "Edit transaction"
+msgstr "Redaguoti operaciją"
+
+#: finance/templates/tx_edit.html:42
+msgid "User note"
+msgstr "Vartotojo pastaba"
+
+#: finance/templates/tx_edit.html:45
+msgid "Add context…"
+msgstr "Pridėti kontekstą..."
+
+#: finance/templates/tx_edit.html:61
+msgid "Delete this transaction"
+msgstr "Ištrinti operaciją"
+
+#: finance/templates/tx_edit.html:64
+msgid ""
+"Deleting hides it from lists and charts, and prevents re-importing the same "
+"row. You can restore it later from"
+msgstr "Ištrynimas paslepia įrašą. Atkurti galite iš"
+
+#: finance/templates/tx_edit.html:70
+msgid "Delete this transaction?"
+msgstr "Ištrinti?"
+
+#: finance/templates/tx_edit.html:76
+msgid "Optional reason (e.g., pass-through transfer)"
+msgstr "Priežastis (nebūtina)"
+
+#: finance/templates/uncategorized.html:8
+msgid "Back to All"
+msgstr "Grįžti į visus"
+
+#: finance/templates/uncategorized.html:28
+msgid "Categorize"
+msgstr "Kategorizuoti"
+
+#: finance/templates/uncategorized.html:36
+msgid "All caught up! No uncategorized transactions."
+msgstr "Viskas sutvarkyta! Nėra nekategorizuotų operacijų."
+
+#: finance/templates/upload.html:3 finance/templates/upload.html:67
+msgid "Upload"
+msgstr "Įkelti"
+
+#: finance/templates/upload.html:8
+msgid "Add Manual"
+msgstr "Pridėti Rankiniu"
+
+#: finance/templates/upload.html:12
+msgid "AI-categorized"
+msgstr "AI kategorizuota"
+
+#: finance/templates/upload.html:14
+msgid "Low-confidence"
+msgstr "Mažas Patikimumas"
+
+#: finance/templates/upload.html:26 finance/templates/upload.html:29
+#, python-format
+msgid "started for <strong>%(count)s</strong> items."
+msgstr "pradėta <strong>%(count)s</strong> įrašams."
+
+#: finance/templates/upload.html:32
+msgid "Started at"
+msgstr "Pradėta"
+
+#: finance/templates/upload.html:38
+msgid "Upload Statement"
+msgstr "Įkelti Išrašą"
+
+#: finance/templates/upload.html:43
+msgid "Target Account"
+msgstr "Sąskaita"
+
+#: finance/templates/upload.html:52
+msgid "Bank format"
+msgstr "Banko formatas"
+
+#: finance/templates/upload.html:62
+msgid "File (CSV/Excel)"
+msgstr "Failas (CSV/Excel)"
+
+#: finance/templates/upload.html:76
+msgid "Filter & Search"
+msgstr "Filtruoti ir Ieškoti"
+
+#: finance/templates/upload.html:80
+msgid "All accounts"
+msgstr "Visos sąskaitos"
+
+#: finance/templates/upload.html:99
+msgid "Search"
+msgstr "Paieška"
+
+#: finance/templates/upload.html:100
+msgid "Merchant..."
+msgstr "Prekybininkas..."
+
+#: finance/templates/upload.html:104
+msgid "From"
+msgstr "Nuo"
+
+#: finance/templates/upload.html:109
+msgid "To"
+msgstr "Iki"
+
+#: finance/templates/upload.html:114
+msgid "Min Amount"
+msgstr "Min suma"
+
+#: finance/templates/upload.html:119
+msgid "Max Amount"
+msgstr "Max suma"
+
+#: finance/templates/upload.html:144
+msgid "Filter"
+msgstr "Filtruoti"
+
+#: finance/templates/upload.html:154
+#, python-format
+msgid "Total %(total)s items"
+msgstr "Viso %(total)s įrašų"
+
+#: finance/templates/upload.html:163
+msgid "page"
+msgstr "psl."
+
+#: finance/templates/upload.html:183
+msgid "Set by"
+msgstr "Nustatė"
+
+#: finance/templates/upload.html:218
+msgid "AI"
+msgstr "AI"
+
+#: finance/templates/upload.html:220
+msgid "Import"
+msgstr "Importas"
+
+#: finance/templates/upload.html:240 finance/templates/upload.html:281
+msgid "pending"
+msgstr "laukiama"
+
+#: finance/templates/upload.html:243
+msgid "Apply Changes"
+msgstr "Taikyti Pakeitimus"
+
+#: finance/templates/upload.html:247
+msgid "Discard"
+msgstr "Atmesti"
+
+#: finance/templates/upload.html:255
+msgid "Prev"
+msgstr "Atgal"
+
+#: finance/templates/upload.html:265
+msgid "No transactions match your filter."
+msgstr "Jokių operacijų nerasta."
+
+#: finance/templates/upload.html:318
+msgid "Discard changes?"
+msgstr "Atmesti pakeitimus?"
+
+#: finance/views/assets.py:148
+msgid "Please select an asset from the list."
+msgstr "Prašome pasirinkti turtą iš sąrašo."
+
+#: finance/views/assets.py:152
+msgid "Invalid asset type."
+msgstr "Neteisingas turto tipas."
+
+#: finance/views/assets.py:158 finance/views/assets.py:174
+#: finance/views/assets.py:178
+msgid "Invalid asset selected."
+msgstr "Pasirinktas neteisingas turtas."
+
+#: finance/views/assets.py:164
+msgid "Invalid quantity."
+msgstr "Neteisingas kiekis."
+
+#: finance/views/assets.py:168
+msgid "Quantity must be greater than 0."
+msgstr "Kiekis turi būti didesnis už 0."
+
+#: finance/views/assets.py:183
+msgid "Stock Assets"
+msgstr "Akcijos"
+
+#: finance/views/assets.py:207
+#, python-format
+msgid "Added %(qty)s %(sym)s."
+msgstr "Pridėta %(qty)s %(sym)s."
+
+#: finance/views/assets.py:210
+#, python-format
+msgid "Error: %(err)s"
+msgstr "Klaida: %(err)s"
+
+#: finance/views/settings.py:99 finance/views/settings.py:162
+msgid "Name cannot be empty."
+msgstr "Pavadinimas negali būti tuščias."
+
+#: finance/views/settings.py:106
+msgid "Category added."
+msgstr "Kategorija pridėta."
+
+#: finance/views/settings.py:108
+msgid "Category already exists."
+msgstr "Kategorija jau egzistuoja."
+
+#: finance/views/settings.py:116
+msgid "“Other” cannot be deleted."
+msgstr "„Kita“ negalima ištrinti."
+
+#: finance/views/settings.py:124
+msgid "Category deleted."
+msgstr "Kategorija ištrinta."
+
+#: finance/views/settings.py:132
+msgid "Preferences saved."
+msgstr "Nuostatos išsaugotos."
+
+#: finance/views/settings.py:140
+msgid "Provide a valid name and type."
+msgstr "Įveskite teisingą pavadinimą ir tipą."
+
+#: finance/views/settings.py:143
+msgid "Account with this name already exists."
+msgstr "Sąskaita su tokiu pavadinimu jau egzistuoja."
+
+#: finance/views/settings.py:146
+msgid "Account added."
+msgstr "Sąskaita pridėta."
+
+#: finance/views/settings.py:156
+#, python-format
+msgid "Another account named “%(name)s” already exists."
+msgstr "Kita sąskaita pavadinimu „%(name)s“ jau egzistuoja."
+
+#: finance/views/settings.py:160
+msgid "Account renamed."
+msgstr "Sąskaita pervadinta."
+
+#: finance/views/settings.py:170 finance/views/settings.py:294
+msgid "Activated"
+msgstr "Aktyvuota"
+
+#: finance/views/settings.py:170
+msgid "Deactivated"
+msgstr "Išjungta"
+
+#: finance/views/settings.py:199
+msgid "Manual balance cleared."
+msgstr "Rankinis likutis išvalytas."
+
+#: finance/views/settings.py:235
+msgid "Manual balance saved and an initial snapshot was recorded."
+msgstr "Rankinis likutis išsaugotas ir įrašytas pradinis „snapshot“."
+
+#: finance/views/settings.py:241
+#, python-format
+msgid ""
+"Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by "
+"%(diff)s EUR."
+msgstr ""
+"Rankinis likutis išsaugotas. Užfiksuota anomalija: „snapshot“ ir operacijos "
+"skiriasi %(diff)s EUR."
+
+#: finance/views/settings.py:245
+msgid "Manual balance saved and a global snapshot was recorded."
+msgstr "Rankinis likutis išsaugotas ir įrašytas globalus „snapshot“."
+
+#: finance/views/settings.py:247
+msgid "Enter a valid number."
+msgstr "Įveskite teisingą skaičių."
+
+#: finance/views/settings.py:258
+#, python-format
+msgid "Removed cap for “%(name)s”."
+msgstr "Pašalintas limitas kategorijai „%(name)s“."
+
+#: finance/views/settings.py:266
+#, python-format
+msgid "Saved cap for “%(name)s”."
+msgstr "Išsaugotas limitas kategorijai „%(name)s“."
+
+#: finance/views/settings.py:268
+msgid "Enter a valid non-negative number."
+msgstr "Įveskite teisingą neneigiamą skaičių."
+
+#: finance/views/settings.py:286
+msgid "Goal created."
+msgstr "Tikslas sukurtas."
+
+#: finance/views/settings.py:301
+msgid "Goal deleted."
+msgstr "Tikslas ištrintas."
+
+#: finance/views/settings.py:426
 msgid "Thanks! We've saved your onboarding progress."
 msgstr "Ačiū! Išsaugojome jūsų onboarding pažangą."
 
+#: moneycoach/settings.py:118
+msgid "English"
+msgstr "Anglų"
+
+#: moneycoach/settings.py:119
+msgid "Lithuanian"
+msgstr "Lietuvių"
+
+#: moneycoach/templates/accounts/login.html:24
+#: moneycoach/templates/accounts/password_reset_form.html:26
+#: moneycoach/templates/accounts/register.html:62
+msgid "Email"
+msgstr "El. paštas"
+
+#: moneycoach/templates/accounts/login.html:73
+msgid "Forgot password?"
+msgstr "Pamiršote slaptažodį?"
+
+#: moneycoach/templates/accounts/password_reset_complete.html:4
+#: moneycoach/templates/accounts/password_reset_complete.html:9
+msgid "Password updated"
+msgstr "Slaptažodis atnaujintas"
+
+#: moneycoach/templates/accounts/password_reset_complete.html:12
+msgid ""
+"Your password has been changed successfully. You can now log in with your "
+"new password."
+msgstr "Slaptažodis sėkmingai pakeistas. Dabar galite prisijungti su nauju slaptažodžiu."
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:4
+#: moneycoach/templates/accounts/password_reset_confirm.html:9
+msgid "Set a new password"
+msgstr "Nustatyti naują slaptažodį"
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:24
+msgid "New password"
+msgstr "Naujas slaptažodis"
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:40
+msgid "Confirm new password"
+msgstr "Pakartokite naują slaptažodį"
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:51
+msgid "Save new password"
+msgstr "Išsaugoti naują slaptažodį"
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:56
+#: moneycoach/templates/accounts/password_reset_done.html:17
+#: moneycoach/templates/accounts/password_reset_form.html:43
+msgid "Back to login"
+msgstr "Grįžti į prisijungimą"
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:62
+msgid "This reset link is invalid or has expired. Please request a new one."
+msgstr "Ši atstatymo nuoroda neteisinga arba nebegalioja. Paprašykite naujos."
+
+#: moneycoach/templates/accounts/password_reset_confirm.html:68
+msgid "Request a new reset link"
+msgstr "Gauti naują atstatymo nuorodą"
+
+#: moneycoach/templates/accounts/password_reset_done.html:4
+#: moneycoach/templates/accounts/password_reset_done.html:9
+msgid "Check your email"
+msgstr "Patikrinkite el. paštą"
+
+#: moneycoach/templates/accounts/password_reset_done.html:12
+msgid ""
+"If an account exists for that email, we sent a password reset link. Please "
+"check your inbox (and spam folder)."
+msgstr "Jei paskyra su šiuo el. paštu egzistuoja, išsiuntėme slaptažodžio atstatymo nuorodą. Patikrinkite pašto dėžutę (ir šlamšto aplanką)."
+
+#: moneycoach/templates/accounts/password_reset_form.html:4
+#: moneycoach/templates/accounts/password_reset_form.html:9
+msgid "Reset password"
+msgstr "Atstatyti slaptažodį"
+
+#: moneycoach/templates/accounts/password_reset_form.html:11
+msgid "Enter your email and we'll send you a link to reset your password."
+msgstr "Įveskite el. paštą ir mes atsiųsime nuorodą slaptažodžio atstatymui."
+
+#: moneycoach/templates/accounts/password_reset_form.html:38
+msgid "Send reset link"
+msgstr "Siųsti atstatymo nuorodą"
+
+#: moneycoach/templates/accounts/register.html:24
+msgid "First name"
+msgstr "Vardas"
+
+#: moneycoach/templates/accounts/register.html:43
+msgid "Last name"
+msgstr "Pavardė"
+
+#: moneycoach/templates/accounts/register.html:105
+msgid "Confirm password"
+msgstr "Pakartokite slaptažodį"
+
+#: moneycoach/templates/base.html:23 moneycoach/templates/overview.html:7
+msgid "Dashboard"
+msgstr "Apžvalga"
+
+#: moneycoach/templates/base.html:58 moneycoach/templates/base.html:180
+msgid "Log Out"
+msgstr "Atsijungti"
+
+#: moneycoach/templates/base.html:83
+msgid "Log In"
+msgstr "Prisijungti"
+
+#: moneycoach/templates/base.html:107
+msgid "I'm Done"
+msgstr "Viskas"
+
+#: moneycoach/templates/base.html:134
+msgid "Home"
+msgstr "Pagrindinis"
+
+#: moneycoach/templates/base.html:137 moneycoach/templates/overview.html:52
+msgid "Invest"
+msgstr "Investicijos"
+
+#: moneycoach/templates/base.html:143
+msgid "Txns"
+msgstr "Operacijos"
+
+#: moneycoach/templates/base.html:147
+msgid "Menu"
+msgstr "Meniu"
+
+#: moneycoach/templates/base.html:175
+msgid "Settings"
+msgstr "Nustatymai"
+
+#: moneycoach/templates/base.html:182
+msgid "Close"
+msgstr "Uždaryti"
+
+#: moneycoach/templates/overview.html:3
+msgid "Overview"
+msgstr "Apžvalga"
+
+#: moneycoach/templates/overview.html:40
+msgid "Accounts & Assets"
+msgstr "Sąskaitos ir Turtas"
+
+#: moneycoach/templates/overview.html:41 moneycoach/templates/overview.html:84
+msgid "Manage"
+msgstr "Valdyti"
+
+#: moneycoach/templates/overview.html:45
+msgid "Source"
+msgstr "Šaltinis"
+
+#: moneycoach/templates/overview.html:45
+msgid "Balance"
+msgstr "Likutis"
+
+#: moneycoach/templates/overview.html:54
+msgid "Bank"
+msgstr "Bankas"
+
+#: moneycoach/templates/overview.html:56
+msgid "Cash"
+msgstr "Grynieji"
+
+#: moneycoach/templates/overview.html:58
+msgid "Savings"
+msgstr "Taupyklė"
+
+#: moneycoach/templates/overview.html:64
+msgid "No accounts found."
+msgstr "Sąskaitų nerasta."
+
+#: moneycoach/templates/overview.html:74
+msgid "Net Worth History"
+msgstr "Turto Istorija"
+
+#: moneycoach/templates/overview.html:108
+msgid "Income vs Spending"
+msgstr "Pajamos vs Išlaidos"
+
+#: moneycoach/templates/overview.html:115
+msgid "Net by Month"
+msgstr "Likutis pagal Mėnesį"
+
+#: moneycoach/templates/overview.html:118
+#: moneycoach/templates/overview.html:156
+msgid "Month"
+msgstr "Mėnuo"
+
+#: moneycoach/templates/overview.html:118
+msgid "Net"
+msgstr "Likutis"
+
+#: moneycoach/templates/overview.html:135
+msgid "Spending per Category"
+msgstr "Išlaidos pagal Kategoriją"
+
 # --- Overview cap notice (category chart) ---
+#: moneycoach/templates/overview.html:150
 msgid "No cap set,"
 msgstr "Limitas nenustatytas,"
 
+#: moneycoach/templates/overview.html:150
 msgid "set it up here"
 msgstr "nustatykite čia"
+
+#: moneycoach/templates/overview.html:162
+msgid "No categorized spending yet."
+msgstr "Nėra kategorizuotų išlaidų."
+
+#: moneycoach/templates/overview.html:180
+msgid "Net Worth"
+msgstr "Grynasis Turtas"
+
+#: moneycoach/templates/overview.html:248
+msgid "Cap"
+msgstr "Limitas"
+
+#: moneycoach/templates/overview.html:334
+msgid "#Tx"
+msgstr "#Op"
+
+#: moneycoach/templates/overview.html:334
+msgid "Avg"
+msgstr "Vid"
+
+#: moneycoach/templates/overview.html:336
+msgid "Open"
+msgstr "Atidaryti"
+
+#: moneycoach/templates/overview.html:339
+msgid "No data."
+msgstr "Nėra duomenų."
+
+# Obsolete entries (do not affect runtime)
+#~ msgid "Budgets vs Spent"
+#~ msgstr "Biudžetai vs Išlaidos"
+
+#~ msgid "You haven't set any caps yet."
+#~ msgstr "Nėra nustatytų limitų."
+
+#~ msgid "Spent"
+#~ msgstr "Išleista"
+
+#~ msgid "Investment"
+#~ msgstr "Investicinė"
