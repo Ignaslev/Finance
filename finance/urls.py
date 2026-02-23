@@ -7,7 +7,6 @@ urlpatterns = [
     path("overview/", f.overview, name="overview"),
     path("upload/", f.upload, name="upload"),
     path("statistics/", f.statistics, name="statistics"),
-    path("env-check/", f.env_check, name="env_check"),
     path("tx/bulk-apply/", f.tx_bulk_category_apply, name="tx_bulk_category_apply"),
 
 
