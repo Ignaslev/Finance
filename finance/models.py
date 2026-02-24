@@ -64,6 +64,14 @@ class Transaction(models.Model):
     OUT = "out"
     IO_CHOICES = [(IN, "Income"), (OUT, "Spending")]
 
+    import_batch = models.ForeignKey(
+        "ImportBatch",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+    )
+
     # ---- AI fields ----
     ai_suggested_fk = models.ForeignKey(
         Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="ai_suggested_for"
@@ -398,3 +406,29 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile for {self.user}"
+
+
+class ImportBatch(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="import_batches",
+    )
+    money_source = models.ForeignKey(
+        "MoneySource",
+        on_delete=models.CASCADE,
+        related_name="import_batches",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    filename = models.CharField(max_length=255, blank=True)
+    bank_key = models.CharField(max_length=32, blank=True)  # auto/revolut/seb/swedbank
+
+    added_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+    dup_count = models.PositiveIntegerField(default=0)
+
+    undone_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user_id} {self.bank_key} {self.created_at:%Y-%m-%d %H:%M}"

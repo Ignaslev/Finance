@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views as f
+from .views import transactions
 
 urlpatterns = [
     path("", f.upload, name="upload"),
@@ -13,6 +14,7 @@ urlpatterns = [
     path("uncategorized/", f.uncategorized, name="uncategorized"),
     path("tx/<int:pk>/edit/", f.tx_edit, name="tx_edit"),
     path("tx/add/", f.tx_add, name="tx_add"),
+    path("undo-last-import/", transactions.undo_last_import, name="undo_last_import"),
 
 # NEW: auto-categorize endpoint (runs only when you click)
     path("ai/full/", f.ai_full_categorize, name="ai_full_categorize"),

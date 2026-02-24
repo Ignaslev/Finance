@@ -9,14 +9,16 @@ from django.conf import settings
 import io, csv, json
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
+from django.utils import timezone
 
-from finance.models import Transaction, Category, MoneySource, OnboardingState, AiRun, UserProfile
+
+from finance.models import Transaction, Category, MoneySource, OnboardingState, AiRun, UserProfile ,ImportBatch
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
     parse_decimal_filter
 )
-
+from django.db import transaction as db_transaction
 
 @login_required
 def tx_edit(request, pk):
@@ -271,6 +273,34 @@ def _pick_best_importer(headers: set[str]):
             best_imp = imp
     return best_imp, best_res
 
+@require_POST
+@login_required
+def undo_last_import(request):
+    batch = (
+        ImportBatch.objects
+        .filter(user=request.user, undone_at__isnull=True)
+        .order_by("-created_at")
+        .first()
+    )
+    if not batch:
+        messages.warning(request, "No import found to undo.")
+        return redirect("upload")
+
+    with db_transaction.atomic():
+        qs = Transaction.objects.filter(user=request.user, import_batch=batch)
+        n = qs.count()
+
+        # permanent delete (won't touch your deleted list)
+        qs.delete()
+
+        batch.undone_at = timezone.now()
+        batch.save(update_fields=["undone_at"])
+
+    messages.success(
+        request,
+        f"Undid last import: permanently deleted {n} transaction{'s' if n != 1 else ''}."
+    )
+    return redirect("upload")
 
 @login_required
 def upload(request):
@@ -443,6 +473,14 @@ def upload(request):
                     })
                     parsed_count += 1
 
+            # ---------------- NEW: create import batch (for Undo Last Upload) ----------------
+            batch = ImportBatch.objects.create(
+                user=request.user,
+                money_source=import_src,
+                filename=filename,
+                bank_key=bank,
+            )
+
             # ---------------- DB-only dedupe using fingerprint v2 ----------------
             existing_fps = set(
                 Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
@@ -508,6 +546,7 @@ def upload(request):
                     category=None,
                     category_source="import",
                     fingerprint=fp,
+                    import_batch=batch,   # ---------------- NEW ----------------
                 ))
 
             added = 0
@@ -519,6 +558,12 @@ def upload(request):
                     .values_list("fingerprint", flat=True)
                 )
                 added = len(created_fps)
+
+            # ---------------- NEW: store batch counts ----------------
+            batch.added_count = added
+            batch.skipped_count = skipped_count
+            batch.dup_count = db_dups
+            batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
 
             msg = (
                 f"Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. "
@@ -637,6 +682,17 @@ def upload(request):
 
     bank_choices = [("auto", "Auto-detect")] + [(k, imp.label) for k, imp in IMPORTERS.items()]
 
+    last_batch = (
+        ImportBatch.objects
+        .filter(user=request.user, undone_at__isnull=True)
+        .order_by("-created_at")
+        .first()
+    )
+    last_batch_count = (
+        Transaction.objects.filter(user=request.user, import_batch=last_batch).count()
+        if last_batch else 0
+    )
+
     ctx = {
         "page_obj": page_obj,
         "total": paginator.count,
@@ -659,6 +715,8 @@ def upload(request):
         "type_choices": MoneySource.TYPE_CHOICES,
         "default_account_name": default_src.name,
         "bank_choices": bank_choices,
+        "last_batch": last_batch,
+        "last_batch_count": last_batch_count,
         "onboarding_state": {
             "categories_done": cats_done,
             "has_income": income_exists,
@@ -667,6 +725,7 @@ def upload(request):
             "min_needed": MIN_USER_LABELS,
             "ai_locked": ai_locked,
         },
+
     }
 
     last_ai_pre = request.session.pop("last_ai_pre", None)
@@ -674,7 +733,6 @@ def upload(request):
         ctx["last_ai_pre"] = last_ai_pre
 
     return render(request, "upload.html", ctx)
-
 
 # ----------------------------- Soft delete -----------------------------
 

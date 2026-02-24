@@ -68,6 +68,17 @@
   </div>
 </form>
 
+{% if last_batch and last_batch_count > 0 %}
+  <form method="post"
+        action="{% url 'undo_last_import' %}"
+        onsubmit="return confirm('Undo last import? This will permanently delete {{ last_batch_count }} transactions imported on {{ last_batch.created_at|date:'Y-m-d H:i' }} ({{ last_batch.filename|escapejs }}). Continue?');"
+        style="margin-top: 10px;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger btn-sm">
+      Undo last upload
+    </button>
+  </form>
+{% endif %}
 
 </div>
 
