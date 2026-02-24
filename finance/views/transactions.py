@@ -363,6 +363,22 @@ def upload(request):
 
     # -------------------- IMPORT (POST) --------------------
     if request.method == "POST" and request.FILES.get("file"):
+        # --- quotas: block abusive importing ---
+        MAX_IMPORTS_PER_DAY = getattr(settings, "MAX_IMPORTS_PER_DAY", 20)
+
+        today = timezone.localdate()
+        imports_today = ImportBatch.objects.filter(
+            user=request.user,
+            created_at__date=today,
+        ).count()
+
+        if imports_today >= MAX_IMPORTS_PER_DAY:
+            messages.error(
+                request,
+                f"Daily import limit reached ({MAX_IMPORTS_PER_DAY}). Try again tomorrow."
+            )
+            return redirect("upload")
+
         import_src_id = request.POST.get("import_src")
         try:
             import_src = MoneySource.objects.get(id=int(import_src_id), user=request.user, is_active=True)
@@ -380,6 +396,11 @@ def upload(request):
 
         try:
             raw = f.read()
+
+            MAX_UPLOAD_BYTES = getattr(settings, "MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
+            if len(raw) > MAX_UPLOAD_BYTES:
+                messages.error(request, "File is too large to import.")
+                return redirect("upload")
 
             # ---- CSV import via bank importers ----
             if name_lower.endswith(".csv"):
@@ -474,6 +495,14 @@ def upload(request):
                     parsed_count += 1
 
             # ---------------- NEW: create import batch (for Undo Last Upload) ----------------
+            MAX_ROWS_PER_IMPORT = getattr(settings, "MAX_ROWS_PER_IMPORT", 20000)
+            if len(rows) > MAX_ROWS_PER_IMPORT:
+                messages.error(
+                    request,
+                    f"This file has {len(rows)} rows, which exceeds the per-import limit ({MAX_ROWS_PER_IMPORT})."
+                )
+                return redirect("upload")
+
             batch = ImportBatch.objects.create(
                 user=request.user,
                 money_source=import_src,

@@ -215,3 +215,12 @@ else:
     SECURE_HSTS_SECONDS = 0
 
 REQUIRE_EMAIL_VERIFICATION = env("REQUIRE_EMAIL_VERIFICATION", "True").lower() in ("1", "true", "yes", "on")
+
+# --- Abuse-prevention quotas (tweak later if needed) ---
+MAX_IMPORTS_PER_DAY = int(os.getenv("MAX_IMPORTS_PER_DAY", "20"))
+MAX_ROWS_PER_IMPORT = int(os.getenv("MAX_ROWS_PER_IMPORT", "20000"))
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(20 * 1024 * 1024)))  # 20MB
+
+MAX_MONEY_SOURCES_PER_USER = int(os.getenv("MAX_MONEY_SOURCES_PER_USER", "25"))
+MAX_CATEGORIES_PER_USER = int(os.getenv("MAX_CATEGORIES_PER_USER", "25"))
+MAX_GOALS_PER_USER = int(os.getenv("MAX_GOALS_PER_USER", "50"))

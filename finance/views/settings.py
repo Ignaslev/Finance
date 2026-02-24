@@ -94,6 +94,12 @@ def profile(request):
         # Categories (inside Profile)
         # ----------------------------
         if action == "cat_add":
+            # --- QUOTA: max categories per user ---
+            MAX_CATEGORIES_PER_USER = getattr(settings, "MAX_CATEGORIES_PER_USER", 200)
+            if Category.objects.filter(user=request.user).count() >= MAX_CATEGORIES_PER_USER:
+                messages.error(request, _(f"You can have at most {MAX_CATEGORIES_PER_USER} categories."))
+                return redirect("profile")
+
             name = (request.POST.get("name") or "").strip()
             if not name:
                 messages.error(request, _("Name cannot be empty."))
@@ -134,6 +140,12 @@ def profile(request):
 
         # Accounts
         if action == "add":
+            # --- QUOTA: max money sources per user ---
+            MAX_MONEY_SOURCES_PER_USER = getattr(settings, "MAX_MONEY_SOURCES_PER_USER", 25)
+            if MoneySource.objects.filter(user=request.user).count() >= MAX_MONEY_SOURCES_PER_USER:
+                messages.error(request, _(f"You can have at most {MAX_MONEY_SOURCES_PER_USER} accounts."))
+                return redirect("profile")
+
             name = (request.POST.get("name") or "").strip()
             typ  = (request.POST.get("type") or "").strip()
             if not name or typ not in dict(MoneySource.TYPE_CHOICES):
@@ -270,6 +282,12 @@ def profile(request):
 
         # Savings goals
         if action == "goal_add":
+            # --- QUOTA: max goals per user ---
+            MAX_GOALS_PER_USER = getattr(settings, "MAX_GOALS_PER_USER", 50)
+            if SavingsGoal.objects.filter(user=request.user).count() >= MAX_GOALS_PER_USER:
+                messages.error(request, _(f"You can have at most {MAX_GOALS_PER_USER} goals."))
+                return redirect("profile")
+
             name = (request.POST.get("goal_name") or "").strip()
             target_raw = (request.POST.get("goal_target") or "").strip().replace(",", ".")
             try:
