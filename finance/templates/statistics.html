@@ -326,8 +326,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   {% if cat_labels_json and cat_labels_json != "[]" %}
-    const catLabels = {{ cat_labels_json|safe }};
-    const catValues = {{ cat_values_json|safe }};
+    const catLabels = JSON.parse('{{ cat_labels_json|escapejs }}');
+    const catValues = JSON.parse('{{ cat_values_json|escapejs }}');
     const pieCtx = document.getElementById('catSharePie').getContext('2d');
     new Chart(pieCtx, {
       type: 'pie',
@@ -352,8 +352,8 @@
     });
   {% endif %}
 
-  const wdLabels = {{ weekday_labels_json|safe }};
-  const wdValues = {{ weekday_values_json|safe }};
+  const wdLabels = JSON.parse('{{ weekday_labels_json|escapejs }}');
+  const wdValues = JSON.parse('{{ weekday_values_json|escapejs }}');
   const wdCtx = document.getElementById('weekdayChart').getContext('2d');
   new Chart(wdCtx, {
     type: 'bar',

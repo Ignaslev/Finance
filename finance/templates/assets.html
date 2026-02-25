@@ -461,10 +461,10 @@
 
     // --- Charts (unchanged) ---
     const datasets = {
-        '1h':  {{ json_1h|safe }},
-        '24h': {{ json_24h|safe }},
-        '30d': {{ json_30d|safe }},
-        'all': {{ json_all|safe }}
+      '1h':  JSON.parse('{{ json_1h|escapejs }}'),
+      '24h': JSON.parse('{{ json_24h|escapejs }}'),
+      '30d': JSON.parse('{{ json_30d|escapejs }}'),
+      'all': JSON.parse('{{ json_all|escapejs }}')
     };
 
     let cryptoChart, stockChart;

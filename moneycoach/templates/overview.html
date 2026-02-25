@@ -175,10 +175,10 @@
     new Chart(ctxNW, {
         type: 'line',
         data: {
-            labels: {{ balance_labels_json|safe }},
+            labels: JSON.parse('{{ balance_labels_json|escapejs }}'),
             datasets: [{
                 label: '{% trans "Net Worth" %}',
-                data: {{ balance_values_json|safe }},
+                data: JSON.parse('{{ balance_values_json|escapejs }}'),
                 borderColor: '#00cea6',
                 backgroundColor: gradNW,
                 borderWidth: 3,
@@ -199,9 +199,9 @@
 
     // 2. INCOME VS SPENDING
     (function(){
-        const labels = {{ labels_json|safe }};
-        const income = {{ income_json|safe }};
-        const spending = {{ spending_json|safe }};
+        const labels = JSON.parse('{{ labels_json|escapejs }}');
+        const income = JSON.parse('{{ income_json|escapejs }}');
+        const spending = JSON.parse('{{ spending_json|escapejs }}');
         if(document.getElementById('incomeSpending')){
             new Chart(document.getElementById('incomeSpending').getContext('2d'), {
                 type: 'line',
@@ -213,10 +213,10 @@
 
     // 3. CATEGORY CHART (+ cap line per category if cap exists)
     (function(){
-        const catMonths = {{ cat_month_labels_json|default:"[]"|safe }};
-        const seriesByCat = {{ series_by_cat_json|default:"{}"|safe }};
-        const breakdown = {{ breakdown_by_cat_month_json|default:"{}"|safe }};
-        const capByCat = {{ cap_by_cat_json|default:"{}"|safe }};
+        const catMonths = JSON.parse('{{ cat_month_labels_json|default:"[]"|escapejs }}');
+        const seriesByCat = JSON.parse('{{ series_by_cat_json|default:"{}"|escapejs }}');
+        const breakdown = JSON.parse('{{ breakdown_by_cat_month_json|default:"{}"|escapejs }}');
+        const capByCat = JSON.parse('{{ cap_by_cat_json|default:"{}"|escapejs }}');
 
         if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
 
@@ -328,12 +328,25 @@
             if(catMonths.length) renderTable(catMonths[catMonths.length-1]);
         }
 
+        function escapeHtml(s) {
+          return String(s).replace(/[&<>"']/g, (c) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c]));
+        }
+
         function renderTable(mk) {
             const wrap = document.getElementById('catMonthTableWrap');
             const rows = (breakdown[currentCat] && breakdown[currentCat][mk]) || [];
             let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
             rows.forEach(r => {
-                html += `<tr><td>${r.merchant}</td><td>${r.total.toFixed(2)}</td><td>${r.count}</td><td>${r.avg.toFixed(2)}</td><td><a href="/?q=${encodeURIComponent(r.merchant)}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
+                html += `<tr><td>${escapeHtml(r.merchant)}</td></td>
+                <td>${r.total.toFixed(2)}</td>
+                <td>${r.count}</td><td>${r.avg.toFixed(2)}</td>
+                <td><a href="/?q=${encodeURIComponent(r.merchant)}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
             html += '</tbody></table>';
             if(!rows.length) html = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
