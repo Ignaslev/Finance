@@ -153,7 +153,7 @@
 
       <div style="margin-top:1.5rem; display:flex; gap:0.5rem;">
           <button type="submit" class="btn btn-primary" style="padding:0.5rem 1.5rem;">{% trans "Filter" %}</button>
-          <a href="{% if active_src %}/?src={{ active_src.id }}{% elif src_param == 'all' %}/?src=all{% else %}/{% endif %}" class="btn" style="background:#edf2f7; color:var(--text-medium); padding:0.5rem 1rem;">{% trans "Reset" %}</a>
+          <a href="{% if active_src %}/app/?src={{ active_src.id }}{% elif src_param == 'all' %}/app/?src=all{% else %}/app/{% endif %}" class="btn" style="background:#edf2f7; color:var(--text-medium); padding:0.5rem 1rem;">{% trans "Reset" %}</a>
       </div>
     </form>
 </div>

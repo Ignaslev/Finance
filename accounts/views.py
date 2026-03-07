@@ -51,7 +51,7 @@ def register(request):
             )
 
             messages.success(request, "Registration successful. Check your email to activate your account.")
-            return redirect("login")
+            return redirect("/accounts/login/")
         else:
             messages.error(request, "Please fix the errors below.")
     else:

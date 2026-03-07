@@ -4,9 +4,9 @@ from . import views as f
 from .views import transactions
 
 urlpatterns = [
-    path("", f.upload, name="upload"),
+    path("app/", f.upload, name="upload"),
     path("overview/", f.overview, name="overview"),
-    path("upload/", f.upload, name="upload"),
+    path("upload/", f.upload),
     path("statistics/", f.statistics, name="statistics"),
     path("tx/bulk-apply/", f.tx_bulk_category_apply, name="tx_bulk_category_apply"),
 

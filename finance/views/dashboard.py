@@ -9,15 +9,16 @@ from datetime import timedelta, datetime, date as _date, timezone as dt_timezone
 from decimal import Decimal
 from calendar import monthrange
 import json, os
-
+from django.contrib.admin.views.decorators import staff_member_required
 from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal, UserProfile
 
 
-
+@staff_member_required
 def env_check(request):
     ok = bool(os.getenv("OPENAI_API_KEY"))
     return HttpResponse("OPENAI_API_KEY loaded: " + ("YES" if ok else "NO"))
 
+@staff_member_required
 def home(request):
     return HttpResponse("It works")
 

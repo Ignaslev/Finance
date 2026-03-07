@@ -628,7 +628,7 @@ def upload(request):
             if stype:
                 qs_params.append(f"stype={stype}")
             if qs_params:
-                return redirect(f"/?{'&'.join(qs_params)}")
+                return redirect(f"/app/?{'&'.join(qs_params)}")
             return redirect("upload")
 
         except Exception as e:
