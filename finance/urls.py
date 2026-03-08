@@ -2,6 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views as f
 from .views import transactions
+from .views import settings as settings_views
 
 urlpatterns = [
     path("app/", f.upload, name="upload"),
@@ -38,6 +39,8 @@ urlpatterns = [
     path("deleted/", f.deleted_list, name="deleted_list"),
 
     path("profile/", f.profile, name="profile"),
+    path("feedback/", settings_views.feedback, name="feedback"),
+
     # Smart launchers (no AI logic here, just scoping & redirects)
     path("ai/run-uncategorized/", f.ai_run_uncategorized, name="ai_run_uncategorized"),
     path("ai/recheck-all/", f.ai_recheck_all, name="ai_recheck_all"),

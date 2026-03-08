@@ -156,6 +156,8 @@ AUTHENTICATION_BACKENDS = [
 # Allow running DEBUG=False on staging while still using console email.
 EMAIL_MODE = env("EMAIL_MODE", "console").lower()  # console | smtp
 
+ADMINS = [("MoneyCompass Admin", env("ADMIN_ALERT_EMAIL", "yourgmail@gmail.com"))]
+
 if EMAIL_MODE == "smtp":
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = env("EMAIL_HOST", required=True)

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Atsiliepimai / Pranešti problemą</h2>
+</div>
+
+<div class="card">
+  <div class="card-title">Naujas pranešimas</div>
+
+  <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid #edf2f7;">
+    {% csrf_token %}
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+      <div style="flex:1; min-width:220px;">
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;"><b>Tipas</b></label>
+        <select name="kind" required style="width:100%; padding:0.6rem; border:1px solid #e2e8f0; border-radius:8px; background:white;">
+          {% for v, label in kind_choices %}
+            <option value="{{ v }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="flex:1; min-width:220px;">
+        <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;"><b>Puslapis</b></label>
+        <select name="page" style="width:100%; padding:0.6rem; border:1px solid #e2e8f0; border-radius:8px; background:white;">
+          {% for v, label in page_choices %}
+            <option value="{{ v }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+
+    </div>
+
+    <div style="margin-top: 12px;">
+      <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;"><b>Aprašymas</b></label>
+      <textarea name="message" rows="5" required
+        style="width:100%; box-sizing:border-box; padding:0.6rem; border:1px solid #e2e8f0; border-radius:8px;"
+        placeholder="Kas nutiko? Kaip pakartoti? Ko norėtumėte?"></textarea>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary">Siųsti</button>
+      </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">Mano pranešimai</div>
+
+  {% if tickets %}
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tipas</th>
+            <th>Puslapis</th>
+            <th>Statusas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets %}
+          <tr>
+            <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ t.get_kind_display }}</td>
+            <td>{{ t.get_page_display }}</td>
+            <td>{{ t.get_status_display }}</td>
+          </tr>
+          <tr>
+            <td colspan="4" style="color:var(--text-medium); padding-top:0;">
+              {{ t.message }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-medium">Dar neturite pranešimų.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -432,3 +432,56 @@ class ImportBatch(models.Model):
 
     def __str__(self):
         return f"{self.user_id} {self.bank_key} {self.created_at:%Y-%m-%d %H:%M}"
+
+
+from django.conf import settings
+from django.db import models
+
+class FeedbackTicket(models.Model):
+    KIND_BUG = "bug"
+    KIND_IDEA = "idea"
+    KIND_CHOICES = [
+        (KIND_BUG, "Bug"),
+        (KIND_IDEA, "Idea"),
+    ]
+
+    STATUS_NEW = "new"
+    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_DONE = "done"
+    STATUS_REJECTED = "rejected"
+    STATUS_CHOICES = [
+        (STATUS_NEW, "New"),
+        (STATUS_IN_PROGRESS, "In progress"),
+        (STATUS_DONE, "Done"),
+        (STATUS_REJECTED, "Rejected"),
+    ]
+
+    PAGE_OVERVIEW = "overview"
+    PAGE_TRANSACTIONS = "transactions"
+    PAGE_IMPORT = "import"
+    PAGE_ASSETS = "assets"
+    PAGE_PROFILE = "profile"
+    PAGE_AI = "ai"
+    PAGE_OTHER = "other"
+    PAGE_CHOICES = [
+        (PAGE_OVERVIEW, "Overview"),
+        (PAGE_TRANSACTIONS, "Transactions"),
+        (PAGE_IMPORT, "Import"),
+        (PAGE_ASSETS, "Assets"),
+        (PAGE_PROFILE, "Profile"),
+        (PAGE_AI, "AI"),
+        (PAGE_OTHER, "Other"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feedback_tickets")
+    kind = models.CharField(max_length=8, choices=KIND_CHOICES)
+    page = models.CharField(max_length=20, choices=PAGE_CHOICES, default=PAGE_OTHER)
+    message = models.TextField()
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user_id} {self.kind} {self.page} {self.status} {self.created_at:%Y-%m-%d}"

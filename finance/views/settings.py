@@ -11,8 +11,9 @@ from decimal import Decimal, InvalidOperation
 from datetime import date as _date
 from calendar import monthrange
 from collections import defaultdict
+from django.core.mail import mail_admins
 
-from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile
+from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile, FeedbackTicket
 from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
 from django.conf import settings
 
@@ -445,3 +446,73 @@ def onboarding_mark_done(request):
 
     return redirect(request.META.get("HTTP_REFERER") or "overview")
 
+@login_required
+def feedback(request):
+    # Optional tiny anti-spam cap (change later if you want)
+    MAX_PER_DAY = 10
+
+    if request.method == "POST":
+        kind = (request.POST.get("kind") or "").strip()
+        page = (request.POST.get("page") or "").strip()
+        message = (request.POST.get("message") or "").strip()
+
+        # Validate
+        valid_kinds = {k for k, _ in FeedbackTicket.KIND_CHOICES}
+        valid_pages = {p for p, _ in FeedbackTicket.PAGE_CHOICES}
+
+        if kind not in valid_kinds:
+            messages.error(request, "Pasirinkite tipą (Bug arba Idėja).")
+            return redirect("feedback")
+
+        if page not in valid_pages:
+            page = FeedbackTicket.PAGE_OTHER
+
+        if not message:
+            messages.error(request, "Aprašymas negali būti tuščias.")
+            return redirect("feedback")
+
+        if len(message) > 5000:
+            messages.error(request, "Aprašymas per ilgas (maks. 5000 simbolių).")
+            return redirect("feedback")
+
+        # Daily cap
+        today = timezone.localdate()
+        sent_today = FeedbackTicket.objects.filter(user=request.user, created_at__date=today).count()
+        if sent_today >= MAX_PER_DAY:
+            messages.error(request, "Šiandienos limitas pasiektas. Bandykite rytoj.")
+            return redirect("feedback")
+
+        FeedbackTicket.objects.create(
+            user=request.user,
+            kind=kind,
+            page=page,
+            message=message,
+            status=FeedbackTicket.STATUS_NEW,
+        )
+
+        try:
+            subject = f"[MoneyCompass] New {kind.upper()} ({page})"
+            body = (
+                f"User: {request.user.email}\n"
+                f"Type: {kind}\n"
+                f"Page: {page}\n"
+                f"Time: {timezone.now().isoformat()}\n\n"
+                f"Message:\n{message}\n"
+            )
+            mail_admins(subject, body, fail_silently=True)
+        except Exception:
+            # Never break ticket creation if email fails
+            pass
+
+        messages.success(request, "Ačiū! Jūsų pranešimas išsiųstas.")
+        return redirect("feedback")
+
+    tickets = FeedbackTicket.objects.filter(user=request.user).order_by("-created_at")
+
+    ctx = {
+        "tickets": tickets,
+        "kind_choices": FeedbackTicket.KIND_CHOICES,
+        "page_choices": FeedbackTicket.PAGE_CHOICES,
+        "status_choices": dict(FeedbackTicket.STATUS_CHOICES),
+    }
+    return render(request, "feedback.html", ctx)
