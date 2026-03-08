@@ -179,7 +179,7 @@ else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
     DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@moneycoach.local")
 
-
+SERVER_EMAIL = env("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 
 
 # ---------------------------------------------------------
