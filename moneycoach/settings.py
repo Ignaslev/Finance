@@ -3,6 +3,8 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url  # Added for Railway
+import copy
+from django.utils.log import DEFAULT_LOGGING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -103,6 +105,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+LOGGING = copy.deepcopy(DEFAULT_LOGGING)
+
+# Stop emailing ADMINS for bot Host-header probes (DisallowedHost).
+LOGGING["loggers"]["django.security.DisallowedHost"] = {
+    "handlers": ["console"],   # keep it in logs (journald)
+    "level": "ERROR",
+    "propagate": False,        # don't bubble to django.request -> email
+}
+
 
 # --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'lt'
