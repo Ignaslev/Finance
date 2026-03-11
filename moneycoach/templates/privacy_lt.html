@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Privatumo politika</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Paskutinį kartą atnaujinta</div>
+    <p class="text-medium" style="margin:0;">2026-03-09</p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">1. Kas mes</div>
+    <p class="text-medium">
+      MoneyCompass yra asmeninių finansų valdymo įrankis, leidžiantis importuoti banko operacijas, jas kategorizuoti,
+      stebėti statistiką, biudžetus ir turto/portfelio įrašus.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      Kontaktai: <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">2. Kokius duomenis tvarkome</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li><b>Paskyros duomenys:</b> el. pašto adresas, slaptažodžio maiša (slaptažodžio atviru tekstu nesaugome).</li>
+      <li><b>Finansiniai duomenys, kuriuos įvedate ar importuojate:</b> operacijos, kategorijos, biudžetų limitai, sąskaitos (MoneySource),
+        tikslai, turto/portfelio įrašai.</li>
+      <li><b>Techniniai duomenys:</b> prisijungimo sesijos slapukai ir baziniai serverio žurnalai (saugumui, stabilumui ir klaidų diagnostikai).</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">3. Banko išrašų importas</div>
+    <p class="text-medium">
+      MoneyCompass neprisijungia prie jūsų banko. Operacijos importuojamos iš jūsų įkeltų failų (CSV/Excel).
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      <b>Įkelti banko failai nėra saugomi po importo.</b> Iš failo ištraukiamos operacijos ir jos įrašomos į duomenų bazę.
+      Gali būti saugomi minimalūs importo metaduomenys (pvz., failo pavadinimas ir importo statistika).
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">4. AI funkcijos (jei naudojate)</div>
+    <p class="text-medium">
+      Jei naudojate AI kategorizaciją ar AI ataskaitas, dalis operacijų informacijos gali būti perduodama trečiosios šalies AI tiekėjui
+      (pvz., <b>OpenAI</b>) tam, kad būtų sugeneruoti pasiūlymai ar įžvalgos.
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Tipiškai tai gali apimti tokius laukus kaip gavėjas/parduotuvė, aprašymas/pastabos, suma, kryptis (in/out) ir panaši kontekstinė informacija.</li>
+      <li>AI pasiūlymai yra rekomendaciniai – galutinį sprendimą visada priima naudotojas.</li>
+    </ul>
+    <p class="text-medium" style="margin-bottom:0;">
+      Jei nenorite, kad operacijų duomenys būtų naudojami AI tikslams, nenaudokite AI funkcijų.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">5. Kam atskleidžiame duomenis</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li><b>Neparduodame</b> jūsų duomenų.</li>
+      <li>Duomenys gali būti tvarkomi infrastruktūros tiekėjų (hostingo, el. pašto) tiek, kiek būtina paslaugai veikti.</li>
+      <li>Jei naudojate AI funkcijas – duomenys gali būti perduodami AI tiekėjui (pvz., OpenAI), tik tam funkcionalumui atlikti.</li>
+      <li>Duomenys gali būti atskleisti institucijoms tik teisės aktų nustatytais atvejais.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">6. Saugumas</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Ryšys šifruojamas naudojant HTTPS.</li>
+      <li>Duomenys susieti su paskyra – kiti naudotojai neturi prieigos prie jūsų operacijų.</li>
+      <li>Naudojami atsarginiai kopijavimai ir žurnalai incidentų diagnostikai.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">7. Paskyros ir duomenų ištrynimas</div>
+    <p class="text-medium">
+      Paskyros ištrynimą galite inicijuoti programoje (profilio nustatymuose).
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Ištrynimas įvykdomas <b>po 24 valandų</b>.</li>
+      <li>Per šį laikotarpį galite <b>atšaukti</b> ištrynimą.</li>
+    </ul>
+    <p class="text-medium" style="margin-bottom:0;">
+      Pastaba: atsarginėse kopijose duomenys gali išlikti ribotą laiką pagal atsarginių kopijų saugojimo politiką.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">8. Jūsų teisės ir kontaktai</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      Jei turite klausimų dėl privatumo ar duomenų tvarkymo, susisiekite: <b>support@moneycompass.lt</b>.
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

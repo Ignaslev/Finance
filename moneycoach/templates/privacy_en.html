@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Privacy Policy</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Last updated</div>
+    <p class="text-medium" style="margin:0;">2026-03-09</p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">1. Who we are</div>
+    <p class="text-medium">
+      MoneyCompass is a personal finance tool that lets you import bank transactions, categorize spending,
+      view statistics/budgets, and track portfolio/holdings.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      Contact: <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">2. What data we process</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li><b>Account data:</b> email address and password hash (we never store your plain password).</li>
+      <li><b>Finance data you provide or import:</b> transactions, categories, budget caps, accounts (MoneySource),
+        goals, portfolio/holdings.</li>
+      <li><b>Technical data:</b> session cookies and basic server logs (for security, stability, and troubleshooting).</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">3. Bank statement imports</div>
+    <p class="text-medium">
+      MoneyCompass does not log in to your bank. Transactions are imported from files you upload (CSV/Excel).
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      <b>Uploaded bank statement files are not stored after import.</b> The file is parsed and transactions are saved to the database.
+      We may store minimal import metadata (e.g., filename and import statistics).
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">4. AI features (if you use them)</div>
+    <p class="text-medium">
+      If you use AI categorization or AI reports, some transaction details may be sent to a third-party AI provider
+      (for example, <b>OpenAI</b>) in order to generate suggestions or insights.
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>This may include fields such as merchant/payee, description/notes, amount, direction (in/out), and other relevant context.</li>
+      <li>AI output is advisory — the user remains in control of final decisions.</li>
+    </ul>
+    <p class="text-medium" style="margin-bottom:0;">
+      If you do not want transaction data to be used for AI purposes, do not use the AI features.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">5. Sharing of data</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>We do <b>not sell</b> your data.</li>
+      <li>Data may be processed by infrastructure providers (hosting, email) only as needed to operate the service.</li>
+      <li>If you use AI features, relevant data may be shared with an AI provider (e.g., OpenAI) only to deliver that functionality.</li>
+      <li>We may disclose data to authorities only when required by law.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">6. Security</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Traffic is encrypted using HTTPS.</li>
+      <li>Data is account-scoped — other users cannot access your transactions.</li>
+      <li>Backups and logs are used for incident response and troubleshooting.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">7. Account and data deletion</div>
+    <p class="text-medium">
+      You can initiate account deletion inside the app (profile/settings).
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Deletion is executed <b>after 24 hours</b>.</li>
+      <li>You can <b>cancel</b> the deletion request during this period.</li>
+    </ul>
+    <p class="text-medium" style="margin-bottom:0;">
+      Note: data may remain in backups for a limited time according to backup retention policies.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">8. Your rights and contact</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      If you have any questions about privacy or data processing, contact: <b>support@moneycompass.lt</b>.
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

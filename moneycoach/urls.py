@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import landing
+from .views import landing, privacy, terms, contact
 
 urlpatterns = [
     path("", landing, name="landing"),
@@ -10,6 +10,9 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("", include("finance.urls")),  # delegates /... to finance.urls
     path("accounts/", include("accounts.urls")),
+    path("privacy/", privacy, name="privacy"),
+    path("terms/", terms, name="terms"),
+    path("contact/", contact, name="contact"),
 
 ]
 

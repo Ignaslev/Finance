@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Naudojimosi sąlygos</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Paskutinį kartą atnaujinta</div>
+    <p class="text-medium" style="margin:0;">2026-03-09</p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">1. Paslaugos aprašymas</div>
+    <p class="text-medium">
+      MoneyCompass yra asmeninių finansų valdymo įrankis. Jis leidžia importuoti banko operacijas, jas tvarkyti,
+      kategorizuoti, peržiūrėti ataskaitas ir stebėti finansinę statistiką.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      MoneyCompass nėra finansinė konsultacija ir neteikia individualių investavimo ar finansinių patarimų.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">2. Paskyra ir atsakomybė</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Jūs atsakote už savo paskyros prisijungimo duomenų saugumą.</li>
+      <li>Jūs atsakote už tai, kokius duomenis importuojate ar suvedate, ir kaip juos naudojate.</li>
+      <li>Jūs sutinkate nenaudoti Paslaugos neteisėtais tikslais ar pažeidžiant kitų asmenų teises.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">3. Importas ir duomenų tikslumas</div>
+    <p class="text-medium">
+      MoneyCompass neprisijungia prie jūsų banko. Operacijos importuojamos iš jūsų įkeltų failų (CSV/Excel).
+      Importo rezultatai priklauso nuo failo formato ir jo turinio.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      Nors stengiamės užtikrinti kuo tikslesnį importą ir statistikas, jūs esate atsakingi už galutinį duomenų patikrinimą
+      (pvz., kategorijas, įrašus, sumas).
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">4. AI funkcijos</div>
+    <p class="text-medium">
+      Jei naudojate AI funkcijas (pvz., automatinę kategorizaciją ar AI ataskaitas), jos gali generuoti pasiūlymus
+      remiantis jūsų operacijų duomenimis.
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>AI pasiūlymai yra rekomendaciniai – galutinį sprendimą visada priima naudotojas.</li>
+      <li>Paslauga gali perduoti dalį operacijų informacijos trečiosios šalies AI tiekėjui (pvz., OpenAI), kad sugeneruotų pasiūlymus.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">5. Draudžiamas naudojimas</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Draudžiama bandyti apeiti saugumo priemones, vykdyti automatizuotą piktnaudžiavimą (spam, bot’ų veikla), ar trikdyti Paslaugos veikimą.</li>
+      <li>Draudžiama bandyti pasiekti kitų naudotojų duomenis arba naudotis Paslauga neteisėtai.</li>
+      <li>Draudžiama įkelti kenkėjišką turinį ar naudoti Paslaugą atakoms (pvz., DoS) vykdyti.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">6. Paslaugos prieinamumas</div>
+    <p class="text-medium">
+      Paslauga teikiama „kaip yra“ (beta/MVP). Gali pasitaikyti klaidų, netikslumų ar laikinų sutrikimų.
+      Mes galime keisti, tobulinti arba laikinai sustabdyti tam tikras funkcijas siekiant pagerinti stabilumą ir saugumą.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">7. Paskyros ištrynimas</div>
+    <p class="text-medium">
+      Paskyros ištrynimą galite inicijuoti programoje (profilio nustatymuose).
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Ištrynimas įvykdomas <b>po 24 valandų</b>.</li>
+      <li>Per šį laikotarpį galite <b>atšaukti</b> ištrynimą.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">8. Kontaktai</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      Klausimai ar pagalba: <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

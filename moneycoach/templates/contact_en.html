@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Contact</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Get in touch</div>
+    <p class="text-medium">
+      If you have questions, found a bug, or want to suggest an improvement, contact us:
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">Account and data questions</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      For privacy, data processing, or account-related questions, email us as well.
+      (Please include the email address you used to create your MoneyCompass account.)
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

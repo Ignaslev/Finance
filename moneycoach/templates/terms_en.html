@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Terms of Use</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Last updated</div>
+    <p class="text-medium" style="margin:0;">2026-03-09</p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">1. Service overview</div>
+    <p class="text-medium">
+      MoneyCompass is a personal finance tool. It allows you to import bank transactions, organize and categorize them,
+      view reports, and track financial statistics.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      MoneyCompass is not financial advice and does not provide individualized investment or financial recommendations.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">2. Account and responsibility</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>You are responsible for keeping your login credentials secure.</li>
+      <li>You are responsible for the data you import or enter and how you use it.</li>
+      <li>You agree not to use the service for illegal purposes or in a way that violates the rights of others.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">3. Imports and data accuracy</div>
+    <p class="text-medium">
+      MoneyCompass does not log in to your bank. Transactions are imported from files you upload (CSV/Excel).
+      Import results depend on the file format and content.
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      While we aim to provide accurate importing and reporting, you are responsible for verifying your data
+      (e.g., categories, entries, amounts) before relying on it.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">4. AI features</div>
+    <p class="text-medium">
+      If you use AI features (e.g., auto-categorization or AI reports), they may generate suggestions based on your transaction data.
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>AI output is advisory — you remain responsible for final decisions.</li>
+      <li>The service may send some transaction details to a third-party AI provider (e.g., OpenAI) to generate suggestions.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">5. Prohibited use</div>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>You must not bypass security controls, abuse the service through automation (spam/bots), or disrupt service operation.</li>
+      <li>You must not attempt to access other users’ data or use the service unlawfully.</li>
+      <li>You must not upload malicious content or use the service to perform attacks (e.g., DoS).</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">6. Availability</div>
+    <p class="text-medium">
+      The service is provided “as is” (beta/MVP). Bugs, inaccuracies, or temporary outages may occur.
+      We may change, improve, or temporarily disable features to improve stability and security.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">7. Account deletion</div>
+    <p class="text-medium">
+      You can initiate account deletion inside the app (profile/settings).
+    </p>
+    <ul class="text-medium" style="margin-top:0;">
+      <li>Deletion is executed <b>after 24 hours</b>.</li>
+      <li>You can <b>cancel</b> the deletion request during this period.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="card-title">8. Contact</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      Support: <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

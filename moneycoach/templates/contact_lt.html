@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">Kontaktai</h2>
+</div>
+
+<style>
+  .legal-card .section { margin-top: 22px; }
+  .legal-card .section:first-child { margin-top: 0; }
+  .legal-card .card-title { margin-bottom: 10px; }
+</style>
+
+<div class="card legal-card">
+
+  <div class="section">
+    <div class="card-title">Susisiekite</div>
+    <p class="text-medium">
+      Jei turite klausimų, pastebėjote klaidą ar norite pasiūlyti patobulinimų – parašykite mums:
+    </p>
+    <p class="text-medium" style="margin-bottom:0;">
+      <b>support@moneycompass.lt</b>
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card-title">Duomenų ir paskyros klausimai</div>
+    <p class="text-medium" style="margin-bottom:0;">
+      Jei turite klausimų dėl privatumo, duomenų tvarkymo ar paskyros – rašykite tuo pačiu el. pašto adresu.
+      (Nurodykite paskyros el. pašto adresą, su kuriuo esate prisiregistravę.)
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}
