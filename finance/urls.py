@@ -60,4 +60,8 @@ urlpatterns = [
     path("assets/add/", f.asset_add, name="asset_add"),
     path("assets/<int:pk>/edit/", f.asset_edit, name="asset_edit"),
     path("api/search-asset/", f.api_search_asset, name="api_search_asset"),
+
+    #Profile delation
+    path("profile/delete-account/", f.profile_delete_account, name="profile_delete_account"),
+    path("profile/cancel-delete-account/", f.profile_cancel_delete_account, name="profile_cancel_delete_account"),
 ]

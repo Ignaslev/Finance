@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 from django.utils.crypto import get_random_string
+from django.utils import timezone
+from datetime import timedelta
 
 # ----- Existing choices -----
 # ----- Category choices come from settings -----
@@ -387,6 +389,10 @@ class UserProfile(models.Model):
     """
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     android_webhook_secret = models.CharField(max_length=64, unique=True, blank=True)
+
+    account_delete_requested_at = models.DateTimeField(null=True, blank=True)
+    account_delete_scheduled_for = models.DateTimeField(null=True, blank=True)
+    account_delete_canceled_at = models.DateTimeField(null=True, blank=True)
 
     # If True: show investment values after subtracting 15% (flat estimate)
     exclude_investment_tax = models.BooleanField(default=False)

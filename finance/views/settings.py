@@ -17,6 +17,15 @@ from finance.models import Category, MoneySource, Transaction, SavingsGoal, Bala
 from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
 from django.conf import settings
 
+from datetime import timedelta
+from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail, mail_admins
+from django.conf import settings
+from finance.models import UserProfile
+
 # Paste: register, category_list, category_edit, category_delete, profile, onboarding_mark_done
 
 
@@ -516,3 +525,97 @@ def feedback(request):
         "status_choices": dict(FeedbackTicket.STATUS_CHOICES),
     }
     return render(request, "feedback.html", ctx)
+
+@login_required
+def profile_delete_account(request):
+    prof, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    # If already scheduled and not canceled, show state
+    scheduled = bool(prof.account_delete_scheduled_for and not prof.account_delete_canceled_at)
+
+    if request.method == "POST":
+        password = (request.POST.get("password") or "").strip()
+
+        if not password or not request.user.check_password(password):
+            messages.error(request, "Neteisingas slaptažodis.")
+            return render(request, "account_delete_confirm.html", {
+                "scheduled": scheduled,
+                "scheduled_for": prof.account_delete_scheduled_for,
+            })
+
+        now = timezone.now()
+        prof.account_delete_requested_at = now
+        prof.account_delete_scheduled_for = now + timedelta(hours=24)
+        prof.account_delete_canceled_at = None
+        prof.save(update_fields=[
+            "account_delete_requested_at",
+            "account_delete_scheduled_for",
+            "account_delete_canceled_at",
+        ])
+
+        # Email user
+        try:
+            when = prof.account_delete_scheduled_for.strftime("%Y-%m-%d %H:%M")
+            profile_url = request.build_absolute_uri("/profile/")
+            send_mail(
+                subject="MoneyCompass – Account deletion scheduled",
+                message=(
+                    f"Your MoneyCompass account deletion has been scheduled.\n\n"
+                    f"It will be deleted after 24 hours: {when}.\n"
+                    f"You can cancel deletion from your profile page:\n{profile_url}\n"
+                ),
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+        # Optional: notify admins too (keeps you aware)
+        try:
+            mail_admins(
+                "MoneyCompass – Account deletion scheduled",
+                f"User: {request.user.email}\nScheduled for: {prof.account_delete_scheduled_for.isoformat()}",
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+        messages.success(request, "Paskyros ištrynimas suplanuotas. Galite atšaukti per 24 val.")
+        return redirect("profile")
+
+    # GET → show confirmation page
+    return render(request, "account_delete_confirm.html", {
+        "scheduled": scheduled,
+        "scheduled_for": prof.account_delete_scheduled_for,
+    })
+
+@login_required
+def profile_cancel_delete_account(request):
+    if request.method != "POST":
+        return redirect("profile")
+
+    prof, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    if not prof.account_delete_scheduled_for or prof.account_delete_canceled_at:
+        messages.info(request, "Nėra suplanuoto ištrynimo.")
+        return redirect("profile")
+
+    prof.account_delete_canceled_at = timezone.now()
+    prof.account_delete_scheduled_for = None
+    prof.save(update_fields=["account_delete_canceled_at", "account_delete_scheduled_for"])
+
+    # Email user
+    try:
+        send_mail(
+            subject="MoneyCompass – Account deletion canceled",
+            message="Your MoneyCompass account deletion request has been canceled.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[request.user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+    messages.success(request, "Paskyros ištrynimas atšauktas.")
+    return redirect("profile")

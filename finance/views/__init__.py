@@ -9,7 +9,7 @@ from .assets import (
 from .reports import statistics, reports, reports_generate
 from .settings import (
     profile, register, category_list, category_edit, category_delete,
-    onboarding_mark_done
+    onboarding_mark_done, profile_delete_account, profile_cancel_delete_account
 )
 # UNCOMMENTED THESE LINES:
 from .ai import (

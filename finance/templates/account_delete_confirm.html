@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">{% trans "Account deletion" %}</h2>
+</div>
+
+<div class="card">
+  <div class="card-title">{% trans "Confirmation" %}</div>
+
+  {% if scheduled %}
+    <p class="text-medium">
+      {% trans "Your account deletion is already scheduled." %}
+    </p>
+    {% if scheduled_for %}
+      <p class="text-medium"><b>{% trans "Scheduled for" %}:</b> {{ scheduled_for }}</p>
+    {% endif %}
+    <p class="text-medium" style="margin-bottom:0;">
+      {% trans "If you want to cancel, go back to your Profile page and click “Cancel deletion”." %}
+    </p>
+  {% else %}
+    <p class="text-medium">
+      {% trans "Your account will be deleted after 24 hours. You can cancel during this period from your Profile page." %}
+    </p>
+
+    <form method="post" style="margin-top: 14px;">
+      {% csrf_token %}
+
+      <label class="text-medium" style="display:block; margin-bottom:6px;">
+        <b>{% trans "Enter your password to confirm" %}</b>
+      </label>
+      <input type="password" name="password" required
+             style="width:100%; max-width:420px; padding:10px; border:1px solid #e2e8f0; border-radius:8px;">
+
+      <div style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="submit" class="btn"
+                style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+          {% trans "Confirm deletion" %}
+        </button>
+
+        <a href="{% url 'profile' %}" class="btn btn-light">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

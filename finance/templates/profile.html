@@ -11,6 +11,30 @@
 </div>
 
 <div class="card">
+  <div class="card-title">Paskyros ištrynimas</div>
+
+  {% if request.user.profile.account_delete_scheduled_for %}
+    <p class="text-medium">Paskyros ištrynimas suplanuotas. Galite atšaukti per 24 val.</p>
+
+    <form method="post" action="{% url 'profile_cancel_delete_account' %}"
+          onsubmit="return confirm('Atšaukti paskyros ištrynimą?');">
+      {% csrf_token %}
+      <button type="submit" class="btn"
+              style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+        Atšaukti ištrynimą
+      </button>
+    </form>
+  {% else %}
+    <p class="text-medium">Paskyra bus ištrinta po 24 val. (galėsite atšaukti).</p>
+    <a class="btn"
+       style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+       href="{% url 'profile_delete_account' %}">
+      Ištrinti paskyrą
+    </a>
+  {% endif %}
+</div>
+
+<div class="card">
   <div class="card-title">{% trans "Accounts" %}</div>
 
   <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid #edf2f7;">
