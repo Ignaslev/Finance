@@ -8,11 +8,23 @@ from django.utils import timezone
 from django.conf import settings
 import io, csv, json
 from decimal import Decimal, InvalidOperation
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
+from django.core.mail import send_mail, mail_admins
+from django.urls import reverse
+from django.utils.translation import gettext as _
 
+from finance.models import (
+    Transaction,
+    Category,
+    MoneySource,
+    OnboardingState,
+    AiRun,
+    UserProfile,
+    ImportBatch,
+    PendingDataDeletion,
+)
 
-from finance.models import Transaction, Category, MoneySource, OnboardingState, AiRun, UserProfile ,ImportBatch
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
@@ -300,6 +312,116 @@ def undo_last_import(request):
         request,
         f"Undid last import: permanently deleted {n} transaction{'s' if n != 1 else ''}."
     )
+    return redirect("upload")
+
+def _get_tx_delete_request(user):
+    return PendingDataDeletion.objects.filter(
+        user=user,
+        scope=PendingDataDeletion.SCOPE_TRANSACTIONS,
+    ).first()
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def data_delete_transactions(request):
+    delete_req = _get_tx_delete_request(request.user)
+    scheduled = bool(delete_req and delete_req.scheduled_for and not delete_req.canceled_at)
+    scheduled_for = delete_req.scheduled_for if delete_req else None
+    tx_count = Transaction.objects.filter(user=request.user).count()
+
+    if request.method == "POST":
+        if scheduled:
+            messages.info(request, _("Transactions deletion is already scheduled."))
+            return redirect("data_delete_transactions")
+
+        if tx_count == 0:
+            messages.info(request, _("You have no transactions to delete."))
+            return redirect("upload")
+
+        password = (request.POST.get("password") or "").strip()
+        if not password or not request.user.check_password(password):
+            messages.error(request, _("Incorrect password."))
+            return render(request, "data_delete_confirm.html", {
+                "scheduled": scheduled,
+                "scheduled_for": scheduled_for,
+                "tx_count": tx_count,
+            })
+
+        now = timezone.now()
+
+        if delete_req is None:
+            delete_req = PendingDataDeletion(
+                user=request.user,
+                scope=PendingDataDeletion.SCOPE_TRANSACTIONS,
+            )
+
+        delete_req.requested_at = now
+        delete_req.scheduled_for = now + timedelta(hours=24)
+        delete_req.canceled_at = None
+        delete_req.save()
+
+        try:
+            when = delete_req.scheduled_for.strftime("%Y-%m-%d %H:%M")
+            manage_url = request.build_absolute_uri(reverse("data_delete_transactions"))
+            send_mail(
+                subject="MoneyCompass – Transactions deletion scheduled",
+                message=(
+                    f"Your MoneyCompass transactions deletion has been scheduled.\n\n"
+                    f"It will run after 24 hours: {when}.\n"
+                    f"This deletes all uploaded and manually created transactions.\n"
+                    f"It does not delete accounts, categories, balances, assets, or your profile.\n\n"
+                    f"You can cancel it here:\n{manage_url}\n"
+                ),
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+        try:
+            mail_admins(
+                "MoneyCompass – Transactions deletion scheduled",
+                f"User: {request.user.email}\nScheduled for: {delete_req.scheduled_for.isoformat()}",
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+        messages.success(request, _("Transactions deletion scheduled. You can cancel it within 24 hours."))
+        return redirect("upload")
+
+    return render(request, "data_delete_confirm.html", {
+        "scheduled": scheduled,
+        "scheduled_for": scheduled_for,
+        "tx_count": tx_count,
+    })
+
+
+@login_required
+@require_POST
+def cancel_data_delete_transactions(request):
+    delete_req = _get_tx_delete_request(request.user)
+
+    if not delete_req or not delete_req.scheduled_for or delete_req.canceled_at:
+        messages.info(request, _("No scheduled transactions deletion found."))
+        return redirect("upload")
+
+    delete_req.canceled_at = timezone.now()
+    delete_req.scheduled_for = None
+    delete_req.save(update_fields=["canceled_at", "scheduled_for"])
+
+    try:
+        send_mail(
+            subject="MoneyCompass – Transactions deletion canceled",
+            message="Your MoneyCompass transactions deletion request has been canceled.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[request.user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+    messages.success(request, _("Transactions deletion canceled."))
     return redirect("upload")
 
 @login_required
@@ -722,6 +844,12 @@ def upload(request):
         if last_batch else 0
     )
 
+    tx_delete_req = _get_tx_delete_request(request.user)
+    tx_delete_scheduled = bool(
+        tx_delete_req and tx_delete_req.scheduled_for and not tx_delete_req.canceled_at
+    )
+    all_tx_count = Transaction.objects.filter(user=request.user).count()
+
     ctx = {
         "page_obj": page_obj,
         "total": paginator.count,
@@ -746,6 +874,9 @@ def upload(request):
         "bank_choices": bank_choices,
         "last_batch": last_batch,
         "last_batch_count": last_batch_count,
+        "tx_delete_scheduled": tx_delete_scheduled,
+        "tx_delete_scheduled_for": (tx_delete_req.scheduled_for if tx_delete_req else None),
+        "all_tx_count": all_tx_count,
         "onboarding_state": {
             "categories_done": cats_done,
             "has_income": income_exists,

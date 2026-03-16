@@ -16,6 +16,9 @@ urlpatterns = [
     path("tx/<int:pk>/edit/", f.tx_edit, name="tx_edit"),
     path("tx/add/", f.tx_add, name="tx_add"),
     path("undo-last-import/", transactions.undo_last_import, name="undo_last_import"),
+    path("data/delete-transactions/", transactions.data_delete_transactions, name="data_delete_transactions"),
+    path("data/cancel-delete-transactions/", transactions.cancel_data_delete_transactions,
+         name="cancel_data_delete_transactions"),
 
 # NEW: auto-categorize endpoint (runs only when you click)
     path("ai/full/", f.ai_full_categorize, name="ai_full_categorize"),

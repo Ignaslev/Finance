@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">{% trans "Delete all transactions" %}</h2>
+</div>
+
+<div class="card">
+  <div class="card-title">{% trans "Confirmation" %}</div>
+
+  {% if scheduled %}
+    <p class="text-medium">
+      {% trans "Your transactions deletion is already scheduled." %}
+    </p>
+
+    {% if scheduled_for %}
+      <p class="text-medium">
+        <b>{% trans "Scheduled for" %}:</b> {{ scheduled_for }}
+      </p>
+    {% endif %}
+
+    <p class="text-medium">
+      {% trans "This will permanently delete all uploaded and manually created transactions." %}
+    </p>
+
+    <form method="post" action="{% url 'cancel_data_delete_transactions' %}" style="margin-top: 14px;">
+      {% csrf_token %}
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="submit" class="btn"
+                style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+          {% trans "Cancel deletion" %}
+        </button>
+
+        <a href="{% url 'upload' %}" class="btn btn-light">{% trans "Back" %}</a>
+      </div>
+    </form>
+
+  {% else %}
+    {% if tx_count > 0 %}
+      <p class="text-medium">
+        {% trans "Your transactions will be permanently deleted after 24 hours. You can cancel during this period." %}
+      </p>
+
+      <p class="text-medium">
+        <b>{% trans "Transactions to delete" %}:</b> {{ tx_count }}
+      </p>
+
+      <p class="text-medium">
+        {% trans "This deletes uploaded and manually created transactions, including transactions currently in the deleted list." %}
+      </p>
+
+      <p class="text-medium">
+        {% trans "This does not delete accounts, categories, balances, assets, or your profile." %}
+      </p>
+
+      <form method="post" style="margin-top: 14px;">
+        {% csrf_token %}
+
+        <label class="text-medium" style="display:block; margin-bottom:6px;">
+          <b>{% trans "Enter your password to confirm" %}</b>
+        </label>
+        <input type="password" name="password" required
+               style="width:100%; max-width:420px; padding:10px; border:1px solid #e2e8f0; border-radius:8px;">
+
+        <div style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="submit" class="btn"
+                  style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+            {% trans "Confirm deletion" %}
+          </button>
+
+          <a href="{% url 'upload' %}" class="btn btn-light">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    {% else %}
+      <p class="text-medium">
+        {% trans "You have no transactions to delete." %}
+      </p>
+      <a href="{% url 'upload' %}" class="btn btn-light">{% trans "Back" %}</a>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

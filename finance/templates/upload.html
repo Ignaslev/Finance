@@ -80,6 +80,23 @@
   </form>
 {% endif %}
 
+{% if all_tx_count > 0 or tx_delete_scheduled %}
+  <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
+    {% if tx_delete_scheduled %}
+      <div class="text-medium" style="margin-bottom:8px;">
+        {% trans "Transactions deletion is already scheduled." %}
+      </div>
+      <a href="{% url 'data_delete_transactions' %}" class="btn btn-danger btn-sm">
+        {% trans "Manage deletion" %}
+      </a>
+    {% else %}
+      <a href="{% url 'data_delete_transactions' %}" class="btn btn-danger btn-sm">
+        {% trans "Delete all transactions" %}
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
 </div>
 
 <div class="card">

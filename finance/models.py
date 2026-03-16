@@ -439,6 +439,39 @@ class ImportBatch(models.Model):
     def __str__(self):
         return f"{self.user_id} {self.bank_key} {self.created_at:%Y-%m-%d %H:%M}"
 
+class PendingDataDeletion(models.Model):
+    SCOPE_TRANSACTIONS = "transactions"
+    SCOPE_CHOICES = [
+        (SCOPE_TRANSACTIONS, "Transactions"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="pending_data_deletions",
+    )
+    scope = models.CharField(
+        max_length=32,
+        choices=SCOPE_CHOICES,
+        default=SCOPE_TRANSACTIONS,
+    )
+    requested_at = models.DateTimeField(null=True, blank=True)
+    scheduled_for = models.DateTimeField(null=True, blank=True, db_index=True)
+    canceled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "scope"],
+                name="uniq_pending_data_deletion_user_scope",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["scope", "scheduled_for"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.scope} {self.scheduled_for or '-'}"
 
 from django.conf import settings
 from django.db import models
