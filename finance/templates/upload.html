@@ -80,22 +80,7 @@
   </form>
 {% endif %}
 
-{% if all_tx_count > 0 or tx_delete_scheduled %}
-  <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
-    {% if tx_delete_scheduled %}
-      <div class="text-medium" style="margin-bottom:8px;">
-        {% trans "Transactions deletion is already scheduled." %}
-      </div>
-      <a href="{% url 'data_delete_transactions' %}" class="btn btn-danger btn-sm">
-        {% trans "Manage deletion" %}
-      </a>
-    {% else %}
-      <a href="{% url 'data_delete_transactions' %}" class="btn btn-danger btn-sm">
-        {% trans "Delete all transactions" %}
-      </a>
-    {% endif %}
-  </div>
-{% endif %}
+
 
 </div>
 
@@ -291,6 +276,42 @@
 {% else %}
   <div class="card">
     <p style="opacity:.7; text-align:center; padding:2rem;">{% trans "No transactions match your filter." %}</p>
+  </div>
+{% endif %}
+
+{% load i18n %}
+
+{% if all_tx_count > 0 or tx_delete_scheduled %}
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title">{% trans "Data deletion" %}</div>
+
+    {% if tx_delete_scheduled %}
+      <p class="text-medium">
+        {% trans "Your transactions deletion is scheduled. You can cancel it within 24 hours." %}
+      </p>
+
+      <p class="text-medium">
+        {% trans "After that, all uploaded and manually created transactions will be permanently deleted." %}
+      </p>
+
+      <a href="{% url 'data_delete_transactions' %}" class="btn"
+         style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+        {% trans "Manage deletion" %}
+      </a>
+    {% else %}
+      <p class="text-medium">
+        {% trans "Your transactions will be permanently deleted after 24 hours. You can cancel it during this period." %}
+      </p>
+
+      <p class="text-medium">
+        {% trans "This deletes all uploaded and manually created transactions." %}
+      </p>
+
+      <a href="{% url 'data_delete_transactions' %}" class="btn"
+         style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+        {% trans "Delete data" %}
+      </a>
+    {% endif %}
   </div>
 {% endif %}
 

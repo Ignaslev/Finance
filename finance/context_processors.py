@@ -139,3 +139,59 @@ def ai_notifications(request):
     ).order_by('-finished_at').first()
 
     return {'ai_notification_run': run}
+
+
+from django.urls import reverse
+
+
+def pending_delete_banner(request):
+    if not request.user.is_authenticated:
+        return {}
+
+    # Account deletion takes priority over data deletion.
+    try:
+        profile = request.user.profile
+    except Exception:
+        profile = None
+
+    if (
+        profile
+        and profile.account_delete_scheduled_for
+        and not profile.account_delete_canceled_at
+    ):
+        return {
+            "pending_delete_banner": {
+                "kind": "account",
+                "scheduled_for": profile.account_delete_scheduled_for,
+                "manage_url": reverse("profile"),
+                "cancel_url": reverse("profile_cancel_delete_account"),
+            }
+        }
+
+    try:
+        from finance.models import PendingDataDeletion
+
+        tx_delete_req = (
+            PendingDataDeletion.objects
+            .filter(
+                user=request.user,
+                scope=PendingDataDeletion.SCOPE_TRANSACTIONS,
+                scheduled_for__isnull=False,
+                canceled_at__isnull=True,
+            )
+            .first()
+        )
+    except Exception:
+        tx_delete_req = None
+
+    if tx_delete_req:
+        return {
+            "pending_delete_banner": {
+                "kind": "transactions",
+                "scheduled_for": tx_delete_req.scheduled_for,
+                "manage_url": reverse("data_delete_transactions"),
+                "cancel_url": reverse("cancel_data_delete_transactions"),
+            }
+        }
+
+    return {}

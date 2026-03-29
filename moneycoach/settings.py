@@ -82,6 +82,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 "finance.context_processors.onboarding",
                 "finance.context_processors.ai_notifications",
+                "finance.context_processors.pending_delete_banner",
             ],
         },
     },

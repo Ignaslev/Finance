@@ -10,29 +10,7 @@
     </div>
 </div>
 
-<div class="card">
-  <div class="card-title">Paskyros ištrynimas</div>
 
-  {% if request.user.profile.account_delete_scheduled_for %}
-    <p class="text-medium">Paskyros ištrynimas suplanuotas. Galite atšaukti per 24 val.</p>
-
-    <form method="post" action="{% url 'profile_cancel_delete_account' %}"
-          onsubmit="return confirm('Atšaukti paskyros ištrynimą?');">
-      {% csrf_token %}
-      <button type="submit" class="btn"
-              style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
-        Atšaukti ištrynimą
-      </button>
-    </form>
-  {% else %}
-    <p class="text-medium">Paskyra bus ištrinta po 24 val. (galėsite atšaukti).</p>
-    <a class="btn"
-       style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
-       href="{% url 'profile_delete_account' %}">
-      Ištrinti paskyrą
-    </a>
-  {% endif %}
-</div>
 
 <div class="card">
   <div class="card-title">{% trans "Accounts" %}</div>
@@ -409,4 +387,37 @@
   </form>
 </div>
 
+{% load i18n %}
+
+<div class="card">
+  <div class="card-title">{% trans "Account deletion" %}</div>
+
+  {% if request.user.profile.account_delete_scheduled_for %}
+    <p class="text-medium">
+      {% trans "Your account deletion is scheduled. You can cancel it within 24 hours." %}
+    </p>
+
+    <form method="post"
+          action="{% url 'profile_cancel_delete_account' %}"
+          onsubmit="return confirm('{% trans "Cancel account deletion?" %}');">
+      {% csrf_token %}
+      <button type="submit" class="btn"
+              style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">
+        {% trans "Cancel deletion" %}
+      </button>
+    </form>
+  {% else %}
+    <p class="text-medium">
+      {% trans "Your account will be permanently deleted after 24 hours. You can cancel it during this period." %}
+    </p>
+
+    <a class="btn"
+       style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+       href="{% url 'profile_delete_account' %}">
+      {% trans "Delete account" %}
+    </a>
+  {% endif %}
+</div>
+
 {% endblock %}
+

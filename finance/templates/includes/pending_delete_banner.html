@@ -1,0 +1,85 @@
+{% load i18n %}
+
+{% if pending_delete_banner %}
+  {% if pending_delete_banner.kind == "account" %}
+    {% trans "Account deletion scheduled" as banner_title %}
+    {% trans "Your account will be deleted in" as banner_text %}
+    {% trans "Manage" as manage_label %}
+    {% trans "Cancel deletion" as cancel_label %}
+    {% trans "Cancel account deletion?" as cancel_confirm %}
+  {% else %}
+    {% trans "Data deletion scheduled" as banner_title %}
+    {% trans "Your data will be deleted in" as banner_text %}
+    {% trans "Manage" as manage_label %}
+    {% trans "Cancel deletion" as cancel_label %}
+    {% trans "Cancel data deletion?" as cancel_confirm %}
+  {% endif %}
+
+  <div style="background:#c53030; color:#ffffff;">
+    <div class="container"
+         style="padding-top:12px; padding-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+
+      <div>
+        <div style="font-weight:700; margin-bottom:2px;">{{ banner_title }}</div>
+        <div style="font-size:0.95rem; color:#fff;">
+          {{ banner_text }}
+          <span id="pending-delete-countdown"
+                data-target="{{ pending_delete_banner.scheduled_for|date:'c' }}"
+                style="font-weight:700;">--:--:--</span>.
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <a href="{{ pending_delete_banner.manage_url }}"
+           class="btn"
+           style="background:transparent; color:#ffffff; border:1px solid rgba(255,255,255,0.6);">
+          {{ manage_label }}
+        </a>
+
+        <form method="post"
+              action="{{ pending_delete_banner.cancel_url }}"
+              style="margin:0;"
+              onsubmit="return confirm('{{ cancel_confirm|escapejs }}');">
+          {% csrf_token %}
+          <button type="submit"
+                  class="btn"
+                  style="background:#ffffff; color:#c53030; border:1px solid #ffffff;">
+            {{ cancel_label }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var el = document.getElementById("pending-delete-countdown");
+      if (!el) return;
+
+      var target = new Date(el.dataset.target).getTime();
+
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function renderCountdown() {
+        var diff = target - Date.now();
+
+        if (diff <= 0) {
+          el.textContent = "00:00:00";
+          return;
+        }
+
+        var totalSeconds = Math.floor(diff / 1000);
+        var hours = Math.floor(totalSeconds / 3600);
+        var minutes = Math.floor((totalSeconds % 3600) / 60);
+        var seconds = totalSeconds % 60;
+
+        el.textContent = pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+      }
+
+      renderCountdown();
+      setInterval(renderCountdown, 1000);
+    })();
+  </script>
+{% endif %}
