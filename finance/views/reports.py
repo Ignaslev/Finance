@@ -8,13 +8,91 @@ from django.db.models.functions import TruncMonth
 from datetime import datetime, timedelta, date as _date
 from decimal import Decimal
 from calendar import monthrange
+from collections import defaultdict
 import json
+import re
 
 from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot, UserProfile
 from finance.services import _advisor_build_payload, _advisor_call_model
 # Move _reconcile_global to utils or keep here if private
 from finance.utils import _reconcile_global # If you moved it
 
+
+def _normalize_subscription_merchant(value: str) -> str:
+    raw = (value or "").lower()
+    raw = re.sub(r"\d+", " ", raw)
+    raw = re.sub(r"[^\w\s]", " ", raw, flags=re.UNICODE)
+    raw = raw.replace("_", " ")
+    raw = re.sub(r"\b(uab|ab|mb|www|com|lt|eu|card|visa|mastercard|payment|bank|pos)\b", " ", raw)
+    raw = re.sub(r"\s+", " ", raw).strip()
+
+    if not raw:
+        return (value or "").strip().lower()
+
+    return " ".join(raw.split()[:3])
+
+
+def _build_subscription_rows(transactions, today):
+    grouped = defaultdict(list)
+
+    for tx in transactions:
+        merchant_key = _normalize_subscription_merchant(tx.merchant)
+        if not merchant_key:
+            continue
+
+        amount_key = (tx.amount or Decimal("0")).quantize(Decimal("0.01"))
+        grouped[(merchant_key, amount_key)].append(tx)
+
+    this_month_start = today.replace(day=1)
+    prev_month_end = this_month_start - timedelta(days=1)
+    prev_month_start = prev_month_end.replace(day=1)
+
+    active_rows = []
+    past_rows = []
+
+    for (_merchant_key, monthly_cost), items in grouped.items():
+        items = sorted(items, key=lambda t: t.date)
+        distinct_months = {(t.date.year, t.date.month) for t in items}
+
+        if len(distinct_months) < 2:
+            continue
+
+        gaps = [(curr.date - prev.date).days for prev, curr in zip(items, items[1:])]
+        if gaps:
+            monthly_gap_ratio = sum(1 for g in gaps if 20 <= g <= 40) / len(gaps)
+            if monthly_gap_ratio < 0.5:
+                continue
+
+        first_paid = items[0].date
+        last_paid = items[-1].date
+        total_spent = sum((t.amount or Decimal("0")) for t in items)
+        display_name = (items[-1].merchant or "").strip() or _merchant_key.title()
+
+        row = {
+            "name": display_name,
+            "monthly_cost": monthly_cost,
+            "months_subscribed": len(distinct_months),
+            "total_spent": total_spent,
+            "first_paid": first_paid,
+            "last_paid": last_paid,
+        }
+
+        if last_paid >= prev_month_start:
+            active_rows.append(row)
+        else:
+            past_rows.append(row)
+
+    active_rows.sort(key=lambda r: (-r["monthly_cost"], r["name"].lower()))
+    past_rows.sort(key=lambda r: (r["last_paid"], r["name"].lower()), reverse=True)
+
+    summary = {
+        "active_count": len(active_rows),
+        "monthly_total": sum((r["monthly_cost"] for r in active_rows), Decimal("0")),
+        "active_total_spent": sum((r["total_spent"] for r in active_rows), Decimal("0")),
+        "past_total_spent": sum((r["total_spent"] for r in past_rows), Decimal("0")),
+    }
+
+    return active_rows, past_rows, summary
 
 
 @login_required
@@ -171,6 +249,15 @@ def statistics(request):
     categorized = base.filter(category_fk__isnull=False).count()
     coverage_pct = (categorized / total_categorizable * 100.0) if total_categorizable else 0.0
 
+    subscription_qs = list(
+        base.filter(in_out=Transaction.OUT)
+        .exclude(merchant__isnull=True)
+        .exclude(merchant="")
+        .exclude(amount__isnull=True)
+        .order_by("merchant", "date")
+    )
+    active_subscriptions, past_subscriptions, subscriptions_summary = _build_subscription_rows(subscription_qs, today)
+
     # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
 
@@ -305,6 +392,9 @@ def statistics(request):
         "most_freq_merchant": most_freq["merchant"] if most_freq else None,
         "most_freq_merchant_cnt": int(most_freq["cnt"]) if most_freq else None,
         "coverage_pct": round(coverage_pct, 1),
+        "active_subscriptions": active_subscriptions,
+        "past_subscriptions": past_subscriptions,
+        "subscriptions_summary": subscriptions_summary,
 
         "available_month_keys": months_keys,
         "start_key": start_key,

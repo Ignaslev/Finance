@@ -57,6 +57,126 @@
   </div>
 </div>
 
+<div class="card">
+  <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+      <div class="card-title" style="margin:0;">{% trans "Subscriptions" %}</div>
+      <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
+        {% trans "Detected from recurring outgoing transactions. A subscription is considered active if it was charged this month or last month." %}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Active subscriptions" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.active_count }}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Estimated / month" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.monthly_total|floatformat:2 }} EUR</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Active total spent" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.active_total_spent|floatformat:2 }} EUR</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Past total spent" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.past_total_spent|floatformat:2 }} EUR</div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Active subscriptions" %}</div>
+
+    {% if active_subscriptions %}
+      <div style="overflow-x:auto;">
+        <table style="font-size:0.9rem;">
+          <thead>
+            <tr>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Monthly cost" %}</th>
+              <th>{% trans "Months" %}</th>
+              <th>{% trans "First paid" %}</th>
+              <th>{% trans "Last paid" %}</th>
+              <th>{% trans "Total spent" %}</th>
+              <th>{% trans "Action" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in active_subscriptions %}
+              <tr>
+                <td class="font-bold">{{ row.name }}</td>
+                <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                <td>{{ row.months_subscribed }}</td>
+                <td>{{ row.first_paid|date:"Y-m-d" }}</td>
+                <td>{{ row.last_paid|date:"Y-m-d" }}</td>
+                <td>{{ row.total_spent|floatformat:2 }}</td>
+                <td>
+                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
+                     class="text-teal"
+                     style="text-decoration:none; font-weight:600;">
+                    {% trans "View" %}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-medium" style="margin:0;">{% trans "No active subscriptions detected yet." %}</p>
+    {% endif %}
+  </div>
+
+  <div style="margin-top:2rem;">
+    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Past subscriptions" %}</div>
+
+    {% if past_subscriptions %}
+      <div style="overflow-x:auto;">
+        <table style="font-size:0.9rem;">
+          <thead>
+            <tr>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Monthly cost" %}</th>
+              <th>{% trans "Months" %}</th>
+              <th>{% trans "First paid" %}</th>
+              <th>{% trans "Last paid" %}</th>
+              <th>{% trans "Total spent" %}</th>
+              <th>{% trans "Action" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in past_subscriptions %}
+              <tr>
+                <td class="font-bold">{{ row.name }}</td>
+                <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                <td>{{ row.months_subscribed }}</td>
+                <td>{{ row.first_paid|date:"Y-m-d" }}</td>
+                <td>{{ row.last_paid|date:"Y-m-d" }}</td>
+                <td>{{ row.total_spent|floatformat:2 }}</td>
+                <td>
+                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
+                     class="text-teal"
+                     style="text-decoration:none; font-weight:600;">
+                    {% trans "View" %}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-medium" style="margin:0;">{% trans "No past subscriptions detected yet." %}</p>
+    {% endif %}
+  </div>
+</div>
+
+
 <div class="card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
     <div class="flex justify-between items-start">
         <div>
