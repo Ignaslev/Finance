@@ -56,7 +56,7 @@ SUBSCRIPTION_ALIAS_RULES = [
 ]
 
 def _canonical_subscription_merchant(raw_merchant: str) -> str:
-    norm = _normalize_merchant(raw_merchant or "")
+    norm = (_normalize_merchant(raw_merchant or "") or "").strip().lower()
     if not norm:
         return ""
 
