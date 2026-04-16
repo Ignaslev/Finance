@@ -25,6 +25,55 @@ SUBSCRIPTION_IGNORE_TERMS = (
     "brink", "brinks", "transfer", "paved", "mokej", "mokėj",
 )
 
+SUBSCRIPTION_CANONICAL_LABELS = {
+    "spotify": "Spotify",
+    "netflix": "Netflix",
+    "hostinger": "Hostinger",
+    "openai": "OpenAI",
+    "claude": "Claude",
+    "pildyk.lt": "pildyk.lt",
+    "seb bankas": "SEB bankas",
+    "disney plus": "Disney Plus",
+    "crunchyroll": "Crunchyroll",
+    "railway": "Railway",
+    "google play apps": "Google Play Apps",
+    "google one": "Google One",
+}
+
+SUBSCRIPTION_ALIAS_RULES = [
+    (r"\bspotify\b", "spotify"),
+    (r"\bnetflix\b", "netflix"),
+    (r"\bhostinger\b", "hostinger"),
+    (r"\bopenai\b|\bchatgpt\b", "openai"),
+    (r"\bclaude\b", "claude"),
+    (r"\bpildyk\b", "pildyk.lt"),
+    (r"\bseb\b", "seb bankas"),
+    (r"\bdisney\b", "disney plus"),
+    (r"\bcrunchyroll\b", "crunchyroll"),
+    (r"\brailway\b", "railway"),
+    (r"\bgoogle one\b", "google one"),
+    (r"\bgoogle play\b", "google play apps"),
+]
+
+def _canonical_subscription_merchant(raw_merchant: str) -> str:
+    norm = _normalize_merchant(raw_merchant or "")
+    if not norm:
+        return ""
+
+    for pattern, canonical in SUBSCRIPTION_ALIAS_RULES:
+        if re.search(pattern, norm):
+            return canonical
+
+    # Strip random statement suffixes / ids that often split one real service
+    norm = re.sub(r"\b[a-z]*\d+[a-z0-9]*\b", " ", norm)
+    norm = re.sub(r"\b[a-z0-9]{8,}\b", " ", norm)
+    norm = re.sub(r"\s+", " ", norm).strip()
+
+    return norm
+
+
+def _subscription_display_name(canonical: str, fallback: str = "") -> str:
+    return SUBSCRIPTION_CANONICAL_LABELS.get(canonical, fallback or canonical.title())
 
 def _tx_is_subscription_category(tx) -> bool:
     return (
@@ -128,7 +177,7 @@ def _build_tracked_subscriptions(user, base_qs, today):
     )
 
     for tx in txs:
-        norm = _normalize_merchant(tx.merchant or "")
+        norm = _canonical_subscription_merchant(tx.merchant or "")
         if not norm:
             continue
 
@@ -140,7 +189,10 @@ def _build_tracked_subscriptions(user, base_qs, today):
 
     for norm, items in groups.items():
         decision = decisions.get(norm)
-        display_name = (decision.display_name if decision and decision.display_name else "") or _latest_nonempty_merchant(items)
+        display_name = (
+                (decision.display_name if decision and decision.display_name else "")
+                or _subscription_display_name(norm, _latest_nonempty_merchant(items))
+        )
         row = _build_subscription_row(norm, items, display_name=display_name)
 
         if _subscription_is_active(row["last_paid"], today):
@@ -189,7 +241,7 @@ def _build_found_subscription_candidates(user, base_qs):
         if _tx_is_subscription_category(tx):
             continue
 
-        norm = _normalize_merchant(tx.merchant or "")
+        norm = _canonical_subscription_merchant(tx.merchant or "")
         if not norm:
             continue
 
@@ -203,7 +255,11 @@ def _build_found_subscription_candidates(user, base_qs):
         if not _is_strong_subscription_candidate(user, norm, items):
             continue
 
-        row = _build_subscription_row(norm, items)
+        row = _build_subscription_row(
+            norm,
+            items,
+            display_name=_subscription_display_name(norm, _latest_nonempty_merchant(items)),
+        )
         rows.append(row)
 
     rows.sort(key=lambda r: (r["last_paid"], r["months_subscribed"], r["name"].lower()), reverse=True)
