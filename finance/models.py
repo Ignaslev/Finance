@@ -473,6 +473,44 @@ class PendingDataDeletion(models.Model):
     def __str__(self):
         return f"{self.user_id} {self.scope} {self.scheduled_for or '-'}"
 
+
+class SubscriptionDecision(models.Model):
+    DECISION_TRACK = "track"
+    DECISION_IGNORE = "ignore"
+    DECISION_CHOICES = [
+        (DECISION_TRACK, "Track"),
+        (DECISION_IGNORE, "Ignore"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscription_decisions",
+    )
+    normalized_merchant = models.CharField(max_length=255)
+    display_name = models.CharField(max_length=255, blank=True, default="")
+    decision = models.CharField(max_length=16, choices=DECISION_CHOICES)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "normalized_merchant"],
+                name="uniq_subscription_decision_user_merchant",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "decision"]),
+            models.Index(fields=["user", "normalized_merchant"]),
+        ]
+        ordering = ["normalized_merchant"]
+
+    def __str__(self):
+        return f"{self.user_id} {self.normalized_merchant} {self.decision}"
+
+
 from django.conf import settings
 from django.db import models
 

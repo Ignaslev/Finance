@@ -26,6 +26,9 @@ urlpatterns = [
 # NEW review pages
     path("review/low/", f.review_low_conf, name="review_low_conf"),
     path("review/low/apply/", f.review_low_apply, name="review_low_apply"),
+    path("review/subscriptions/", f.review_subscription_candidates, name="review_subscription_candidates"),
+    path("review/subscriptions/apply/", f.review_subscription_candidates_apply,
+         name="review_subscription_candidates_apply"),
 
 
     # --- NEW: categories CRUD ---

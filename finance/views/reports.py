@@ -12,72 +12,138 @@ from collections import defaultdict
 import json
 import re
 
-from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot, UserProfile
+from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot, UserProfile, SubscriptionDecision
 from finance.services import _advisor_build_payload, _advisor_call_model
 # Move _reconcile_global to utils or keep here if private
-from finance.utils import _reconcile_global # If you moved it
+from finance.utils import _reconcile_global, _normalize_merchant, looks_like_self_transfer
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+
+SUBSCRIPTIONS_CATEGORY_NAME = "Subscriptions"
+SUBSCRIPTION_IGNORE_TERMS = (
+    "atm", "bank", "bankas", "cash", "withdraw", "withdrawal",
+    "brink", "brinks", "transfer", "paved", "mokej", "mokėj",
+)
 
 
-def _normalize_subscription_merchant(value: str) -> str:
-    raw = (value or "").lower()
-    raw = re.sub(r"\d+", " ", raw)
-    raw = re.sub(r"[^\w\s]", " ", raw, flags=re.UNICODE)
-    raw = raw.replace("_", " ")
-    raw = re.sub(r"\b(uab|ab|mb|www|com|lt|eu|card|visa|mastercard|payment|bank|pos)\b", " ", raw)
-    raw = re.sub(r"\s+", " ", raw).strip()
-
-    if not raw:
-        return (value or "").strip().lower()
-
-    return " ".join(raw.split()[:3])
+def _tx_is_subscription_category(tx) -> bool:
+    return (
+        (tx.category_fk and tx.category_fk.name == SUBSCRIPTIONS_CATEGORY_NAME)
+        or (tx.category == SUBSCRIPTIONS_CATEGORY_NAME)
+    )
 
 
-def _build_subscription_rows(transactions, today):
-    grouped = defaultdict(list)
+def _subscription_month_key(d):
+    return (d.year, d.month)
 
-    for tx in transactions:
-        merchant_key = _normalize_subscription_merchant(tx.merchant)
-        if not merchant_key:
-            continue
 
-        amount_key = (tx.amount or Decimal("0")).quantize(Decimal("0.01"))
-        grouped[(merchant_key, amount_key)].append(tx)
-
+def _subscription_is_active(last_paid, today):
     this_month_start = today.replace(day=1)
     prev_month_end = this_month_start - timedelta(days=1)
     prev_month_start = prev_month_end.replace(day=1)
+    return last_paid >= prev_month_start
+
+
+def _latest_nonempty_merchant(items):
+    for tx in reversed(items):
+        if (tx.merchant or "").strip():
+            return tx.merchant.strip()
+    return ""
+
+
+def _build_subscription_row(normalized_merchant, items, display_name=""):
+    items = sorted(items, key=lambda t: (t.date, t.id))
+    months = sorted({_subscription_month_key(t.date) for t in items})
+    latest_amount = items[-1].amount or Decimal("0")
+    total_spent = sum((t.amount or Decimal("0")) for t in items)
+
+    return {
+        "normalized_merchant": normalized_merchant,
+        "name": display_name or _latest_nonempty_merchant(items) or normalized_merchant,
+        "monthly_cost": latest_amount,
+        "months_subscribed": len(months),
+        "first_paid": items[0].date,
+        "last_paid": items[-1].date,
+        "total_spent": total_spent,
+        "tx_count": len(items),
+    }
+
+
+def _looks_like_non_subscription(user, normalized_merchant, raw_merchant):
+    nm = (normalized_merchant or "").lower()
+    raw = (raw_merchant or "").lower()
+
+    if not nm:
+        return True
+
+    if any(term in nm for term in SUBSCRIPTION_IGNORE_TERMS):
+        return True
+
+    first_name = (user.first_name or "").strip()
+    last_name = (user.last_name or "").strip()
+    if first_name and last_name and looks_like_self_transfer(raw_merchant or "", first_name, last_name):
+        return True
+
+    return False
+
+
+def _is_strong_subscription_candidate(user, normalized_merchant, items):
+    if _looks_like_non_subscription(user, normalized_merchant, _latest_nonempty_merchant(items)):
+        return False
+
+    items = sorted(items, key=lambda t: (t.date, t.id))
+    distinct_months = sorted({_subscription_month_key(t.date) for t in items})
+
+    if len(distinct_months) < 2:
+        return False
+
+    if len(items) == 2:
+        gap = (items[1].date - items[0].date).days
+        return 20 <= gap <= 40
+
+    gaps = [(curr.date - prev.date).days for prev, curr in zip(items, items[1:])]
+    monthlyish = sum(1 for g in gaps if 20 <= g <= 40)
+    ratio = (monthlyish / len(gaps)) if gaps else 0.0
+
+    return ratio >= 0.5
+
+
+def _build_tracked_subscriptions(user, base_qs, today):
+    decisions = {
+        d.normalized_merchant: d
+        for d in SubscriptionDecision.objects.filter(
+            user=user,
+            decision=SubscriptionDecision.DECISION_TRACK,
+        )
+    }
+
+    groups = defaultdict(list)
+
+    txs = list(
+        base_qs.filter(in_out=Transaction.OUT)
+        .exclude(merchant__isnull=True)
+        .exclude(merchant="")
+        .select_related("category_fk")
+        .order_by("date", "id")
+    )
+
+    for tx in txs:
+        norm = _normalize_merchant(tx.merchant or "")
+        if not norm:
+            continue
+
+        if _tx_is_subscription_category(tx) or norm in decisions:
+            groups[norm].append(tx)
 
     active_rows = []
     past_rows = []
 
-    for (_merchant_key, monthly_cost), items in grouped.items():
-        items = sorted(items, key=lambda t: t.date)
-        distinct_months = {(t.date.year, t.date.month) for t in items}
+    for norm, items in groups.items():
+        decision = decisions.get(norm)
+        display_name = (decision.display_name if decision and decision.display_name else "") or _latest_nonempty_merchant(items)
+        row = _build_subscription_row(norm, items, display_name=display_name)
 
-        if len(distinct_months) < 2:
-            continue
-
-        gaps = [(curr.date - prev.date).days for prev, curr in zip(items, items[1:])]
-        if gaps:
-            monthly_gap_ratio = sum(1 for g in gaps if 20 <= g <= 40) / len(gaps)
-            if monthly_gap_ratio < 0.5:
-                continue
-
-        first_paid = items[0].date
-        last_paid = items[-1].date
-        total_spent = sum((t.amount or Decimal("0")) for t in items)
-        display_name = (items[-1].merchant or "").strip() or _merchant_key.title()
-
-        row = {
-            "name": display_name,
-            "monthly_cost": monthly_cost,
-            "months_subscribed": len(distinct_months),
-            "total_spent": total_spent,
-            "first_paid": first_paid,
-            "last_paid": last_paid,
-        }
-
-        if last_paid >= prev_month_start:
+        if _subscription_is_active(row["last_paid"], today):
             active_rows.append(row)
         else:
             past_rows.append(row)
@@ -93,6 +159,55 @@ def _build_subscription_rows(transactions, today):
     }
 
     return active_rows, past_rows, summary
+
+
+def _build_found_subscription_candidates(user, base_qs):
+    track_set = set(
+        SubscriptionDecision.objects.filter(
+            user=user,
+            decision=SubscriptionDecision.DECISION_TRACK,
+        ).values_list("normalized_merchant", flat=True)
+    )
+    ignore_set = set(
+        SubscriptionDecision.objects.filter(
+            user=user,
+            decision=SubscriptionDecision.DECISION_IGNORE,
+        ).values_list("normalized_merchant", flat=True)
+    )
+
+    groups = defaultdict(list)
+
+    txs = list(
+        base_qs.filter(in_out=Transaction.OUT)
+        .exclude(merchant__isnull=True)
+        .exclude(merchant="")
+        .select_related("category_fk")
+        .order_by("date", "id")
+    )
+
+    for tx in txs:
+        if _tx_is_subscription_category(tx):
+            continue
+
+        norm = _normalize_merchant(tx.merchant or "")
+        if not norm:
+            continue
+
+        if norm in track_set or norm in ignore_set:
+            continue
+
+        groups[norm].append(tx)
+
+    rows = []
+    for norm, items in groups.items():
+        if not _is_strong_subscription_candidate(user, norm, items):
+            continue
+
+        row = _build_subscription_row(norm, items)
+        rows.append(row)
+
+    rows.sort(key=lambda r: (r["last_paid"], r["months_subscribed"], r["name"].lower()), reverse=True)
+    return rows
 
 
 @login_required
@@ -249,14 +364,8 @@ def statistics(request):
     categorized = base.filter(category_fk__isnull=False).count()
     coverage_pct = (categorized / total_categorizable * 100.0) if total_categorizable else 0.0
 
-    subscription_qs = list(
-        base.filter(in_out=Transaction.OUT)
-        .exclude(merchant__isnull=True)
-        .exclude(merchant="")
-        .exclude(amount__isnull=True)
-        .order_by("merchant", "date")
-    )
-    active_subscriptions, past_subscriptions, subscriptions_summary = _build_subscription_rows(subscription_qs, today)
+    active_subscriptions, past_subscriptions, subscriptions_summary = _build_tracked_subscriptions(user, base, today)
+    found_subscription_candidates = _build_found_subscription_candidates(user, base)
 
     # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
@@ -392,9 +501,11 @@ def statistics(request):
         "most_freq_merchant": most_freq["merchant"] if most_freq else None,
         "most_freq_merchant_cnt": int(most_freq["cnt"]) if most_freq else None,
         "coverage_pct": round(coverage_pct, 1),
+
         "active_subscriptions": active_subscriptions,
         "past_subscriptions": past_subscriptions,
         "subscriptions_summary": subscriptions_summary,
+        "found_subscriptions_count": len(found_subscription_candidates),
 
         "available_month_keys": months_keys,
         "start_key": start_key,
@@ -419,6 +530,79 @@ def statistics(request):
         "include_uncat": include_uncat,
     }
     return render(request, "statistics.html", ctx)
+
+
+@login_required
+def review_subscription_candidates(request):
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    rows = _build_found_subscription_candidates(request.user, base)
+
+    try:
+        per = max(5, min(200, int(request.GET.get("per") or 50)))
+    except (TypeError, ValueError):
+        per = 50
+
+    paginator = Paginator(rows, per)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "review_subscriptions.html", {
+        "page_obj": page_obj,
+        "total": paginator.count,
+        "per_value": per,
+    })
+
+
+@login_required
+@require_POST
+def review_subscription_candidates_apply(request):
+    changes_raw = request.POST.get("decisions_json")
+    if not changes_raw:
+        messages.info(request, "No changes to apply.")
+        return redirect("review_subscription_candidates")
+
+    try:
+        mapping = json.loads(changes_raw)
+        if not isinstance(mapping, dict):
+            mapping = {}
+    except Exception:
+        messages.error(request, "Invalid data format.")
+        return redirect("review_subscription_candidates")
+
+    if not mapping:
+        messages.info(request, "No changes selected.")
+        return redirect("review_subscription_candidates")
+
+    applied = 0
+
+    for norm, payload in mapping.items():
+        if not isinstance(payload, dict):
+            continue
+
+        decision = (payload.get("decision") or "").strip()
+        display_name = (payload.get("display_name") or "").strip()[:255]
+
+        if decision not in {
+            SubscriptionDecision.DECISION_TRACK,
+            SubscriptionDecision.DECISION_IGNORE,
+        }:
+            continue
+
+        SubscriptionDecision.objects.update_or_create(
+            user=request.user,
+            normalized_merchant=norm,
+            defaults={
+                "decision": decision,
+                "display_name": display_name,
+            },
+        )
+        applied += 1
+
+    if applied:
+        messages.success(request, f"Applied {applied} subscription decision(s).")
+    else:
+        messages.info(request, "Nothing changed.")
+
+    return redirect("review_subscription_candidates")
 
 
 @login_required

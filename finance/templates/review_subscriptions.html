@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Found subscriptions" %} · Money Compass{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">{% trans "Found subscriptions" %}</h2>
+
+    <p class="meta" style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-light);">
+        {% trans "These are likely subscriptions detected from recurring outgoing transactions. Review and decide which ones to track." %}
+    </p>
+
+    {% if page_obj and page_obj.object_list %}
+        <p class="meta" style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-light);">
+            {% blocktrans with total=total num=page_obj.number pages=page_obj.paginator.num_pages %}
+            Total: {{ total }} · Page {{ num }} of {{ pages }}
+            {% endblocktrans %}
+        </p>
+
+        <form method="post" action="{% url 'review_subscription_candidates_apply' %}" id="subscriptionReviewForm" style="margin-top:1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="decisions_json" id="decisions_json">
+
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{% trans "Name" %}</th>
+                            <th>{% trans "Monthly cost" %}</th>
+                            <th>{% trans "Months" %}</th>
+                            <th>{% trans "First paid" %}</th>
+                            <th>{% trans "Last paid" %}</th>
+                            <th>{% trans "Total spent" %}</th>
+                            <th>{% trans "View" %}</th>
+                            <th>{% trans "Decision" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in page_obj.object_list %}
+                        <tr data-row="{{ row.normalized_merchant }}">
+                            <td class="font-bold">{{ row.name }}</td>
+                            <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                            <td>{{ row.months_subscribed }}</td>
+                            <td>{{ row.first_paid|date:"Y-m-d" }}</td>
+                            <td>{{ row.last_paid|date:"Y-m-d" }}</td>
+                            <td>{{ row.total_spent|floatformat:2 }}</td>
+                            <td>
+                                <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
+                                   class="text-teal"
+                                   style="text-decoration:none; font-weight:600;">
+                                    {% trans "View" %}
+                                </a>
+                            </td>
+                            <td>
+                                <select class="decision-select"
+                                        data-merchant="{{ row.normalized_merchant }}"
+                                        data-display="{{ row.name|escape }}"
+                                        style="padding:0.35rem 0.6rem; border-radius:8px; border:1px solid #e2e8f0;">
+                                    <option value="">{% trans "Choose" %}</option>
+                                    <option value="track">{% trans "Track" %}</option>
+                                    <option value="ignore">{% trans "Not subscription" %}</option>
+                                </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="pager" style="margin-top:1rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1">« {% trans "first" %}</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">‹ {% trans "prev" %}</a>
+                {% endif %}
+                <strong style="margin:0 0.5rem;">
+                    {% trans "Page" %} {{ page_obj.number }}
+                </strong>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">{% trans "next" %} ›</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}">{% trans "last" %} »</a>
+                {% endif %}
+            </p>
+
+            <div style="
+                position:sticky;
+                bottom:0;
+                background:#ffffff;
+                border-top:1px solid #e2e8f0;
+                padding:.75rem 0;
+                margin-top:0.75rem;
+                display:flex;
+                gap:1rem;
+                align-items:center;
+                z-index:100;
+                box-shadow:0 -2px 5px rgba(0,0,0,0.04);
+            ">
+                <strong>
+                    <span id="pendingCount">0</span> {% trans "ready" %}
+                </strong>
+                <button id="applyBtn"
+                        style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+                    {% trans "Apply All Saved" %}
+                </button>
+                <button type="button" id="clearBtn"
+                        style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+                    {% trans "Clear" %}
+                </button>
+            </div>
+        </form>
+
+        <script>
+            const userKey = 'mc_subscription_review_u{{ request.user.id }}';
+
+            function loadChanges() {
+                try { return JSON.parse(localStorage.getItem(userKey) || '{}'); }
+                catch (e) { return {}; }
+            }
+
+            function saveChanges(obj) {
+                localStorage.setItem(userKey, JSON.stringify(obj));
+            }
+
+            function refreshUI() {
+                const changes = loadChanges();
+                const count = Object.keys(changes).length;
+                document.getElementById('pendingCount').textContent = count;
+
+                document.querySelectorAll('.decision-select').forEach(sel => {
+                    const key = sel.dataset.merchant;
+                    const row = sel.closest('tr');
+                    const payload = changes[key];
+
+                    sel.value = payload ? payload.decision : "";
+                    row.style.background = payload ? '#f0f8ff' : '';
+                });
+            }
+
+            document.querySelectorAll('.decision-select').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const changes = loadChanges();
+                    const key = sel.dataset.merchant;
+
+                    if (sel.value) {
+                        changes[key] = {
+                            decision: sel.value,
+                            display_name: sel.dataset.display || "",
+                        };
+                    } else {
+                        delete changes[key];
+                    }
+
+                    saveChanges(changes);
+                    refreshUI();
+                });
+            });
+
+            document.getElementById('subscriptionReviewForm').addEventListener('submit', (e) => {
+                const changes = loadChanges();
+                if (!Object.keys(changes).length) {
+                    e.preventDefault();
+                    alert('{% trans "No changes to apply." %}');
+                    return;
+                }
+                document.getElementById('decisions_json').value = JSON.stringify(changes);
+                localStorage.removeItem(userKey);
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                if (confirm('{% trans "Clear saved decisions?" %}')) {
+                    localStorage.removeItem(userKey);
+                    refreshUI();
+                }
+            });
+
+            refreshUI();
+        </script>
+    {% else %}
+        <p style="opacity:.7; margin:0;">{% trans "No found subscriptions right now." %}</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -57,12 +57,26 @@
   </div>
 </div>
 
+
+<div style="margin:1.25rem 0 0.5rem;">
+  <a href="{% url 'review_subscription_candidates' %}"
+     class="text-teal"
+     style="text-decoration:none; font-weight:600;">
+    {% trans "Found subscriptions" %}
+    {% if found_subscriptions_count %}
+      <span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">
+        {{ found_subscriptions_count }}
+      </span>
+    {% endif %}
+  </a>
+</div>
+
 <div class="card">
   <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
     <div>
       <div class="card-title" style="margin:0;">{% trans "Subscriptions" %}</div>
       <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
-        {% trans "Detected from recurring outgoing transactions. A subscription is considered active if it was charged this month or last month." %}
+       {% trans "Tracked from your Subscriptions category and approved findings. A subscription is considered active if it was charged this month or last month." %}
       </div>
     </div>
   </div>
