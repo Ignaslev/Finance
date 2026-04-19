@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from datetime import timedelta
+from django.utils.translation import gettext_lazy as _
 
 # ----- Existing choices -----
 # ----- Category choices come from settings -----
@@ -396,6 +397,22 @@ class UserProfile(models.Model):
 
     # If True: show investment values after subtracting 15% (flat estimate)
     exclude_investment_tax = models.BooleanField(default=False)
+
+    LANG_LT = "lt"
+    LANG_EN = "en"
+
+
+
+    LANGUAGE_CHOICES = [
+        (LANG_LT, _("Lithuanian")),
+        (LANG_EN, _("English")),
+    ]
+
+    preferred_language = models.CharField(
+        max_length=2,
+        choices=LANGUAGE_CHOICES,
+        default=LANG_LT,
+    )
 
     default_import_source = models.ForeignKey(
         "finance.MoneySource",

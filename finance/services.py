@@ -161,11 +161,19 @@ def _call_openai_rows(user, rows, examples, cats):
         }
     return out
 
+def _get_user_report_language(user) -> str:
+    try:
+        lang = (user.profile.preferred_language or "lt").lower()
+    except Exception:
+        lang = "lt"
+
+    return "en" if lang == "en" else "lt"
+
 def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
     tx = Transaction.objects.filter(user=user, is_deleted=False, date__gte=start, date__lte=end)
     inc = tx.filter(in_out=Transaction.IN).aggregate(s=Sum("amount"))["s"] or Decimal("0")
     out = tx.filter(in_out=Transaction.OUT).aggregate(s=Sum("amount"))["s"] or Decimal("0")
-
+    report_lang = _get_user_report_language(user)
     top_cat_qs = (tx.filter(in_out=Transaction.OUT, category_fk__isnull=False)
                     .values("category_fk__name")
                     .annotate(total=Sum("amount"))
@@ -234,7 +242,7 @@ def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
         mom_delta = float((inc - out) - (prev_inc - prev_out))
 
     payload = {
-        "user_context": {"currency": "EUR", "locale": "LT"},
+        "user_context": {"currency": "EUR", "locale": report_lang.upper()},
         "period": {"type": ptype, "start": start.isoformat(), "end": end.isoformat()},
         "income_vs_spending": {
             "income_total": float(inc),
@@ -384,7 +392,15 @@ def _advisor_call_model(payload: dict, model_name=None):
         "required":["summary","key_metrics","insights","budgets","goals","subscriptions","forecast","action_items","appendix"]
     }
 
+    locale = str(payload.get("user_context", {}).get("locale") or "LT").lower()
+    report_language = "Lithuanian" if locale == "lt" else "English"
+
     system = (
+        f"You are a personal finance and wealth advisor. Always write the report in {report_language}. "
+        "Do not mix languages unless absolutely necessary for brand names or transaction labels. "
+        "Analyze both cash flow and net worth / portfolio, comment on spending discipline, "
+        "analyze portfolio performance and whether it cushioned spending, "
+        "be concrete, quantify savings/gains, and ground claims in data. Use EUR.\n"
         "You are a personal finance & wealth advisor. "
         "Your goal is to analyze the user's holistic financial health: Cash Flow (Income/Spend) AND Net Worth (Portfolio). "
         "1. Comment on their spending discipline. "

@@ -64,6 +64,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'finance.middleware.UserPreferredLanguageMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -127,6 +128,7 @@ USE_THOUSAND_SEPARATOR = False
 DECIMAL_SEPARATOR = '.'
 
 from django.utils.translation import gettext_lazy as _
+
 LANGUAGES = [
     ('en', _('English')),
     ('lt', _('Lithuanian')),

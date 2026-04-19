@@ -387,8 +387,6 @@
   </form>
 </div>
 
-{% load i18n %}
-
 <div class="card">
   <div class="card-title">{% trans "Account deletion" %}</div>
 
@@ -417,6 +415,33 @@
       {% trans "Delete account" %}
     </a>
   {% endif %}
+</div>
+{% load i18n %}
+
+<div class="card">
+  <div class="card-title">{% trans "Language" %}</div>
+
+  <p class="text-medium">
+    {% trans "Choose your default app language. Reports will be generated in this language too." %}
+  </p>
+
+  <form method="post" style="margin-top: 12px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="pref_language">
+
+    <select name="preferred_language"
+            style="padding:0.55rem 0.75rem; border:1px solid #e2e8f0; border-radius:8px; min-width:220px;">
+      {% for code, label in language_choices %}
+        <option value="{{ code }}" {% if preferred_language == code %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary" style="margin-left: 8px;">
+      {% trans "Save" %}
+    </button>
+  </form>
 </div>
 
 {% endblock %}

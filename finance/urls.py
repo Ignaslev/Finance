@@ -45,6 +45,7 @@ urlpatterns = [
     path("deleted/", f.deleted_list, name="deleted_list"),
 
     path("profile/", f.profile, name="profile"),
+    path("language/set/", settings_views.set_preferred_language, name="set_preferred_language"),
     path("feedback/", settings_views.feedback, name="feedback"),
 
     # Smart launchers (no AI logic here, just scoping & redirects)

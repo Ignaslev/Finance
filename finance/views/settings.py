@@ -25,9 +25,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail, mail_admins
 from django.conf import settings
 from finance.models import UserProfile
-
+from django.utils import translation
 # Paste: register, category_list, category_edit, category_delete, profile, onboarding_mark_done
-
+from django.utils.translation import gettext as _
 
 def register(request):
     if request.method == "POST":
@@ -146,6 +146,24 @@ def profile(request):
             prof.exclude_investment_tax = bool(request.POST.get("exclude_investment_tax"))
             prof.save(update_fields=["exclude_investment_tax"])
             messages.success(request, _("Preferences saved."))
+            return redirect("profile")
+
+        if action == "pref_language":
+            prof, _created = UserProfile.objects.get_or_create(user=request.user)
+
+            lang = (request.POST.get("preferred_language") or "lt").strip().lower()
+            valid_langs = {code for code, _label in UserProfile.LANGUAGE_CHOICES}
+            if lang not in valid_langs:
+                messages.error(request, _("Invalid language selected."))
+                return redirect("profile")
+
+            prof.preferred_language = lang
+            prof.save(update_fields=["preferred_language"])
+
+            translation.activate(lang)
+            request.LANGUAGE_CODE = lang
+
+            messages.success(request, _("Language preferences saved."))
             return redirect("profile")
 
         # Accounts
@@ -414,7 +432,8 @@ def profile(request):
 
     ctx = {
         "exclude_investment_tax": prof.exclude_investment_tax,
-
+        "preferred_language": prof.preferred_language,
+        "language_choices": UserProfile.LANGUAGE_CHOICES,
         "accounts": accounts,
         "total_accounts_balance": float(total_effective),
         "type_choices": MoneySource.TYPE_CHOICES,
@@ -427,6 +446,27 @@ def profile(request):
         "categories": cats,
     }
     return render(request, "profile.html", ctx)
+
+
+@login_required
+@require_POST
+def set_preferred_language(request):
+    lang = (request.POST.get("language") or "lt").strip().lower()
+    valid_langs = {code for code, _label in UserProfile.LANGUAGE_CHOICES}
+
+    if lang not in valid_langs:
+        messages.error(request, _("Invalid language selected."))
+        return redirect(request.POST.get("next") or request.META.get("HTTP_REFERER") or "overview")
+
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
+    prof.preferred_language = lang
+    prof.save(update_fields=["preferred_language"])
+
+    translation.activate(lang)
+    request.LANGUAGE_CODE = lang
+
+    return redirect(request.POST.get("next") or request.META.get("HTTP_REFERER") or "overview")
+
 
 @login_required
 @require_POST
