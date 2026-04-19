@@ -295,7 +295,7 @@
 {% load i18n %}
 
 {% if refund_candidates %}
-  <div class="card" style="margin-top:16px;">
+  <div id="found-refunds" class="card" style="margin-top:16px;">
     <div class="card-title">{% trans "Found refunds" %}</div>
 
     <p class="text-medium" style="margin-bottom:1rem;">
@@ -337,7 +337,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="tx_out_id" value="{{ pair.tx_out.id }}">
                     <input type="hidden" name="tx_in_id" value="{{ pair.tx_in.id }}">
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="next" value="{{ request.path }}#found-refunds">
                     <button type="submit"
                             class="btn"
                             style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
@@ -350,7 +350,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="tx_out_id" value="{{ pair.tx_out.id }}">
                     <input type="hidden" name="tx_in_id" value="{{ pair.tx_in.id }}">
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="next" value="{{ request.path }}#found-refunds">
                     <button type="submit"
                             class="btn"
                             style="background:#edf2f7; color:var(--text-medium); border:1px solid #e2e8f0;">

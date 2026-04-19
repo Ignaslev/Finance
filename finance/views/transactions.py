@@ -321,8 +321,8 @@ def _get_tx_delete_request(user):
         scope=PendingDataDeletion.SCOPE_TRANSACTIONS,
     ).first()
 
-REFUND_AMOUNT_TOLERANCE = Decimal("0.10")
-REFUND_MAX_DAYS = 45
+REFUND_AMOUNT_TOLERANCE = Decimal("0.00")
+REFUND_MAX_DAYS = 10
 
 
 def _build_refund_candidates(user, filtered_qs):
