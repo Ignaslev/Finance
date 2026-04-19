@@ -118,9 +118,14 @@
     </div>
   </div>
 
+
+
+
+
+
+
   <div>
     <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Income source breakdown" %}</div>
-
     {% if income_sources %}
       <div style="overflow-x:auto;">
         <table style="font-size:0.9rem; width:100%; min-width:1100px;">
@@ -149,7 +154,7 @@
                 <td>{{ row.last_received|date:"Y-m-d" }}</td>
                 <td>{{ row.share_of_income|floatformat:1 }}%</td>
                 <td>
-                  <div style="display:inline-flex; gap:0.75rem; align-items:center; flex-wrap:nowrap;">
+                  <div style="display:inline-flex; gap:12px 24px; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
                        class="text-teal"
                        style="text-decoration:none; font-weight:600;">
@@ -179,6 +184,8 @@
     {% endif %}
   </div>
 </div>
+
+
 
 
 <div style="margin:1.25rem 0 0.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
@@ -264,7 +271,7 @@
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.total_spent|floatformat:2 }}</td>
                 <td>
-                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                  <div style="display:flex; gap:12px 24px; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
                        class="text-teal"
                        style="text-decoration:none; font-weight:600;">
@@ -321,7 +328,7 @@
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.total_spent|floatformat:2 }}</td>
                 <td>
-                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                  <div style="display:flex; gap:12px 24px; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
                        class="text-teal"
                        style="text-decoration:none; font-weight:600;">
