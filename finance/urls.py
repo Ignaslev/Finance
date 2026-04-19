@@ -29,7 +29,15 @@ urlpatterns = [
     path("review/subscriptions/", f.review_subscription_candidates, name="review_subscription_candidates"),
     path("review/subscriptions/apply/", f.review_subscription_candidates_apply,
          name="review_subscription_candidates_apply"),
+    path("review/subscriptions/untracked/", f.untracked_subscriptions, name="untracked_subscriptions"),
+    path("review/subscriptions/untrack/", f.subscription_untrack, name="subscription_untrack"),
+    path("review/subscriptions/retrack/", f.subscription_retrack, name="subscription_retrack"),
 
+    path("review/income-sources/", f.review_income_sources, name="review_income_sources"),
+    path("review/income-sources/apply/", f.review_income_sources_apply, name="review_income_sources_apply"),
+    path("review/income-sources/untracked/", f.untracked_income_sources, name="untracked_income_sources"),
+    path("review/income-sources/untrack/", f.income_source_untrack, name="income_source_untrack"),
+    path("review/income-sources/retrack/", f.income_source_retrack, name="income_source_retrack"),
 
     # --- NEW: categories CRUD ---
     path("categories/", f.category_list, name="category_list"),

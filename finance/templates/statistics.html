@@ -57,6 +57,30 @@
   </div>
 </div>
 
+<div style="margin:1.25rem 0 0.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
+  <a href="{% url 'review_income_sources' %}"
+     class="text-teal"
+     style="text-decoration:none; font-weight:600;">
+    {% trans "Found income sources" %}
+    {% if found_income_sources_count %}
+      <span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">
+        {{ found_income_sources_count }}
+      </span>
+    {% endif %}
+  </a>
+
+  <a href="{% url 'untracked_income_sources' %}"
+     class="text-teal"
+     style="text-decoration:none; font-weight:600;">
+    {% trans "Untracked income sources" %}
+    {% if untracked_income_sources_count %}
+      <span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">
+        {{ untracked_income_sources_count }}
+      </span>
+    {% endif %}
+  </a>
+</div>
+
 <div class="card">
   <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
     <div>
@@ -143,7 +167,7 @@
 </div>
 
 
-<div style="margin:1.25rem 0 0.5rem;">
+<div style="margin:1.25rem 0 0.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
   <a href="{% url 'review_subscription_candidates' %}"
      class="text-teal"
      style="text-decoration:none; font-weight:600;">
@@ -151,6 +175,17 @@
     {% if found_subscriptions_count %}
       <span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">
         {{ found_subscriptions_count }}
+      </span>
+    {% endif %}
+  </a>
+
+  <a href="{% url 'untracked_subscriptions' %}"
+     class="text-teal"
+     style="text-decoration:none; font-weight:600;">
+    {% trans "Untracked subscriptions" %}
+    {% if untracked_subscriptions_count %}
+      <span style="background:#edf2f7; color:#2d3748; padding:0 6px; border-radius:8px; font-size:0.8em;">
+        {{ untracked_subscriptions_count }}
       </span>
     {% endif %}
   </a>
@@ -215,11 +250,25 @@
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.total_spent|floatformat:2 }}</td>
                 <td>
-                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
-                     class="text-teal"
-                     style="text-decoration:none; font-weight:600;">
-                    {% trans "View" %}
-                  </a>
+                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                    <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
+                       class="text-teal"
+                       style="text-decoration:none; font-weight:600;">
+                      {% trans "View" %}
+                    </a>
+
+                    <form method="post" action="{% url 'subscription_untrack' %}" style="margin:0;">
+                      {% csrf_token %}
+                      <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                      <input type="hidden" name="display_name" value="{{ row.name }}">
+                      <button type="submit"
+                              class="btn"
+                              style="padding:0.25rem 0.6rem; font-size:0.8rem; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+                              onclick="return confirm('{% trans "Remove this subscription from tracking?" %}');">
+                        {% trans "Remove" %}
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -258,11 +307,25 @@
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.total_spent|floatformat:2 }}</td>
                 <td>
-                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
-                     class="text-teal"
-                     style="text-decoration:none; font-weight:600;">
-                    {% trans "View" %}
-                  </a>
+                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                    <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
+                       class="text-teal"
+                       style="text-decoration:none; font-weight:600;">
+                      {% trans "View" %}
+                    </a>
+
+                    <form method="post" action="{% url 'subscription_untrack' %}" style="margin:0;">
+                      {% csrf_token %}
+                      <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                      <input type="hidden" name="display_name" value="{{ row.name }}">
+                      <button type="submit"
+                              class="btn"
+                              style="padding:0.4rem 0.6rem; font-size:0.8rem; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+                              onclick="return confirm('{% trans "Remove this subscription from tracking?" %}');">
+                        {% trans "Remove" %}
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -274,6 +337,9 @@
     {% endif %}
   </div>
 </div>
+
+
+
 
 
 <div class="card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Untracked subscriptions" %} · Money Compass{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">{% trans "Untracked subscriptions" %}</h2>
+
+    <p class="meta" style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-light);">
+        {% trans "These subscriptions were removed from tracking. You can track them again anytime." %}
+    </p>
+
+    {% if page_obj and page_obj.object_list %}
+        <div style="overflow-x:auto; margin-top:1rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Monthly cost" %}</th>
+                        <th>{% trans "Months" %}</th>
+                        <th>{% trans "First paid" %}</th>
+                        <th>{% trans "Last paid" %}</th>
+                        <th>{% trans "Total spent" %}</th>
+                        <th>{% trans "Action" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in page_obj.object_list %}
+                    <tr>
+                        <td class="font-bold">{{ row.name }}</td>
+                        <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                        <td>{{ row.months_subscribed }}</td>
+                        <td>{{ row.first_paid|date:"Y-m-d" }}</td>
+                        <td>{{ row.last_paid|date:"Y-m-d" }}</td>
+                        <td>{{ row.total_spent|floatformat:2 }}</td>
+                        <td>
+                            <form method="post" action="{% url 'subscription_retrack' %}" style="margin:0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                                <input type="hidden" name="display_name" value="{{ row.name }}">
+                                <button type="submit" class="btn btn-primary" style="padding:0.3rem 0.8rem;">
+                                    {% trans "Track again" %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="pager" style="margin-top:1rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">« {% trans "first" %}</a>
+                <a href="?page={{ page_obj.previous_page_number }}">‹ {% trans "prev" %}</a>
+            {% endif %}
+            <strong style="margin:0 0.5rem;">
+                {% trans "Page" %} {{ page_obj.number }}
+            </strong>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">{% trans "next" %} ›</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">{% trans "last" %} »</a>
+            {% endif %}
+        </p>
+    {% else %}
+        <p style="opacity:.7; margin:0;">{% trans "No untracked subscriptions." %}</p>
+    {% endif %}
+</div>
+{% endblock %}</title>
+</head>
+<body>
+
+</body>
+</html>

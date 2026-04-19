@@ -12,7 +12,10 @@ from collections import defaultdict
 import json
 import re
 
-from finance.models import Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot, UserProfile, SubscriptionDecision
+from finance.models import (
+    Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot,
+    UserProfile, SubscriptionDecision, IncomeSourceDecision
+)
 from finance.services import _advisor_build_payload, _advisor_call_model
 # Move _reconcile_global to utils or keep here if private
 from finance.utils import _reconcile_global, _normalize_merchant, looks_like_self_transfer
@@ -161,10 +164,7 @@ def _is_strong_subscription_candidate(user, normalized_merchant, items):
 def _build_tracked_subscriptions(user, base_qs, today):
     decisions = {
         d.normalized_merchant: d
-        for d in SubscriptionDecision.objects.filter(
-            user=user,
-            decision=SubscriptionDecision.DECISION_TRACK,
-        )
+        for d in SubscriptionDecision.objects.filter(user=user)
     }
 
     groups = defaultdict(list)
@@ -187,14 +187,28 @@ def _build_tracked_subscriptions(user, base_qs, today):
 
     active_rows = []
     past_rows = []
+    untracked_rows = []
 
     for norm, items in groups.items():
         decision = decisions.get(norm)
         display_name = (
-                (decision.display_name if decision and decision.display_name else "")
-                or _subscription_display_name(norm, _latest_nonempty_merchant(items))
+            (decision.display_name if decision and decision.display_name else "")
+            or _subscription_display_name(norm, _latest_nonempty_merchant(items))
         )
         row = _build_subscription_row(norm, items, display_name=display_name)
+
+        if decision:
+            if decision.decision == SubscriptionDecision.DECISION_IGNORE:
+                continue
+            if decision.decision == SubscriptionDecision.DECISION_UNTRACK:
+                untracked_rows.append(row)
+                continue
+            if decision.decision == SubscriptionDecision.DECISION_TRACK:
+                if _subscription_is_active(row["last_paid"], today):
+                    active_rows.append(row)
+                else:
+                    past_rows.append(row)
+                continue
 
         if _subscription_is_active(row["last_paid"], today):
             active_rows.append(row)
@@ -203,6 +217,7 @@ def _build_tracked_subscriptions(user, base_qs, today):
 
     active_rows.sort(key=lambda r: (-r["monthly_cost"], r["name"].lower()))
     past_rows.sort(key=lambda r: (r["last_paid"], r["name"].lower()), reverse=True)
+    untracked_rows.sort(key=lambda r: (r["last_paid"], r["name"].lower()), reverse=True)
 
     summary = {
         "active_count": len(active_rows),
@@ -211,21 +226,12 @@ def _build_tracked_subscriptions(user, base_qs, today):
         "past_total_spent": sum((r["total_spent"] for r in past_rows), Decimal("0")),
     }
 
-    return active_rows, past_rows, summary
-
+    return active_rows, past_rows, untracked_rows, summary
 
 def _build_found_subscription_candidates(user, base_qs):
-    track_set = set(
-        SubscriptionDecision.objects.filter(
-            user=user,
-            decision=SubscriptionDecision.DECISION_TRACK,
-        ).values_list("normalized_merchant", flat=True)
-    )
-    ignore_set = set(
-        SubscriptionDecision.objects.filter(
-            user=user,
-            decision=SubscriptionDecision.DECISION_IGNORE,
-        ).values_list("normalized_merchant", flat=True)
+    blocked_set = set(
+        SubscriptionDecision.objects.filter(user=user)
+        .values_list("normalized_merchant", flat=True)
     )
 
     groups = defaultdict(list)
@@ -246,7 +252,7 @@ def _build_found_subscription_candidates(user, base_qs):
         if not norm:
             continue
 
-        if norm in track_set or norm in ignore_set:
+        if norm in blocked_set:
             continue
 
         groups[norm].append(tx)
@@ -266,6 +272,14 @@ def _build_found_subscription_candidates(user, base_qs):
     rows.sort(key=lambda r: (r["last_paid"], r["months_subscribed"], r["name"].lower()), reverse=True)
     return rows
 
+def _canonical_income_source(raw_merchant: str) -> str:
+    norm = (_normalize_merchant(raw_merchant or "") or "").strip().lower()
+    if not norm:
+        return ""
+    norm = re.sub(r"\s+", " ", norm).strip()
+    return norm
+
+
 def _tx_is_income_category(tx) -> bool:
     return (
         (tx.category_fk and tx.category_fk.name == INCOME_CATEGORY_NAME)
@@ -273,7 +287,30 @@ def _tx_is_income_category(tx) -> bool:
     )
 
 
-def _build_income_source_rows(base_qs):
+def _build_income_source_row(normalized_merchant, items, display_name=""):
+    items = sorted(items, key=lambda t: (t.date, t.id))
+    months = sorted({_subscription_month_key(t.date) for t in items})
+    total_earned = sum((t.amount or Decimal("0")) for t in items)
+    count = len(items)
+
+    return {
+        "normalized_merchant": normalized_merchant,
+        "name": display_name or _latest_nonempty_merchant(items) or "Unknown income",
+        "count": count,
+        "total_earned": total_earned,
+        "avg_payment": (total_earned / count) if count else Decimal("0"),
+        "first_received": items[0].date,
+        "last_received": items[-1].date,
+        "months_active": len(months),
+    }
+
+
+def _build_income_source_buckets(user, base_qs):
+    decisions = {
+        d.normalized_merchant: d
+        for d in IncomeSourceDecision.objects.filter(user=user)
+    }
+
     groups = defaultdict(list)
 
     txs = list(
@@ -286,54 +323,61 @@ def _build_income_source_rows(base_qs):
         if not _tx_is_income_category(tx):
             continue
 
-        raw_name = (tx.merchant or "").strip()
-        norm = (_normalize_merchant(raw_name) or "").strip()
+        norm = _canonical_income_source(tx.merchant or "")
         if not norm:
             norm = "__unknown_income__"
 
         groups[norm].append(tx)
 
-    rows = []
-    total_income = Decimal("0")
-    total_transfers = 0
+    tracked_rows = []
+    found_rows = []
+    untracked_rows = []
 
     for norm, items in groups.items():
-        items = sorted(items, key=lambda t: (t.date, t.id))
-        total = sum((t.amount or Decimal("0")) for t in items)
-        count = len(items)
-        months_active = len({_subscription_month_key(t.date) for t in items})
-        name = _latest_nonempty_merchant(items) or "Unknown income"
+        decision = decisions.get(norm)
+        display_name = (
+            (decision.display_name if decision and decision.display_name else "")
+            or _latest_nonempty_merchant(items)
+            or "Unknown income"
+        )
+        row = _build_income_source_row(norm, items, display_name=display_name)
 
-        rows.append({
-            "normalized_merchant": norm,
-            "name": name,
-            "count": count,
-            "total_earned": total,
-            "avg_payment": (total / count) if count else Decimal("0"),
-            "first_received": items[0].date,
-            "last_received": items[-1].date,
-            "months_active": months_active,
-        })
+        if decision:
+            if decision.decision == IncomeSourceDecision.DECISION_IGNORE:
+                continue
+            if decision.decision == IncomeSourceDecision.DECISION_UNTRACK:
+                untracked_rows.append(row)
+                continue
+            if decision.decision == IncomeSourceDecision.DECISION_TRACK:
+                tracked_rows.append(row)
+                continue
 
-        total_income += total
-        total_transfers += count
+        if row["months_active"] >= 2:
+            tracked_rows.append(row)
+        else:
+            found_rows.append(row)
 
-    rows.sort(key=lambda r: (-r["total_earned"], r["name"].lower()))
+    tracked_rows.sort(key=lambda r: (-r["total_earned"], r["name"].lower()))
+    found_rows.sort(key=lambda r: (r["last_received"], r["name"].lower()), reverse=True)
+    untracked_rows.sort(key=lambda r: (r["last_received"], r["name"].lower()), reverse=True)
 
-    for row in rows:
-        row["share_of_income"] = float((row["total_earned"] / total_income) * 100) if total_income else 0.0
+    tracked_total = sum((r["total_earned"] for r in tracked_rows), Decimal("0"))
+    total_transfers = sum((r["count"] for r in tracked_rows), 0)
 
-    top_source = rows[0] if rows else None
+    for row in tracked_rows:
+        row["share_of_income"] = float((row["total_earned"] / tracked_total) * 100) if tracked_total else 0.0
+
+    top_source = tracked_rows[0] if tracked_rows else None
 
     summary = {
-        "source_count": len(rows),
-        "total_income": total_income,
+        "source_count": len(tracked_rows),
+        "total_income": tracked_total,
         "top_source_name": top_source["name"] if top_source else "",
         "top_source_total": top_source["total_earned"] if top_source else Decimal("0"),
-        "avg_payment": (total_income / total_transfers) if total_transfers else Decimal("0"),
+        "avg_payment": (tracked_total / total_transfers) if total_transfers else Decimal("0"),
     }
 
-    return rows, summary
+    return tracked_rows, found_rows, untracked_rows, summary
 
 @login_required
 def statistics(request):
@@ -489,9 +533,10 @@ def statistics(request):
     categorized = base.filter(category_fk__isnull=False).count()
     coverage_pct = (categorized / total_categorizable * 100.0) if total_categorizable else 0.0
 
-    active_subscriptions, past_subscriptions, subscriptions_summary = _build_tracked_subscriptions(user, base, today)
+    active_subscriptions, past_subscriptions, untracked_subscriptions, subscriptions_summary = _build_tracked_subscriptions(user, base, today)
     found_subscription_candidates = _build_found_subscription_candidates(user, base)
-    income_sources, income_sources_summary = _build_income_source_rows(base)
+    income_sources, found_income_sources, untracked_income_sources, income_sources_summary = _build_income_source_buckets(
+        user, base)
 
     # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
@@ -632,8 +677,11 @@ def statistics(request):
         "past_subscriptions": past_subscriptions,
         "subscriptions_summary": subscriptions_summary,
         "found_subscriptions_count": len(found_subscription_candidates),
+        "untracked_subscriptions_count": len(untracked_subscriptions),
         "income_sources": income_sources,
         "income_sources_summary": income_sources_summary,
+        "found_income_sources_count": len(found_income_sources),
+        "untracked_income_sources_count": len(untracked_income_sources),
 
         "available_month_keys": months_keys,
         "start_key": start_key,
@@ -732,6 +780,212 @@ def review_subscription_candidates_apply(request):
 
     return redirect("review_subscription_candidates")
 
+@login_required
+def untracked_subscriptions(request):
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    _active, _past, untracked_rows, _summary = _build_tracked_subscriptions(
+        request.user,
+        base,
+        timezone.localtime().date(),
+    )
+
+    try:
+        per = max(5, min(200, int(request.GET.get("per") or 50)))
+    except (TypeError, ValueError):
+        per = 50
+
+    paginator = Paginator(untracked_rows, per)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "untracked_subscriptions.html", {
+        "page_obj": page_obj,
+        "total": paginator.count,
+        "per_value": per,
+    })
+
+
+@login_required
+@require_POST
+def subscription_untrack(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, "Missing subscription.")
+        return redirect("statistics")
+
+    SubscriptionDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": SubscriptionDecision.DECISION_UNTRACK,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, "Subscription removed from tracking.")
+    return redirect("statistics")
+
+
+@login_required
+@require_POST
+def subscription_retrack(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, "Missing subscription.")
+        return redirect("untracked_subscriptions")
+
+    SubscriptionDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": SubscriptionDecision.DECISION_TRACK,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, "Subscription tracked again.")
+    return redirect("untracked_subscriptions")
+
+@login_required
+def review_income_sources(request):
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    _tracked, found_rows, _untracked, _summary = _build_income_source_buckets(request.user, base)
+
+    try:
+        per = max(5, min(200, int(request.GET.get("per") or 50)))
+    except (TypeError, ValueError):
+        per = 50
+
+    paginator = Paginator(found_rows, per)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "review_income_sources.html", {
+        "page_obj": page_obj,
+        "total": paginator.count,
+        "per_value": per,
+    })
+
+
+@login_required
+@require_POST
+def review_income_sources_apply(request):
+    changes_raw = request.POST.get("decisions_json")
+    if not changes_raw:
+        messages.info(request, "No changes to apply.")
+        return redirect("review_income_sources")
+
+    try:
+        mapping = json.loads(changes_raw)
+        if not isinstance(mapping, dict):
+            mapping = {}
+    except Exception:
+        messages.error(request, "Invalid data format.")
+        return redirect("review_income_sources")
+
+    if not mapping:
+        messages.info(request, "No changes selected.")
+        return redirect("review_income_sources")
+
+    applied = 0
+
+    for norm, payload in mapping.items():
+        if not isinstance(payload, dict):
+            continue
+
+        decision = (payload.get("decision") or "").strip()
+        display_name = (payload.get("display_name") or "").strip()[:255]
+
+        if decision not in {
+            IncomeSourceDecision.DECISION_TRACK,
+            IncomeSourceDecision.DECISION_IGNORE,
+        }:
+            continue
+
+        IncomeSourceDecision.objects.update_or_create(
+            user=request.user,
+            normalized_merchant=norm,
+            defaults={
+                "decision": decision,
+                "display_name": display_name,
+            },
+        )
+        applied += 1
+
+    if applied:
+        messages.success(request, f"Applied {applied} income source decision(s).")
+    else:
+        messages.info(request, "Nothing changed.")
+
+    return redirect("review_income_sources")
+
+
+@login_required
+def untracked_income_sources(request):
+    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    _tracked, _found, untracked_rows, _summary = _build_income_source_buckets(request.user, base)
+
+    try:
+        per = max(5, min(200, int(request.GET.get("per") or 50)))
+    except (TypeError, ValueError):
+        per = 50
+
+    paginator = Paginator(untracked_rows, per)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "untracked_income_sources.html", {
+        "page_obj": page_obj,
+        "total": paginator.count,
+        "per_value": per,
+    })
+
+
+@login_required
+@require_POST
+def income_source_untrack(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, "Missing income source.")
+        return redirect("statistics")
+
+    IncomeSourceDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": IncomeSourceDecision.DECISION_UNTRACK,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, "Income source removed from this statistic.")
+    return redirect("statistics")
+
+
+@login_required
+@require_POST
+def income_source_retrack(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, "Missing income source.")
+        return redirect("untracked_income_sources")
+
+    IncomeSourceDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": IncomeSourceDecision.DECISION_TRACK,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, "Income source tracked again.")
+    return redirect("untracked_income_sources")
 
 @login_required
 def reports(request):
