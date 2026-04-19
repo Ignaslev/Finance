@@ -156,11 +156,11 @@
                 <td>{{ row.total_earned|floatformat:2 }}</td>
                 <td>{{ row.avg_payment|floatformat:2 }}</td>
                 <td>{{ row.months_active }}</td>
-                <td style="white-space:nowrap;">{{ row.first_received|date:"Y-m-d" }}</td>
-                <td style="white-space:nowrap;">{{ row.last_received|date:"Y-m-d" }}</td>
+                <td>{{ row.first_received|date:"Y-m-d" }}</td>
+                <td>{{ row.last_received|date:"Y-m-d" }}</td>
                 <td>{{ row.share_of_income|floatformat:1 }}%</td>
-                <td style="white-space:nowrap;">
-                  <div style="display:inline-flex; gap:0.75rem; align-items:center; flex-wrap:nowrap; white-space:nowrap;">
+                <td>
+                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
                        class="text-teal"
                        style="text-decoration:none; font-weight:600;">
@@ -253,16 +253,7 @@
 
     {% if active_subscriptions %}
       <div style="overflow-x:auto;">
-        <table style="font-size:0.9rem; width:100%; table-layout:fixed;">
-          <colgroup>
-            <col style="width:20%;">
-            <col style="width:13%;">
-            <col style="width:8%;">
-            <col style="width:13%;">
-            <col style="width:13%;">
-            <col style="width:13%;">
-            <col style="width:20%;">
-          </colgroup>
+        <table style="font-size:0.9rem;">
           <thead>
             <tr>
               <th>{% trans "Name" %}</th>
@@ -319,16 +310,7 @@
 
     {% if past_subscriptions %}
       <div style="overflow-x:auto;">
-        <table style="font-size:0.9rem; width:100%; table-layout:fixed;">
-          <colgroup>
-            <col style="width:20%;">
-            <col style="width:13%;">
-            <col style="width:8%;">
-            <col style="width:13%;">
-            <col style="width:13%;">
-            <col style="width:13%;">
-            <col style="width:20%;">
-          </colgroup>
+        <table style="font-size:0.9rem;">
           <thead>
             <tr>
               <th>{% trans "Name" %}</th>
