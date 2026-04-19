@@ -52,6 +52,9 @@ urlpatterns = [
     path("tx/<int:tx_id>/restore/", f.tx_restore, name="tx_restore"),
     path("deleted/", f.deleted_list, name="deleted_list"),
 
+    path("refunds/delete-pair/", transactions.refund_pair_delete, name="refund_pair_delete"),
+    path("refunds/ignore-pair/", transactions.refund_pair_ignore, name="refund_pair_ignore"),
+
     path("profile/", f.profile, name="profile"),
     path("language/set/", settings_views.set_preferred_language, name="set_preferred_language"),
     path("feedback/", settings_views.feedback, name="feedback"),

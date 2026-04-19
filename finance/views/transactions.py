@@ -23,6 +23,7 @@ from finance.models import (
     UserProfile,
     ImportBatch,
     PendingDataDeletion,
+    RefundPairIgnore,
 )
 
 from finance.utils import (
@@ -319,6 +320,81 @@ def _get_tx_delete_request(user):
         user=user,
         scope=PendingDataDeletion.SCOPE_TRANSACTIONS,
     ).first()
+
+REFUND_AMOUNT_TOLERANCE = Decimal("0.10")
+REFUND_MAX_DAYS = 45
+
+
+def _build_refund_candidates(user, filtered_qs):
+    qs = filtered_qs.filter(is_deleted=False)
+
+    outs = list(
+        qs.filter(in_out=Transaction.OUT)
+        .select_related("money_source")
+        .order_by("date", "id")
+    )
+    ins = list(
+        qs.filter(in_out=Transaction.IN)
+        .select_related("money_source")
+        .order_by("date", "id")
+    )
+
+    if not outs or not ins:
+        return []
+
+    ignored_pairs = set(
+        RefundPairIgnore.objects.filter(
+            user=user,
+            tx_out_id__in=[t.id for t in outs],
+            tx_in_id__in=[t.id for t in ins],
+        ).values_list("tx_out_id", "tx_in_id")
+    )
+
+    used_in_ids = set()
+    pairs = []
+
+    for tx_out in outs:
+        best = None
+        best_key = None
+
+        for tx_in in ins:
+            if tx_in.id in used_in_ids:
+                continue
+
+            if tx_out.currency != tx_in.currency:
+                continue
+
+            # Refund should be same day or later, within 45 days
+            days_apart = (tx_in.date - tx_out.date).days
+            if days_apart < 0 or days_apart > REFUND_MAX_DAYS:
+                continue
+
+            amount_diff = abs((tx_out.amount or Decimal("0")) - (tx_in.amount or Decimal("0")))
+            if amount_diff > REFUND_AMOUNT_TOLERANCE:
+                continue
+
+            pair_key = (tx_out.id, tx_in.id)
+            if pair_key in ignored_pairs:
+                continue
+
+            sort_key = (amount_diff, days_apart, tx_in.id)
+            if best is None or sort_key < best_key:
+                best = tx_in
+                best_key = sort_key
+
+        if best is None:
+            continue
+
+        used_in_ids.add(best.id)
+
+        pairs.append({
+            "tx_out": tx_out,
+            "tx_in": best,
+            "amount_diff": best_key[0],
+            "days_apart": best_key[1],
+        })
+
+    return pairs
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -849,6 +925,7 @@ def upload(request):
         tx_delete_req and tx_delete_req.scheduled_for and not tx_delete_req.canceled_at
     )
     all_tx_count = Transaction.objects.filter(user=request.user).count()
+    refund_candidates = _build_refund_candidates(request.user, qs)
 
     ctx = {
         "page_obj": page_obj,
@@ -877,6 +954,7 @@ def upload(request):
         "tx_delete_scheduled": tx_delete_scheduled,
         "tx_delete_scheduled_for": (tx_delete_req.scheduled_for if tx_delete_req else None),
         "all_tx_count": all_tx_count,
+        "refund_candidates": refund_candidates,
         "onboarding_state": {
             "categories_done": cats_done,
             "has_income": income_exists,
@@ -893,6 +971,80 @@ def upload(request):
         ctx["last_ai_pre"] = last_ai_pre
 
     return render(request, "upload.html", ctx)
+
+@login_required
+@require_POST
+def refund_pair_delete(request):
+    tx_out_id = request.POST.get("tx_out_id")
+    tx_in_id = request.POST.get("tx_in_id")
+    next_url = request.POST.get("next") or "upload"
+
+    try:
+        tx_out = Transaction.objects.get(
+            id=int(tx_out_id),
+            user=request.user,
+            in_out=Transaction.OUT,
+            is_deleted=False,
+        )
+        tx_in = Transaction.objects.get(
+            id=int(tx_in_id),
+            user=request.user,
+            in_out=Transaction.IN,
+            is_deleted=False,
+        )
+    except Exception:
+        messages.error(request, _("Refund pair not found."))
+        return redirect(next_url)
+
+    now = timezone.now()
+
+    with db_transaction.atomic():
+        tx_out.is_deleted = True
+        tx_out.deleted_at = now
+        tx_out.deleted_note = "Deleted via refund pair"
+        tx_out.save(update_fields=["is_deleted", "deleted_at", "deleted_note"])
+
+        tx_in.is_deleted = True
+        tx_in.deleted_at = now
+        tx_in.deleted_note = "Deleted via refund pair"
+        tx_in.save(update_fields=["is_deleted", "deleted_at", "deleted_note"])
+
+    messages.success(request, _("Refund pair deleted. Both transactions were moved to Deleted."))
+    return redirect(next_url)
+
+
+@login_required
+@require_POST
+def refund_pair_ignore(request):
+    tx_out_id = request.POST.get("tx_out_id")
+    tx_in_id = request.POST.get("tx_in_id")
+    next_url = request.POST.get("next") or "upload"
+
+    try:
+        tx_out = Transaction.objects.get(
+            id=int(tx_out_id),
+            user=request.user,
+            in_out=Transaction.OUT,
+            is_deleted=False,
+        )
+        tx_in = Transaction.objects.get(
+            id=int(tx_in_id),
+            user=request.user,
+            in_out=Transaction.IN,
+            is_deleted=False,
+        )
+    except Exception:
+        messages.error(request, _("Refund pair not found."))
+        return redirect(next_url)
+
+    RefundPairIgnore.objects.get_or_create(
+        user=request.user,
+        tx_out=tx_out,
+        tx_in=tx_in,
+    )
+
+    messages.success(request, _("Refund pair ignored."))
+    return redirect(next_url)
 
 # ----------------------------- Soft delete -----------------------------
 

@@ -567,6 +567,42 @@ class IncomeSourceDecision(models.Model):
     def __str__(self):
         return f"{self.user_id} {self.normalized_merchant} {self.decision}"
 
+
+class RefundPairIgnore(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ignored_refund_pairs",
+    )
+    tx_out = models.ForeignKey(
+        "Transaction",
+        on_delete=models.CASCADE,
+        related_name="refund_ignored_as_out",
+    )
+    tx_in = models.ForeignKey(
+        "Transaction",
+        on_delete=models.CASCADE,
+        related_name="refund_ignored_as_in",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "tx_out", "tx_in"],
+                name="uniq_refund_ignore_user_pair",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["user", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} refund-ignore {self.tx_out_id}->{self.tx_in_id}"
+
+
 from django.conf import settings
 from django.db import models
 

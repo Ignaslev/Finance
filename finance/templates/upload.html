@@ -294,6 +294,80 @@
 
 {% load i18n %}
 
+{% if refund_candidates %}
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title">{% trans "Found refunds" %}</div>
+
+    <p class="text-medium" style="margin-bottom:1rem;">
+      {% trans "These look like possible refunds: one outgoing and one incoming transaction with nearly the same amount, within 45 days." %}
+    </p>
+
+    <div style="overflow-x:auto;">
+      <table style="font-size:0.9rem;">
+        <thead>
+          <tr>
+            <th>{% trans "Spent" %}</th>
+            <th>{% trans "Refunded" %}</th>
+            <th>{% trans "Diff" %}</th>
+            <th>{% trans "Days apart" %}</th>
+            <th>{% trans "Action" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pair in refund_candidates %}
+            <tr>
+              <td>
+                <div style="font-weight:600;">{{ pair.tx_out.date|date:"Y-m-d" }}</div>
+                <div>{{ pair.tx_out.merchant|default:"—" }}</div>
+                <div style="color:#e53e3e;">-{{ pair.tx_out.amount|floatformat:2 }} {{ pair.tx_out.currency }}</div>
+              </td>
+
+              <td>
+                <div style="font-weight:600;">{{ pair.tx_in.date|date:"Y-m-d" }}</div>
+                <div>{{ pair.tx_in.merchant|default:"—" }}</div>
+                <div style="color:#38a169;">+{{ pair.tx_in.amount|floatformat:2 }} {{ pair.tx_in.currency }}</div>
+              </td>
+
+              <td>{{ pair.amount_diff|floatformat:2 }} {{ pair.tx_out.currency }}</td>
+              <td>{{ pair.days_apart }}</td>
+
+              <td>
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+                  <form method="post" action="{% url 'refund_pair_delete' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="tx_out_id" value="{{ pair.tx_out.id }}">
+                    <input type="hidden" name="tx_in_id" value="{{ pair.tx_in.id }}">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit"
+                            class="btn"
+                            style="background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+                            onclick="return confirm('{% trans "Delete both transactions? They will be moved to Deleted." %}');">
+                      {% trans "Delete both" %}
+                    </button>
+                  </form>
+
+                  <form method="post" action="{% url 'refund_pair_ignore' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="tx_out_id" value="{{ pair.tx_out.id }}">
+                    <input type="hidden" name="tx_in_id" value="{{ pair.tx_in.id }}">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit"
+                            class="btn"
+                            style="background:#edf2f7; color:var(--text-medium); border:1px solid #e2e8f0;">
+                      {% trans "Ignore" %}
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+
 {% if all_tx_count > 0 or tx_delete_scheduled %}
   <div class="card" style="margin-top:16px;">
     <div class="card-title">{% trans "Data deletion" %}</div>
