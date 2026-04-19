@@ -123,18 +123,7 @@
 
     {% if income_sources %}
       <div style="overflow-x:auto;">
-        <table style="font-size:0.9rem; width:100%; table-layout:fixed;">
-          <colgroup>
-            <col style="width:32%;">
-            <col style="width:8%;">
-            <col style="width:11%;">
-            <col style="width:11%;">
-            <col style="width:10%;">
-            <col style="width:10%;">
-            <col style="width:10%;">
-            <col style="width:8%;">
-            <col style="width:14%;">
-          </colgroup>
+        <table style="font-size:0.9rem; width:100%; min-width:1100px;">
           <thead>
             <tr>
               <th>{% trans "Source" %}</th>
@@ -160,7 +149,7 @@
                 <td>{{ row.last_received|date:"Y-m-d" }}</td>
                 <td>{{ row.share_of_income|floatformat:1 }}%</td>
                 <td>
-                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                  <div style="display:inline-flex; gap:0.75rem; align-items:center; flex-wrap:nowrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
                        class="text-teal"
                        style="text-decoration:none; font-weight:600;">
