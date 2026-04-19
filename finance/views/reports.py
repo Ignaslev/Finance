@@ -20,6 +20,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 
 SUBSCRIPTIONS_CATEGORY_NAME = "Subscriptions"
+INCOME_CATEGORY_NAME = "Income"
 SUBSCRIPTION_IGNORE_TERMS = (
     "atm", "bank", "bankas", "cash", "withdraw", "withdrawal",
     "brink", "brinks", "transfer", "paved", "mokej", "mokėj",
@@ -265,6 +266,74 @@ def _build_found_subscription_candidates(user, base_qs):
     rows.sort(key=lambda r: (r["last_paid"], r["months_subscribed"], r["name"].lower()), reverse=True)
     return rows
 
+def _tx_is_income_category(tx) -> bool:
+    return (
+        (tx.category_fk and tx.category_fk.name == INCOME_CATEGORY_NAME)
+        or (tx.category == INCOME_CATEGORY_NAME)
+    )
+
+
+def _build_income_source_rows(base_qs):
+    groups = defaultdict(list)
+
+    txs = list(
+        base_qs.filter(in_out=Transaction.IN)
+        .select_related("category_fk")
+        .order_by("date", "id")
+    )
+
+    for tx in txs:
+        if not _tx_is_income_category(tx):
+            continue
+
+        raw_name = (tx.merchant or "").strip()
+        norm = (_normalize_merchant(raw_name) or "").strip()
+        if not norm:
+            norm = "__unknown_income__"
+
+        groups[norm].append(tx)
+
+    rows = []
+    total_income = Decimal("0")
+    total_transfers = 0
+
+    for norm, items in groups.items():
+        items = sorted(items, key=lambda t: (t.date, t.id))
+        total = sum((t.amount or Decimal("0")) for t in items)
+        count = len(items)
+        months_active = len({_subscription_month_key(t.date) for t in items})
+        name = _latest_nonempty_merchant(items) or "Unknown income"
+
+        rows.append({
+            "normalized_merchant": norm,
+            "name": name,
+            "count": count,
+            "total_earned": total,
+            "avg_payment": (total / count) if count else Decimal("0"),
+            "first_received": items[0].date,
+            "last_received": items[-1].date,
+            "months_active": months_active,
+        })
+
+        total_income += total
+        total_transfers += count
+
+    rows.sort(key=lambda r: (-r["total_earned"], r["name"].lower()))
+
+    for row in rows:
+        row["share_of_income"] = float((row["total_earned"] / total_income) * 100) if total_income else 0.0
+
+    top_source = rows[0] if rows else None
+
+    summary = {
+        "source_count": len(rows),
+        "total_income": total_income,
+        "top_source_name": top_source["name"] if top_source else "",
+        "top_source_total": top_source["total_earned"] if top_source else Decimal("0"),
+        "avg_payment": (total_income / total_transfers) if total_transfers else Decimal("0"),
+    }
+
+    return rows, summary
 
 @login_required
 def statistics(request):
@@ -422,6 +491,7 @@ def statistics(request):
 
     active_subscriptions, past_subscriptions, subscriptions_summary = _build_tracked_subscriptions(user, base, today)
     found_subscription_candidates = _build_found_subscription_candidates(user, base)
+    income_sources, income_sources_summary = _build_income_source_rows(base)
 
     # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
@@ -562,6 +632,8 @@ def statistics(request):
         "past_subscriptions": past_subscriptions,
         "subscriptions_summary": subscriptions_summary,
         "found_subscriptions_count": len(found_subscription_candidates),
+        "income_sources": income_sources,
+        "income_sources_summary": income_sources_summary,
 
         "available_month_keys": months_keys,
         "start_key": start_key,

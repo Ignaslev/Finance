@@ -57,6 +57,91 @@
   </div>
 </div>
 
+<div class="card">
+  <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+      <div class="card-title" style="margin:0;">{% trans "Income Sources" %}</div>
+      <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
+        {% trans "Based on incoming transactions categorized as Income." %}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Income sources" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.source_count }}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Total earned" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.total_income|floatformat:2 }} EUR</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Top source" %}</div>
+      <div style="font-weight:700; font-size:1.1em;">{{ income_sources_summary.top_source_name|default:"—" }}</div>
+      {% if income_sources_summary.top_source_name %}
+        <div class="text-medium" style="font-size:.85em; margin-top:0.25rem;">
+          {{ income_sources_summary.top_source_total|floatformat:2 }} EUR
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="text-medium" style="font-size:.9em;">{% trans "Average payment" %}</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.avg_payment|floatformat:2 }} EUR</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Income source breakdown" %}</div>
+
+    {% if income_sources %}
+      <div style="overflow-x:auto;">
+        <table style="font-size:0.9rem;">
+          <thead>
+            <tr>
+              <th>{% trans "Source" %}</th>
+              <th>{% trans "Transfers" %}</th>
+              <th>{% trans "Total earned" %}</th>
+              <th>{% trans "Avg payment" %}</th>
+              <th>{% trans "Months active" %}</th>
+              <th>{% trans "First received" %}</th>
+              <th>{% trans "Last received" %}</th>
+              <th>{% trans "Share" %}</th>
+              <th>{% trans "Action" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in income_sources %}
+              <tr>
+                <td class="font-bold">{{ row.name }}</td>
+                <td>{{ row.count }}</td>
+                <td>{{ row.total_earned|floatformat:2 }}</td>
+                <td>{{ row.avg_payment|floatformat:2 }}</td>
+                <td>{{ row.months_active }}</td>
+                <td>{{ row.first_received|date:"Y-m-d" }}</td>
+                <td>{{ row.last_received|date:"Y-m-d" }}</td>
+                <td>{{ row.share_of_income|floatformat:1 }}%</td>
+                <td>
+                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
+                     class="text-teal"
+                     style="text-decoration:none; font-weight:600;">
+                    {% trans "View" %}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-medium" style="margin:0;">{% trans "No income sources detected yet." %}</p>
+    {% endif %}
+  </div>
+</div>
+
 
 <div style="margin:1.25rem 0 0.5rem;">
   <a href="{% url 'review_subscription_candidates' %}"
