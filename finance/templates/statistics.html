@@ -149,11 +149,25 @@
                 <td>{{ row.last_received|date:"Y-m-d" }}</td>
                 <td>{{ row.share_of_income|floatformat:1 }}%</td>
                 <td>
-                  <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
-                     class="text-teal"
-                     style="text-decoration:none; font-weight:600;">
-                    {% trans "View" %}
-                  </a>
+                  <div style="display:flex; gap:3rem; align-items:center; flex-wrap:wrap;">
+                    <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=in"
+                       class="text-teal"
+                       style="text-decoration:none; font-weight:600;">
+                      {% trans "View" %}
+                    </a>
+
+                    <form method="post" action="{% url 'income_source_untrack' %}" style="margin:0;">
+                      {% csrf_token %}
+                      <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                      <input type="hidden" name="display_name" value="{{ row.name }}">
+                      <button type="submit"
+                              class="btn"
+                              style="padding:0.25rem 0.6rem; font-size:0.8rem; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;"
+                              onclick="return confirm('{% trans "Remove this income source from tracking?" %}');">
+                        {% trans "Remove" %}
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -228,7 +242,16 @@
 
     {% if active_subscriptions %}
       <div style="overflow-x:auto;">
-        <table style="font-size:0.9rem;">
+        <table style="font-size:0.9rem; width:100%; table-layout:fixed;">
+          <colgroup>
+            <col style="width:20%;">
+            <col style="width:13%;">
+            <col style="width:8%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:20%;">
+          </colgroup>
           <thead>
             <tr>
               <th>{% trans "Name" %}</th>
@@ -285,7 +308,16 @@
 
     {% if past_subscriptions %}
       <div style="overflow-x:auto;">
-        <table style="font-size:0.9rem;">
+        <table style="font-size:0.9rem; width:100%; table-layout:fixed;">
+          <colgroup>
+            <col style="width:20%;">
+            <col style="width:13%;">
+            <col style="width:8%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:20%;">
+          </colgroup>
           <thead>
             <tr>
               <th>{% trans "Name" %}</th>
