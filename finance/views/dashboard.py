@@ -300,35 +300,55 @@ def overview(request):
 
     series_by_cat = {cname: [float(data_map[cname][m]) for m in cat_months] for cname in cat_names}
 
-    qs_merchant = (
+    merchant_rows = (
         tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .annotate(month=TruncMonth("date"))
-        .values("month", "category_fk__name", "merchant")
-        .annotate(total=Sum("amount"), tx_count=Count("id"))
+        .select_related("category_fk")
+        .only("date", "merchant", "amount", "category_fk__name")
+        .order_by("date", "id")
     )
-    breakdown_by_cat_month = {}
 
-    for row in qs_merchant:
-        if not row["month"]:
+    breakdown_acc = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {
+        "merchant": "",
+        "total": Decimal("0"),
+        "count": 0,
+    })))
+
+    for t in merchant_rows:
+        if not t.date:
             continue
-        val = row["month"]
-        if hasattr(val, 'date'):
-            val = val.date()
-        mk = val.replace(day=1)
-        month_key = mk.strftime("%Y-%m")
 
-        cname = row["category_fk__name"] or "Other"
-        merchant = (row["merchant"] or "").strip() or "—"
-        total = row["total"] or Decimal("0")
-        cnt = int(row["tx_count"] or 0)
-        avg = (total / cnt) if cnt else Decimal("0")
+        month_key = t.date.replace(day=1).strftime("%Y-%m")
+        cname = t.category_fk.name if t.category_fk else "Other"
+        merchant_display = _canonical_overview_merchant(t.merchant or "")
+        merchant_key = merchant_display.lower()
 
-        breakdown_by_cat_month.setdefault(cname, {}).setdefault(month_key, []).append({
-            "merchant": merchant[:80],
-            "total": float(total),
-            "count": cnt,
-            "avg": float(avg),
-        })
+        bucket = breakdown_acc[cname][month_key][merchant_key]
+        bucket["merchant"] = merchant_display
+        bucket["total"] += (t.amount or Decimal("0"))
+        bucket["count"] += 1
+
+    breakdown_by_cat_month = {}
+    for cname, per_month in breakdown_acc.items():
+        breakdown_by_cat_month[cname] = {}
+
+        for month_key, merchants in per_month.items():
+            rows = []
+            for _mkey, data in merchants.items():
+                cnt = int(data["count"] or 0)
+                total = data["total"] or Decimal("0")
+                avg = (total / cnt) if cnt else Decimal("0")
+
+                rows.append({
+                    "merchant": data["merchant"][:80],
+                    "total": float(total),
+                    "count": cnt,
+                    "avg": float(avg),
+                })
+
+            breakdown_by_cat_month[cname][month_key] = sorted(
+                rows,
+                key=lambda x: (-x["total"], x["merchant"])
+            )[:12]
 
 
     for cname, per_month in breakdown_by_cat_month.items():

@@ -343,10 +343,15 @@
             const rows = (breakdown[currentCat] && breakdown[currentCat][mk]) || [];
             let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
             rows.forEach(r => {
-                html += `<tr><td>${escapeHtml(r.merchant)}</td></td>
+                const [year, month] = mk.split('-').map(Number);
+                const lastDay = new Date(year, month, 0).getDate();
+                const fromDate = `${mk}-01`;
+                const toDate = `${mk}-${String(lastDay).padStart(2, '0')}`;
+
+                html += `<tr><td>${escapeHtml(r.merchant)}</td>
                 <td>${r.total.toFixed(2)}</td>
                 <td>${r.count}</td><td>${r.avg.toFixed(2)}</td>
-                <td><a href="/?q=${encodeURIComponent(r.merchant)}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
+                <td><a href="{% url 'upload' %}?q=${encodeURIComponent(r.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
             html += '</tbody></table>';
             if(!rows.length) html = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
