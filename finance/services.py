@@ -161,6 +161,117 @@ def _call_openai_rows(user, rows, examples, cats):
         }
     return out
 
+def _sample_transactions_for_period(user, start, end):
+    qs = list(
+        Transaction.objects
+        .filter(user=user, is_deleted=False, date__gte=start, date__lte=end)
+        .select_related("category_fk")
+        .order_by("-date", "-id")
+    )
+
+    def tx_row(t):
+        category_name = ""
+        if getattr(t, "category_fk", None):
+            category_name = t.category_fk.name or ""
+        else:
+            category_name = getattr(t, "category", "") or ""
+
+        note_parts = []
+        if getattr(t, "notes", None):
+            note_parts.append(t.notes)
+        if getattr(t, "user_note", None):
+            note_parts.append(t.user_note)
+
+        return {
+            "id": t.id,
+            "date": t.date.isoformat() if t.date else None,
+            "merchant": (t.merchant or "")[:120],
+            "amount": float(t.amount or 0),
+            "in_out": t.in_out or "",
+            "category": category_name,
+            "notes": " | ".join(note_parts)[:180],
+        }
+
+    # Basic sample the advisor can cite
+    tx_sample = [tx_row(t) for t in qs[:12]]
+
+    outs = [
+        t for t in qs
+        if t.in_out == Transaction.OUT and (t.merchant or "").strip()
+    ]
+
+    by_merchant = defaultdict(list)
+    for t in outs:
+        norm = _normalize_merchant(t.merchant or "")
+        if norm:
+            by_merchant[norm].append(t)
+
+    recurrings = []
+    leaks = []
+
+    for norm, items in by_merchant.items():
+        if len(items) < 2:
+            continue
+
+        items = sorted(items, key=lambda t: (t.date, t.id))
+        amounts = [Decimal(t.amount or 0) for t in items]
+        total = sum(amounts, Decimal("0"))
+        avg = total / len(items) if items else Decimal("0")
+        first_date = items[0].date
+        last_date = items[-1].date
+        span_days = (last_date - first_date).days if first_date and last_date else 0
+        display_name = next((t.merchant for t in reversed(items) if t.merchant), norm)
+
+        # Recurring-ish merchant activity
+        if len(items) >= 2 and (span_days >= 14 or len(items) >= 3):
+            recurrings.append({
+                "merchant": display_name,
+                "count": len(items),
+                "total": float(total),
+                "avg": float(avg),
+                "first_date": first_date.isoformat() if first_date else None,
+                "last_date": last_date.isoformat() if last_date else None,
+            })
+
+        # Small repeated outflows = possible leak
+        if len(items) >= 3 and avg <= Decimal("25") and total >= Decimal("30"):
+            leaks.append({
+                "merchant": display_name,
+                "count": len(items),
+                "total": float(total),
+                "avg": float(avg),
+                "note": "Repeated small outgoing transactions in this period.",
+            })
+
+    recurrings.sort(key=lambda r: (-r["total"], -r["count"], r["merchant"].lower()))
+    leaks.sort(key=lambda r: (-r["total"], -r["count"], r["merchant"].lower()))
+
+    anomalies = []
+    if outs:
+        spend_amounts = [Decimal(t.amount or 0) for t in outs]
+        avg_spend = sum(spend_amounts, Decimal("0")) / len(spend_amounts)
+        threshold = max(Decimal("50"), avg_spend * Decimal("2"))
+
+        large_spends = [
+            t for t in outs
+            if Decimal(t.amount or 0) >= threshold
+        ]
+        large_spends = sorted(
+            large_spends,
+            key=lambda t: (Decimal(t.amount or 0), t.date, t.id),
+            reverse=True
+        )[:5]
+
+        for t in large_spends:
+            anomalies.append({
+                "merchant": t.merchant or "",
+                "amount": float(t.amount or 0),
+                "date": t.date.isoformat() if t.date else None,
+                "reason": "Large outgoing transaction relative to this period average.",
+            })
+
+    return tx_sample, recurrings[:5], leaks[:5], anomalies[:5]
+
 def _get_user_report_language(user) -> str:
     try:
         lang = (user.profile.preferred_language or "lt").lower()
