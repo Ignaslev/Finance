@@ -12,7 +12,7 @@ from datetime import date as _date
 from calendar import monthrange
 from collections import defaultdict
 from django.core.mail import mail_admins
-
+from django import forms
 from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile, FeedbackTicket
 from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
 from django.conf import settings
@@ -29,27 +29,61 @@ from django.utils import translation
 # Paste: register, category_list, category_edit, category_delete, profile, onboarding_mark_done
 from django.utils.translation import gettext as _
 
+class BetaRegistrationForm(UserCreationForm):
+    beta_access_code = forms.CharField(
+        label=_("Beta code"),
+        max_length=100,
+        required=True,
+        strip=True,
+    )
+
+    def clean_beta_access_code(self):
+        code = (self.cleaned_data.get("beta_access_code") or "").strip()
+        expected = (getattr(settings, "BETA_ACCESS_CODE", "") or "").strip()
+
+        if not getattr(settings, "BETA_REGISTRATION_ENABLED", True):
+            raise forms.ValidationError(_("Beta registration is currently closed."))
+
+        if not expected or code != expected:
+            raise forms.ValidationError(_("Invalid beta access code."))
+
+        return code
+
 def register(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        raise Exception("DEBUG: NEW REGISTER VIEW IS RUNNING")
+        form = BetaRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            beta_count = UserProfile.objects.filter(
+                is_beta_tester=True,
+                user__is_active=True,
+                user__is_staff=False,
+                user__is_superuser=False,
+            ).count()
 
-            # === AUTO-POPULATE START ===
-            # 1. Create Default Categories (Income, Groceries, etc.)
-            ensure_default_categories(user)
+            if beta_count >= getattr(settings, "BETA_USER_LIMIT", 100):
+                form.add_error(None, _("Beta is currently full."))
+            else:
+                user = form.save()
 
-            # 2. Create Default Accounts so the Dashboard isn't empty
-            MoneySource.objects.create(user=user, name="Main Account", type="bank", is_active=True)
-            MoneySource.objects.create(user=user, name="Cash Wallet", type="cash", is_active=True)
-            MoneySource.objects.create(user=user, name="Savings", type="savings", is_active=True)
-            # === AUTO-POPULATE END ===
+                # === AUTO-POPULATE START ===
+                ensure_default_categories(user)
+                MoneySource.objects.create(user=user, name="Main Account", type="bank", is_active=True)
+                MoneySource.objects.create(user=user, name="Cash Wallet", type="cash", is_active=True)
+                MoneySource.objects.create(user=user, name="Savings", type="savings", is_active=True)
+                # === AUTO-POPULATE END ===
 
-            login(request, user)
-            messages.success(request, "Welcome! We've set up your default accounts and categories.")
-            return redirect("overview")  # Redirect to Dashboard instead of Upload
+                prof, _created = UserProfile.objects.get_or_create(user=user)
+                prof.is_beta_tester = True
+                prof.beta_joined_at = timezone.now()
+                prof.save(update_fields=["is_beta_tester", "beta_joined_at"])
+
+                login(request, user)
+                messages.success(request, _("Welcome! We've set up your default accounts and categories."))
+                print("REGISTER FORM FIELDS:", list(form.fields.keys()))
+                return redirect("overview")
     else:
-        form = UserCreationForm()
+        form = BetaRegistrationForm()
     return render(request, "register.html", {"form": form})
 
 @login_required

@@ -2390,3 +2390,6 @@ msgstr "Nėra duomenų."
 
 #~ msgid "Investment"
 #~ msgstr "Investicinė"
+
+msgid "Beta code"
+msgstr "Beta kodas"

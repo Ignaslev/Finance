@@ -44,7 +44,7 @@ urlpatterns = [
     path("categories/<int:pk>/edit/", f.category_edit, name="category_edit"),
     path("categories/<int:pk>/delete/", f.category_delete, name="category_delete"),
 
-    path("register/", f.register, name="register"),
+
     path("login/",  auth_views.LoginView.as_view(template_name="login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
 

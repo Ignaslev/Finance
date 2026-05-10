@@ -391,6 +391,9 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     android_webhook_secret = models.CharField(max_length=64, unique=True, blank=True)
 
+    is_beta_tester = models.BooleanField(default=False)
+    beta_joined_at = models.DateTimeField(null=True, blank=True)
+
     account_delete_requested_at = models.DateTimeField(null=True, blank=True)
     account_delete_scheduled_for = models.DateTimeField(null=True, blank=True)
     account_delete_canceled_at = models.DateTimeField(null=True, blank=True)

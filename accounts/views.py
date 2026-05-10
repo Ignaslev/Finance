@@ -8,7 +8,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-
+from django.utils import timezone
+from finance.models import UserProfile
 from django.contrib.auth import get_user_model
 from .forms import RegisterForm
 
@@ -27,6 +28,11 @@ def register(request):
             # Normalize email
             user.email = (user.email or "").strip().lower()
             user.save()
+
+            prof, _created = UserProfile.objects.get_or_create(user=user)
+            prof.is_beta_tester = True
+            prof.beta_joined_at = timezone.now()
+            prof.save(update_fields=["is_beta_tester", "beta_joined_at"])
 
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
