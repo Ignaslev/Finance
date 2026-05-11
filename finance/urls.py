@@ -58,6 +58,7 @@ urlpatterns = [
     path("profile/", f.profile, name="profile"),
     path("language/set/", settings_views.set_preferred_language, name="set_preferred_language"),
     path("feedback/", settings_views.feedback, name="feedback"),
+    path("guide/", f.guide, name="guide"),
 
     # Smart launchers (no AI logic here, just scoping & redirects)
     path("ai/run-uncategorized/", f.ai_run_uncategorized, name="ai_run_uncategorized"),

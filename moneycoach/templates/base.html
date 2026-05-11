@@ -53,6 +53,7 @@
                 </div>
 
                 <a href="{% url 'profile' %}" class="dropdown-item">{% trans "Profile" %}</a>
+                <a href="{% url 'guide' %}" class="dropdown-item">{% trans "Guide" %}</a>
                 <a href="{% url 'feedback' %}" class="dropdown-item">{% trans "Feedback" %}</a>
                 <form action="{% url 'logout' %}" method="post" style="margin:0;">
                   {% csrf_token %}
@@ -168,16 +169,30 @@
                 </div>
             </div>
 
-            <div class="menu-grid" style="display:flex; justify-content:center; gap:3rem; flex-wrap:wrap;">
+            <div class="menu-grid">
 
                 <a href="{% url 'reports' %}" class="menu-item">
-                    <div class="icon-box" style="background:#ebf8ff; color:#3182ce;"><i class="ph ph-file-text"></i></div>
+                    <div class="icon-box" style="background:#ebf8ff; color:#3182ce;">
+                        <i class="ph ph-file-text"></i>
+                    </div>
                     <span>{% trans "Reports" %}</span>
                 </a>
+
                 <a href="{% url 'profile' %}" class="menu-item">
-                    <div class="icon-box" style="background:#f3e8ff; color:#805ad5;"><i class="ph ph-gear"></i></div>
+                    <div class="icon-box" style="background:#f3e8ff; color:#805ad5;">
+                        <i class="ph ph-gear"></i>
+                    </div>
                     <span>{% trans "Settings" %}</span>
                 </a>
+
+                <a href="{% url 'guide' %}" class="menu-item">
+                    <div class="icon-box" style="background:#ecfdf5; color:var(--primary-teal-dark);">
+                        <i class="ph ph-book-open"></i>
+                    </div>
+                    <span>{% trans "Guide" %}</span>
+                </a>
+
+            </div>
             </div>
             <form action="{% url 'logout' %}" method="post" style="margin-top:1.5rem;">
                 {% csrf_token %}

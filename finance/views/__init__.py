@@ -31,3 +31,5 @@ from .ai import (
    teach_ai, review_low_conf, review_low_apply, review_ai_recent,
    ai_dismiss_notification, review_ai_runs, review_ai_run_detail
 )
+
+from .guide import guide

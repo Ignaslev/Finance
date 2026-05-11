@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Guide" %} · Money Compass{% endblock %}
+
+{% block content %}
+<div class="guide-page">
+    <aside class="guide-sidebar card">
+        <div class="guide-sidebar-title">{% trans "Guide" %}</div>
+
+        <nav class="guide-nav">
+            {% for section in sections %}
+                <a
+                    href="{% url 'guide' %}?section={{ section.id }}"
+                    class="guide-nav-item {% if section.id == active_section.id %}active{% endif %}"
+                >
+                    {{ section.title }}
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="guide-content card">
+        <h1 class="guide-title">{{ active_section.title }}</h1>
+
+        {% if active_section.subtitle %}
+            <p class="guide-subtitle">{{ active_section.subtitle }}</p>
+        {% endif %}
+
+        <div class="guide-body">
+            {% for block in active_section.body %}
+
+                {% if block.type == "paragraph" %}
+                    <p>{{ block.text }}</p>
+                {% endif %}
+
+                {% if block.type == "heading" %}
+                    <h2>{{ block.text }}</h2>
+                {% endif %}
+
+                {% if block.type == "note" %}
+                    <div class="guide-note">
+                        {{ block.text }}
+                    </div>
+                {% endif %}
+
+                {% if block.type == "list" %}
+                    <ul>
+                        {% for item in block.items %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if block.type == "image" %}
+                    <figure class="guide-image-wrap {% if block.variant %}guide-image-wrap-{{ block.variant }}{% endif %}">
+                        <img
+                            src="{% static block.src %}"
+                            alt="{{ block.alt }}"
+                            class="guide-image {% if block.variant %}guide-image-{{ block.variant }}{% endif %}"
+                        >
+                        {% if block.caption %}
+                            <figcaption>{{ block.caption }}</figcaption>
+                        {% endif %}
+                    </figure>
+                {% endif %}
+
+                {% if block.type == "table" %}
+                    <div class="guide-table-wrap">
+                        <table class="guide-table">
+                            <thead>
+                                <tr>
+                                    {% for header in block.headers %}
+                                        <th>{{ header }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in block.rows %}
+                                    <tr>
+                                        {% for cell in row %}
+                                            <td>{{ cell }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}
