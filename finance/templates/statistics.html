@@ -372,7 +372,7 @@
             </div>
 
             <div style="font-size: 0.9rem; color: var(--text-medium); margin-top: 0.5rem;">
-                {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} EUR/mo</strong> ({% trans "last 3 months avg" %}).
+                {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} {% trans "EUR/month" %}</strong> ({% trans "last 3 months avg" %}).
                 <br>
                 <button onclick="openRunwayModal()" style="background:none; border:none; color:var(--primary-teal); padding:0; font-weight:600; cursor:pointer; margin-top:0.3rem;">
                     ⚙ {% trans "Configure Scenario" %}
@@ -450,10 +450,10 @@
             <tr>
               <th>{% trans "Category" %}</th>
               <th>{% trans "Total" %}</th>
-              <th>#Tx</th>
+              <th>{% trans "Transactions" %}</th>
               <th>{% trans "Avg/Tx" %}</th>
               <th>{% trans "Cap (range)" %}</th>
-              <th>Δ vs Cap</th>
+              <th>{% trans "Delta vs Cap" %}</th>
               <th>{% trans "Avg/Mo" %}</th>
               <th>{% trans "Action" %}</th>
             </tr>
@@ -475,9 +475,9 @@
             <td>
               {% if row.has_cap %}
                 {% if row.delta >= 0 %}
-                  <span title="Remaining" class="text-teal">+{{ row.delta|floatformat:2 }}</span>
+                  <span title="{% trans 'Remaining' %}" class="text-teal">+{{ row.delta|floatformat:2 }}</span>
                 {% else %}
-                  <span title="Overspent" style="color:#e53e3e;">{{ row.delta|floatformat:2 }}</span>
+                  <span title="{% trans 'Overspent' %}" style="color:#e53e3e;">{{ row.delta|floatformat:2 }}</span>
                 {% endif %}
               {% else %}
                 <span style="opacity:0.3">—</span>
@@ -504,7 +504,7 @@
     <div class="modal-content card" style="max-width:500px;">
       <div class="flex justify-between items-center mb-4">
         <strong class="text-dark" style="font-size:1.1rem;">{% trans "Choose categories" %}</strong>
-        <button type="button" id="catsClose" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">✕</button>
+        <button type="button" id="catsClose" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">&times;</button>
       </div>
 
       <form method="get">
@@ -657,7 +657,7 @@
   const wdCtx = document.getElementById('weekdayChart').getContext('2d');
   new Chart(wdCtx, {
     type: 'bar',
-    data: { labels: wdLabels, datasets: [{ label: 'Spending (EUR)', data: wdValues, backgroundColor: '#00cea6', borderRadius: 4 }] },
+    data: { labels: wdLabels, datasets: [{ label: '{% trans "Spending (EUR)" %}', data: wdValues, backgroundColor: '#00cea6', borderRadius: 4 }] },
     options: {
       responsive: true,
       scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },

@@ -15,12 +15,8 @@ msgstr ""
 
 # --- Onboarding banner ---
 #: finance/context_processors.py:71
-msgid ""
-"Welcome! Let’s get you set up. First, check your categories, edit or add "
-"what you need."
-msgstr ""
-"Sveiki! Pradėkime nuo pagrindų. Pirmiausia peržiūrėkite kategorijas – "
-"pakoreguokite arba pridėkite, ko reikia."
+msgid "Welcome! Let’s get you set up. First, check your categories, edit or add what you need."
+msgstr "Sveiki! Pradekime nuo paruosimo. Pirmiausia perziurekite kategorijas, pakoreguokite arba pridekite, ko reikia."
 
 #: finance/context_processors.py:72
 msgid "Open Categories"
@@ -35,11 +31,11 @@ msgid "Go to Upload"
 msgstr "Eiti į įkėlimą"
 
 #: finance/context_processors.py:95
-msgid ""
-"Now set a manual balance snapshot so we have a reference point for balances."
-msgstr ""
-"Dabar nustatykite rankinį likučio „snapshot“, kad turėtume atskaitos tašką "
-"likučiams skaičiuoti."
+msgid "Now set a manual balance snapshot so we have a reference point for balances."
+msgstr "Dabar nustatykite rankini likucio momentini irasa, kad turetume atskaitos taska likuciams."
+
+msgid "Now enter the current balance in your account so the app can perform calculations."
+msgstr "Dabar įrašykite esamą balansą jūsų sąskaitoje, kad aplikacija galėtų atlikti skaičiavimus."
 
 #: finance/context_processors.py:96
 msgid "Set a Balance"
@@ -60,12 +56,8 @@ msgid "Teach AI"
 msgstr "Mokyti AI"
 
 #: finance/context_processors.py:121
-msgid ""
-"You're ready to auto-categorize. Keep an eye on AI results and correct "
-"anything — it will keep improving!"
-msgstr ""
-"Viskas paruošta automatiniai kategorizacijai. Stebėkite AI rezultatus ir "
-"pakoreguokite, jei reikia – taip jis vis gerės."
+msgid "You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"
+msgstr "Viskas paruosta automatiniam kategorizavimui. Stebekite AI rezultatus ir prireikus pakoreguokite - taip jis vis geres!"
 
 #: finance/models.py:407 moneycoach/settings.py:134
 msgid "Lithuanian"
@@ -89,7 +81,7 @@ msgstr "Patvirtinimas"
 
 #: finance/templates/account_delete_confirm.html:13
 msgid "Your account deletion is already scheduled."
-msgstr "Jūsų paskyros ištrynimas jau suplanuotas."
+msgstr "Jusu paskyros istrynimas jau suplanuotas."
 
 #: finance/templates/account_delete_confirm.html:16
 #: finance/templates/data_delete_confirm.html:18
@@ -97,16 +89,12 @@ msgid "Scheduled for"
 msgstr "Suplanuota"
 
 #: finance/templates/account_delete_confirm.html:19
-msgid ""
-"If you want to cancel, go back to your Profile page and click “Cancel "
-"deletion”."
-msgstr ""
+msgid "If you want to cancel, go back to your Profile page and click “Cancel deletion”."
+msgstr "Jei norite atsaukti, grizkite i Profilio puslapi ir spustelekite \"Atsaukti istrynima\"."
 
 #: finance/templates/account_delete_confirm.html:23
-msgid ""
-"Your account will be deleted after 24 hours. You can cancel during this "
-"period from your Profile page."
-msgstr "Jūsų paskyra bus ištrinta po 24 valandų. Per šį laikotarpį ištrynimą galite atšaukti savo profilio puslapyje."
+msgid "Your account will be deleted after 24 hours. You can cancel during this period from your Profile page."
+msgstr "Jusu paskyra bus istrinta po 24 valandu. Per si laika galite atsaukti Profilio puslapyje."
 
 #: finance/templates/account_delete_confirm.html:30
 #: finance/templates/data_delete_confirm.html:60
@@ -459,9 +447,8 @@ msgid "Your transactions deletion is already scheduled."
 msgstr "Jūsų operacijų ištrynimas jau suplanuotas."
 
 #: finance/templates/data_delete_confirm.html:23
-msgid ""
-"This will permanently delete all uploaded and manually created transactions."
-msgstr "Tai visam laikui ištrins visas įkeltas ir ranka sukurtas operacijas."
+msgid "This will permanently delete all uploaded and manually created transactions."
+msgstr "Tai negriztamai istrins visas ikeltas ir rankiniu budu sukurtas operacijas."
 
 #: finance/templates/data_delete_confirm.html:31
 #: finance/templates/includes/pending_delete_banner.html:8
@@ -472,10 +459,8 @@ msgid "Cancel deletion"
 msgstr "Atšaukti ištrynimą"
 
 #: finance/templates/data_delete_confirm.html:41
-msgid ""
-"Your transactions will be permanently deleted after 24 hours. You can cancel "
-"during this period."
-msgstr "Jūsų operacijos bus visam laikui ištrintos po 24 valandų. Per šį laikotarpį galite atšaukti ištrynimą."
+msgid "Your transactions will be permanently deleted after 24 hours. You can cancel during this period."
+msgstr "Jusu operacijos bus negriztamai istrintos po 24 valandu. Per si laika galite atsaukti."
 
 #: finance/templates/data_delete_confirm.html:45
 #| msgid "Transactions"
@@ -483,15 +468,12 @@ msgid "Transactions to delete"
 msgstr "Ištrinamos operacijos"
 
 #: finance/templates/data_delete_confirm.html:49
-msgid ""
-"This deletes uploaded and manually created transactions, including "
-"transactions currently in the deleted list."
-msgstr "Tai ištrina įkeltas ir ranka sukurtas operacijas, įskaitant šiuo metu ištrintų operacijų sąraše esančias operacijas."
+msgid "This deletes uploaded and manually created transactions, including transactions currently in the deleted list."
+msgstr "Tai istrina ikeltas ir rankiniu budu sukurtas operacijas, iskaitant tas, kurios dabar yra istrintu sarase."
 
 #: finance/templates/data_delete_confirm.html:53
-msgid ""
-"This does not delete accounts, categories, balances, assets, or your profile."
-msgstr "Tai neištrina sąskaitų, kategorijų, balansų, turto ar jūsų profilio."
+msgid "This does not delete accounts, categories, balances, assets, or your profile."
+msgstr "Tai neistrina saskaitu, kategoriju, likuciu, turto ar jusu profilio."
 
 #: finance/templates/data_delete_confirm.html:76
 #: finance/views/transactions.py:413
@@ -611,7 +593,7 @@ msgstr "Profilis"
 # --- Missing Profile Page Translations ---
 #: finance/templates/profile.html:9 finance/templates/upload.html:242
 msgid "User"
-msgstr "Vartotojas"
+msgstr "Naudotojas"
 
 #: finance/templates/profile.html:16
 msgid "Accounts"
@@ -730,11 +712,8 @@ msgid "Include balances from accounts:"
 msgstr "Įtraukti lėšas iš sąskaitų:"
 
 #: finance/templates/profile.html:281
-msgid ""
-"Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal."
-msgstr ""
-"Patarimas: Sujunkite kelias sąskaitas (pvz. Taupomoji + Grynieji) vienam "
-"tikslui."
+msgid "Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal."
+msgstr "Patarimas: vienam tikslui galite priskirti kelias saskaitas (pvz., taupomaja ir grynuosius)."
 
 #: finance/templates/profile.html:285
 msgid "Create Goal"
@@ -805,10 +784,8 @@ msgid "Your account deletion is scheduled. You can cancel it within 24 hours."
 msgstr "Jūsų paskyros ištrynimas suplanuotas. Galite jį atšaukti per 24 valandas."
 
 #: finance/templates/profile.html:409
-msgid ""
-"Your account will be permanently deleted after 24 hours. You can cancel it "
-"during this period."
-msgstr "Jūsų paskyra bus visam laikui ištrinta po 24 valandų. Per šį laikotarpį galite atšaukti ištrynimą."
+msgid "Your account will be permanently deleted after 24 hours. You can cancel it during this period."
+msgstr "Jusu paskyra bus negriztamai istrinta po 24 valandu. Per si laika galite tai atsaukti."
 
 #: finance/templates/profile.html:415
 #| msgid "Create account"
@@ -820,10 +797,8 @@ msgid "Language"
 msgstr "Kalba"
 
 #: finance/templates/profile.html:425
-msgid ""
-"Choose your default app language. Reports will be generated in this language "
-"too."
-msgstr "Pasirinkite numatytąją programėlės kalbą. Ataskaitos taip pat bus generuojamos šia kalba."
+msgid "Choose your default app language. Reports will be generated in this language too."
+msgstr "Pasirinkite numatytaja programos kalba. Ataskaitos taip pat bus generuojamos sia kalba."
 
 #: finance/templates/register.html:7
 #: moneycoach/templates/accounts/register.html:123
@@ -1069,10 +1044,8 @@ msgid "Found income sources"
 msgstr "Rasti pajamų šaltiniai"
 
 #: finance/templates/review_income_sources.html:10
-msgid ""
-"These are income sources seen in only one month so far. Review and decide "
-"which ones to track."
-msgstr "Tai pajamų šaltiniai, aptikti tik per vieną mėnesį. Peržiūrėkite juos ir nuspręskite, kuriuos sekti."
+msgid "These are income sources seen in only one month so far. Review and decide which ones to track."
+msgstr "Tai pajamu saltiniai, kol kas matyti tik viena menesi. Perziurekite ir nuspreskite, kuriuos sekti."
 
 #: finance/templates/review_income_sources.html:15
 #: finance/templates/review_low.html:11
@@ -1280,7 +1253,7 @@ msgstr "pakeista"
 
 #: finance/templates/review_low.html:215
 msgid "No changes selected."
-msgstr "Nepasirinkta jokių pakeitimų."
+msgstr "Nepasirinkta jokiu pakeitimu."
 
 #: finance/templates/review_low.html:227
 msgid "Clear all saved selections?"
@@ -1297,10 +1270,8 @@ msgid "Found subscriptions"
 msgstr "Rastos prenumeratos"
 
 #: finance/templates/review_subscriptions.html:10
-msgid ""
-"These are likely subscriptions detected from recurring outgoing "
-"transactions. Review and decide which ones to track."
-msgstr "Tai tikėtinos prenumeratos, aptiktos pagal pasikartojančias išeinančias operacijas. Peržiūrėkite jas ir nuspręskite, kurias sekti."
+msgid "These are likely subscriptions detected from recurring outgoing transactions. Review and decide which ones to track."
+msgstr "Tai galimos prenumeratos, aptiktos pagal pasikartojancias iseinancias operacijas. Perziurekite ir nuspreskite, kurias sekti."
 
 #: finance/templates/review_subscriptions.html:29
 #: finance/templates/statistics.html:250 finance/templates/statistics.html:307
@@ -1409,7 +1380,7 @@ msgstr "Pajamų šaltiniai"
 
 #: finance/templates/statistics.html:89
 msgid "Based on incoming transactions categorized as Income."
-msgstr "Remiasi gaunamomis operacijomis, priskirtomis kategorijai „Income“."
+msgstr "Remiantis įeinančiomis operacijomis, priskirtomis kategorijai \"Pajamos\"."
 
 #: finance/templates/statistics.html:96
 #| msgid "Income"
@@ -1464,10 +1435,8 @@ msgid "Subscriptions"
 msgstr "Prenumeratos"
 
 #: finance/templates/statistics.html:214
-msgid ""
-"Tracked from your Subscriptions category and approved findings. A "
-"subscription is considered active if it was charged this month or last month."
-msgstr "Sekama pagal jūsų kategoriją „Subscriptions“ ir patvirtintus radinius. Prenumerata laikoma aktyvia, jei mokestis buvo nuskaičiuotas šį arba praėjusį mėnesį."
+msgid "Tracked from your Subscriptions category and approved findings. A subscription is considered active if it was charged this month or last month."
+msgstr "Sekama pagal kategoriją \"Prenumeratos\" ir patvirtintus radinius. Prenumerata laikoma aktyvia, jei mokestis nuskaičiuotas šį arba praėjusį mėnesį."
 
 #: finance/templates/statistics.html:221 finance/templates/statistics.html:242
 msgid "Active subscriptions"
@@ -1597,12 +1566,8 @@ msgid "Runway Simulator"
 msgstr "Išgyvenimo Simuliatorius"
 
 #: finance/templates/statistics.html:551
-msgid ""
-"Select which assets (Net Worth) and which expenses (Burn Rate) to include in "
-"the calculation."
-msgstr ""
-"Pasirinkite, kurį turtą (Grynąjį Turtą) ir kurias išlaidas įtraukti į "
-"skaičiavimą."
+msgid "Select which assets (Net Worth) and which expenses (Burn Rate) to include in the calculation."
+msgstr "Pasirinkite, koki turta (grynaja verte) ir kokias islaidas (islaidu tempa) itraukti i skaiciavima."
 
 #: finance/templates/statistics.html:559
 msgid "Include Assets"
@@ -1627,7 +1592,7 @@ msgstr "Perskaičiuoti"
 
 #: finance/templates/suggest_done.html:3
 msgid "Done"
-msgstr "Viskas"
+msgstr "Atlikta"
 
 #: finance/templates/suggest_done.html:5
 msgid "Changes applied"
@@ -1649,12 +1614,8 @@ msgid "Back to Low-confidence"
 msgstr "Grįžti į žemo patikimumo"
 
 #: finance/templates/teach_ai.html:9
-msgid ""
-"Pick a category per merchant. This applies to all matching uncategorized "
-"transactions."
-msgstr ""
-"Pasirinkite kategoriją kiekvienam prekybininkui. Tai bus pritaikyta visoms "
-"atitinkančioms nekategorizuotoms operacijoms."
+msgid "Pick a category per merchant. This applies to all matching uncategorized transactions."
+msgstr "Pasirinkite kategorija kiekvienam gavejui. Ji bus pritaikyta visoms atitinkancioms nekategorizuotoms operacijoms."
 
 #: finance/templates/teach_ai.html:19 finance/templates/tx_add.html:73
 #: finance/templates/upload.html:137
@@ -1729,10 +1690,8 @@ msgid "Delete this transaction"
 msgstr "Ištrinti operaciją"
 
 #: finance/templates/tx_edit.html:64
-msgid ""
-"Deleting hides it from lists and charts, and prevents re-importing the same "
-"row. You can restore it later from"
-msgstr "Ištrynimas paslepia įrašą. Atkurti galite iš"
+msgid "Deleting hides it from lists and charts, and prevents re-importing the same row. You can restore it later from"
+msgstr "Istrynus operacija paslepiama sarasuose ir grafikuose, taip pat neleidziama is naujo importuoti tos pacios eilutes. Veliau ja galite atkurti is"
 
 #: finance/templates/tx_edit.html:70
 msgid "Delete this transaction?"
@@ -1755,10 +1714,8 @@ msgid "All caught up! No uncategorized transactions."
 msgstr "Viskas sutvarkyta! Nėra nekategorizuotų operacijų."
 
 #: finance/templates/untracked_income_sources.html:10
-msgid ""
-"These income sources were removed from tracking in the Income Sources "
-"statistic. You can track them again anytime."
-msgstr "Šie pajamų šaltiniai buvo pašalinti iš sekimo „Pajamų šaltinių“ statistikoje. Galite bet kada pradėti juos sekti iš naujo."
+msgid "These income sources were removed from tracking in the Income Sources statistic. You can track them again anytime."
+msgstr "Sie pajamu saltiniai pasalinti is Pajamu saltiniu statistikos. Galite juos vel sekti bet kada."
 
 #: finance/templates/untracked_income_sources.html:42
 #: finance/templates/untracked_subscriptions.html:46
@@ -1771,10 +1728,8 @@ msgid "No untracked income sources."
 msgstr "Nesekamų pajamų šaltinių nėra."
 
 #: finance/templates/untracked_subscriptions.html:14
-msgid ""
-"These subscriptions were removed from tracking. You can track them again "
-"anytime."
-msgstr "Šios prenumeratos buvo pašalintos iš sekimo. Galite bet kada pradėti jas sekti iš naujo."
+msgid "These subscriptions were removed from tracking. You can track them again anytime."
+msgstr "Sios prenumeratos pasalintos is sekimo. Galite jas vel sekti bet kada."
 
 #: finance/templates/untracked_subscriptions.html:70
 msgid "No untracked subscriptions."
@@ -1908,10 +1863,8 @@ msgid "Found refunds"
 msgstr "Rasti grąžinimai"
 
 #: finance/templates/upload.html:302
-msgid ""
-"These look like possible refunds: one outgoing and one incoming transaction "
-"with nearly the same amount, within 45 days."
-msgstr "Tai atrodo kaip galimi grąžinimai: viena išeinanti ir viena gaunama operacija su beveik tokia pačia suma per 45 dienas."
+msgid "These look like possible refunds: one outgoing and one incoming transaction with nearly the same amount, within 45 days."
+msgstr "Tai panasu i galimus grazinimus: viena iseinanti ir viena ieinanti beveik tokios pacios sumos operacija per 45 dienas."
 
 #: finance/templates/upload.html:309
 msgid "Spent"
@@ -1940,15 +1893,12 @@ msgid "Data deletion"
 msgstr "Duomenų ištrynimas"
 
 #: finance/templates/upload.html:377
-msgid ""
-"Your transactions deletion is scheduled. You can cancel it within 24 hours."
-msgstr "Jūsų operacijų ištrynimas suplanuotas. Galite jį atšaukti per 24 valandas."
+msgid "Your transactions deletion is scheduled. You can cancel it within 24 hours."
+msgstr "Operaciju istrynimas suplanuotas. Galite ji atsaukti per 24 valandas."
 
 #: finance/templates/upload.html:381
-msgid ""
-"After that, all uploaded and manually created transactions will be "
-"permanently deleted."
-msgstr "Po to visos įkeltos ir ranka sukurtos operacijos bus visam laikui ištrintos."
+msgid "After that, all uploaded and manually created transactions will be permanently deleted."
+msgstr "Po to visos ikeltos ir rankiniu budu sukurtos operacijos bus negriztamai istrintos."
 
 #: finance/templates/upload.html:386
 #| msgid "Save Selection"
@@ -1956,10 +1906,8 @@ msgid "Manage deletion"
 msgstr "Tvarkyti ištrynimą"
 
 #: finance/templates/upload.html:390
-msgid ""
-"Your transactions will be permanently deleted after 24 hours. You can cancel "
-"it during this period."
-msgstr ""
+msgid "Your transactions will be permanently deleted after 24 hours. You can cancel it during this period."
+msgstr "Jusu operacijos bus negriztamai istrintos po 24 valandu. Per si laika galite tai atsaukti."
 
 #: finance/templates/upload.html:394
 msgid "This deletes all uploaded and manually created transactions."
@@ -2082,12 +2030,8 @@ msgstr "Rankinis likutis išsaugotas ir įrašytas pradinis „snapshot“."
 
 #: finance/views/settings.py:281
 #, python-format
-msgid ""
-"Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by "
-"%(diff)s EUR."
-msgstr ""
-"Rankinis likutis išsaugotas. Užfiksuota anomalija: „snapshot“ ir operacijos "
-"skiriasi %(diff)s EUR."
+msgid "Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by %(diff)s EUR."
+msgstr "Rankinis likutis issaugotas. Uzfiksuota anomalija: momentinis likutis nuo operaciju skiriasi %(diff)s EUR."
 
 #: finance/views/settings.py:285
 msgid "Manual balance saved and a global snapshot was recorded."
@@ -2172,12 +2116,8 @@ msgid "Password updated"
 msgstr "Slaptažodis atnaujintas"
 
 #: moneycoach/templates/accounts/password_reset_complete.html:12
-msgid ""
-"Your password has been changed successfully. You can now log in with your "
-"new password."
-msgstr ""
-"Slaptažodis sėkmingai pakeistas. Dabar galite prisijungti su nauju "
-"slaptažodžiu."
+msgid "Your password has been changed successfully. You can now log in with your new password."
+msgstr "Slaptazodis sekmingai pakeistas. Dabar galite prisijungti su nauju slaptazodziu."
 
 #: moneycoach/templates/accounts/password_reset_confirm.html:4
 #: moneycoach/templates/accounts/password_reset_confirm.html:9
@@ -2216,12 +2156,8 @@ msgid "Check your email"
 msgstr "Patikrinkite el. paštą"
 
 #: moneycoach/templates/accounts/password_reset_done.html:12
-msgid ""
-"If an account exists for that email, we sent a password reset link. Please "
-"check your inbox (and spam folder)."
-msgstr ""
-"Jei paskyra su šiuo el. paštu egzistuoja, išsiuntėme slaptažodžio atstatymo "
-"nuorodą. Patikrinkite pašto dėžutę (ir šlamšto aplanką)."
+msgid "If an account exists for that email, we sent a password reset link. Please check your inbox (and spam folder)."
+msgstr "Jei paskyra su siuo el. pastu yra, issiunteme slaptazodzio atkurimo nuoroda. Patikrinkite pasto dezute ir slamsto aplanka."
 
 #: moneycoach/templates/accounts/password_reset_form.html:4
 #: moneycoach/templates/accounts/password_reset_form.html:9
@@ -2290,7 +2226,7 @@ msgstr "Uždaryti"
 
 #: moneycoach/templates/overview.html:3
 msgid "Overview"
-msgstr "Apžvalga"
+msgstr "Apzvalga"
 
 #: moneycoach/templates/overview.html:40
 msgid "Accounts & Assets"
@@ -2393,3 +2329,439 @@ msgstr "Nėra duomenų."
 
 msgid "Beta code"
 msgstr "Beta kodas"
+
+# Added by Codex i18n sweep
+msgid "Guide"
+msgstr "Gidas"
+
+# Added by Codex i18n sweep
+msgid "Feedback / Report a problem"
+msgstr "Atsiliepimai / Pranešti apie problemą"
+
+# Added by Codex i18n sweep
+msgid "New message"
+msgstr "Naujas pranešimas"
+
+# Added by Codex i18n sweep
+msgid "Description"
+msgstr "Aprašymas"
+
+# Added by Codex i18n sweep
+msgid "What happened? How can we reproduce it? What would you like?"
+msgstr "Kas nutiko? Kaip galime tai pakartoti? Ko norėtumėte?"
+
+# Added by Codex i18n sweep
+msgid "Send"
+msgstr "Siųsti"
+
+# Added by Codex i18n sweep
+msgid "My messages"
+msgstr "Mano pranešimai"
+
+# Added by Codex i18n sweep
+msgid "You do not have any messages yet."
+msgstr "Kol kas neturite pranešimų."
+
+# Added by Codex i18n sweep
+msgid "Bug"
+msgstr "Klaida"
+
+# Added by Codex i18n sweep
+msgid "Idea"
+msgstr "Ideja"
+
+# Added by Codex i18n sweep
+msgid "New"
+msgstr "Naujas"
+
+# Added by Codex i18n sweep
+msgid "In progress"
+msgstr "Vykdoma"
+
+# Added by Codex i18n sweep
+msgid "Rejected"
+msgstr "Atmesta"
+
+# Added by Codex i18n sweep
+msgid "Assets"
+msgstr "Turtas"
+
+# Added by Codex i18n sweep
+msgid "Other"
+msgstr "Kita"
+
+# Added by Codex i18n sweep
+msgid "Unknown"
+msgstr "Nežinoma"
+
+# Added by Codex i18n sweep
+msgid "Rule"
+msgstr "Taisyklė"
+
+# Added by Codex i18n sweep
+msgid "Bank account"
+msgstr "Banko sąskaita"
+
+# Added by Codex i18n sweep
+msgid "Cash reserve"
+msgstr "Grynieji"
+
+# Added by Codex i18n sweep
+msgid "Savings account"
+msgstr "Taupomoji sąskaita"
+
+# Added by Codex i18n sweep
+msgid "Investment"
+msgstr "Investicija"
+
+# Added by Codex i18n sweep
+msgid "Based on average spending across %(start)s to %(end)s."
+msgstr "Remiantis vidutinemis islaidomis nuo %(start)s iki %(end)s."
+
+# Added by Codex i18n sweep
+msgid "Choose a valid type (bug or idea)."
+msgstr "Pasirinkite tinkamą tipą (klaida arba idėja)."
+
+# Added by Codex i18n sweep
+msgid "Description cannot be empty."
+msgstr "Aprašymas negali būti tuščias."
+
+# Added by Codex i18n sweep
+msgid "Description is too long (maximum 5000 characters)."
+msgstr "Aprašymas per ilgas (daugiausia 5000 simbolių)."
+
+# Added by Codex i18n sweep
+msgid "Today's feedback limit has been reached. Please try again tomorrow."
+msgstr "Šiandienos pranešimų limitas pasiektas. Bandykite rytoj."
+
+# Added by Codex i18n sweep
+msgid "Thank you! Your message has been sent."
+msgstr "Ačiū! Jūsų pranešimas išsiųstas."
+
+# Added by Codex i18n sweep
+msgid "Account deletion has been scheduled. You can cancel it within 24 hours."
+msgstr "Paskyros istrynimas suplanuotas. Galite ji atsaukti per 24 valandas."
+
+# Added by Codex i18n sweep
+msgid "No account deletion is currently scheduled."
+msgstr "Siuo metu paskyros istrynimas nesuplanuotas."
+
+# Added by Codex i18n sweep
+msgid "Account deletion has been canceled."
+msgstr "Paskyros istrynimas atsauktas."
+
+# Added by Codex i18n sweep
+msgid "Account not found or inactive."
+msgstr "Sąskaita nerasta arba neaktyvi."
+
+# Added by Codex i18n sweep
+msgid "You can have at most %(count)s categories."
+msgstr "Galite tureti daugiausia %(count)s kategoriju."
+
+# Added by Codex i18n sweep
+msgid "You can have at most %(count)s accounts."
+msgstr "Galite turėti daugiausia %(count)s sąskaitų."
+
+# Added by Codex i18n sweep
+msgid "You can have at most %(count)s goals."
+msgstr "Galite tureti daugiausia %(count)s tikslu."
+
+# Added by Codex i18n sweep
+msgid "\"Other\" cannot be deleted."
+msgstr "Kategorijos \"Kita\" istrinti negalima."
+
+# Added by Codex i18n sweep
+msgid "Another account named \"%(name)s\" already exists."
+msgstr "Saskaita pavadinimu \"%(name)s\" jau yra."
+
+# Added by Codex i18n sweep
+msgid "%(status)s \"%(name)s\"."
+msgstr "%(status)s \"%(name)s\"."
+
+# Added by Codex i18n sweep
+msgid "\"%(name)s\" set as default import account."
+msgstr "\"%(name)s\" nustatyta kaip numatytoji importo saskaita."
+
+# Added by Codex i18n sweep
+msgid "Removed cap for \"%(name)s\"."
+msgstr "Nuimtas limitas kategorijai \"%(name)s\"."
+
+# Added by Codex i18n sweep
+msgid "Saved cap for \"%(name)s\"."
+msgstr "Issaugotas limitas kategorijai \"%(name)s\"."
+
+# Added by Codex i18n sweep
+msgid "Saved."
+msgstr "Išsaugota."
+
+# Added by Codex i18n sweep
+msgid "Error: %(error)s"
+msgstr "Klaida: %(error)s"
+
+# Added by Codex i18n sweep
+msgid "Enter a valid amount (e.g., 12.34)."
+msgstr "Įveskite tinkamą sumą (pvz., 12.34)."
+
+# Added by Codex i18n sweep
+msgid "This transaction already exists (duplicate skipped)."
+msgstr "Tokia operacija jau yra (dublikatas praleistas)."
+
+# Added by Codex i18n sweep
+msgid "Transaction added."
+msgstr "Operacija pridėta."
+
+# Added by Codex i18n sweep
+msgid "Invalid data format."
+msgstr "Netinkamas duomenų formatas."
+
+# Added by Codex i18n sweep
+msgid "Nothing changed."
+msgstr "Niekas nepakeista."
+
+# Added by Codex i18n sweep
+msgid "Nothing to apply."
+msgstr "Nėra ką pritaikyti."
+
+# Added by Codex i18n sweep
+msgid "Transaction deleted."
+msgstr "Operacija ištrinta."
+
+# Added by Codex i18n sweep
+msgid "Transaction was already deleted."
+msgstr "Operacija jau buvo ištrinta."
+
+# Added by Codex i18n sweep
+msgid "Transaction restored."
+msgstr "Operacija atkurta."
+
+# Added by Codex i18n sweep
+msgid "Transaction is not deleted."
+msgstr "Operacija nėra ištrinta."
+
+# Added by Codex i18n sweep
+msgid "Invalid request method."
+msgstr "Netinkamas užklausos metodas."
+
+# Added by Codex i18n sweep
+msgid "No eligible uncategorized transactions to categorize."
+msgstr "Nera tinkamu nekategorizuotu operaciju kategorizavimui."
+
+# Added by Codex i18n sweep
+msgid "No eligible transactions to recheck (excluding user-labeled)."
+msgstr "Nera tinkamu operaciju pakartotiniam tikrinimui (isskyrus naudotojo pazymetas)."
+
+# Added by Codex i18n sweep
+msgid "No AI-labeled transactions to recheck."
+msgstr "Nera AI pazymetu operaciju pakartotiniam tikrinimui."
+
+# Added by Codex i18n sweep
+msgid "Select categories for at least one merchant."
+msgstr "Pasirinkite kategorijas bent vienam gavejui."
+
+# Added by Codex i18n sweep
+msgid "Share of total spending from %(start)s to %(end)s."
+msgstr "Visų išlaidų dalis nuo %(start)s iki %(end)s."
+
+# Added by Codex i18n sweep
+msgid "Subscription removed from tracking."
+msgstr "Prenumerata pašalinta iš sekimo."
+
+# Added by Codex i18n sweep
+msgid "Subscription tracked again."
+msgstr "Prenumerata vėl sekama."
+
+# Added by Codex i18n sweep
+msgid "Missing subscription."
+msgstr "Trūksta prenumeratos."
+
+# Added by Codex i18n sweep
+msgid "Income source removed from this statistic."
+msgstr "Pajamų šaltinis pašalintas iš šios statistikos."
+
+# Added by Codex i18n sweep
+msgid "Income source tracked again."
+msgstr "Pajamų šaltinis vėl sekamas."
+
+# Added by Codex i18n sweep
+msgid "Missing income source."
+msgstr "Trūksta pajamų šaltinio."
+
+# Added by Codex i18n sweep
+msgid "Invalid report type."
+msgstr "Netinkamas ataskaitos tipas."
+
+# Added by Codex i18n sweep
+msgid "Invalid start date."
+msgstr "Netinkama pradžios data."
+
+# Added by Codex i18n sweep
+msgid "Report already exists."
+msgstr "Ataskaita jau yra."
+
+# Added by Codex i18n sweep
+msgid "%(type)s report generated for %(start)s - %(end)s."
+msgstr "%(type)s ataskaita sugeneruota laikotarpiui %(start)s - %(end)s."
+
+# Added by Codex i18n sweep
+msgid "EUR/month"
+msgstr "EUR/mėn."
+
+# Added by Codex i18n sweep
+msgid "Delta vs Cap"
+msgstr "Skirtumas nuo limito"
+
+# Added by Codex i18n sweep
+msgid "Remaining"
+msgstr "Liko"
+
+# Added by Codex i18n sweep
+msgid "Overspent"
+msgstr "Viršyta"
+
+# Added by Codex i18n sweep
+msgid "Spending (EUR)"
+msgstr "Išlaidos (EUR)"
+
+# Added by Codex i18n sweep
+msgid "Exclude 15% tax from investments"
+msgstr "Is investiciju atimti 15% mokesti"
+
+# Added by Codex i18n sweep
+msgid "If enabled, the app will show your investment values after subtracting 15% (flat estimate) in Overview and Statistics. The Portfolio page will always show full value."
+msgstr "Ijungus sia parinkti, Apzvalgoje ir Statistikoje investiciju vertes bus rodomos atemus 15% (paprastas ivertis). Portfelio puslapyje visada bus rodoma visa verte."
+
+# Added by Codex i18n sweep
+msgid "Daily import limit reached (%(limit)s). Try again tomorrow."
+msgstr "Pasiektas dienos importo limitas (%(limit)s). Bandykite rytoj."
+
+# Added by Codex i18n sweep
+msgid "File is too large to import."
+msgstr "Failas per didelis importuoti."
+
+# Added by Codex i18n sweep
+msgid "Could not detect CSV format. Please choose the bank and try again."
+msgstr "Nepavyko atpazinti CSV formato. Pasirinkite banka ir bandykite dar karta."
+
+# Added by Codex i18n sweep
+msgid "Unknown bank format selected."
+msgstr "Pasirinktas nezinomas banko formatas."
+
+# Added by Codex i18n sweep
+msgid "This file does not look like %(bank)s. It looks like: %(suggestion)s. Please choose the correct bank and try again."
+msgstr "Sis failas nepanasus i %(bank)s. Atrodo, kad tai: %(suggestion)s. Pasirinkite tinkama banka ir bandykite dar karta."
+
+# Added by Codex i18n sweep
+msgid "This file does not look like %(bank)s. Please choose the correct bank and try again."
+msgstr "Sis failas nepanasus i %(bank)s. Pasirinkite tinkama banka ir bandykite dar karta."
+
+# Added by Codex i18n sweep
+msgid "This file has %(count)s rows, which exceeds the per-import limit (%(limit)s)."
+msgstr "Siame faile yra %(count)s eiluciu, tai virsija vieno importo limita (%(limit)s)."
+
+# Added by Codex i18n sweep
+msgid "Failed to import file: %(error)s"
+msgstr "Failo importuoti nepavyko: %(error)s"
+
+# Added by Codex i18n sweep
+msgid "Applied changes to %(count)s transaction."
+msgid_plural "Applied changes to %(count)s transactions."
+msgstr[0] "Pritaikytas pakeitimas %(count)s operacijai."
+msgstr[1] "Pritaikyti pakeitimai %(count)s operacijoms."
+msgstr[2] "Pritaikyta pakeitimu %(count)s operaciju."
+
+# Added by Codex i18n sweep
+msgid "Applied %(count)s change."
+msgid_plural "Applied %(count)s changes."
+msgstr[0] "Pritaikytas %(count)s pakeitimas."
+msgstr[1] "Pritaikyti %(count)s pakeitimai."
+msgstr[2] "Pritaikyta %(count)s pakeitimu."
+
+# Added by Codex i18n sweep
+msgid "Applied categories to %(count)s transaction."
+msgid_plural "Applied categories to %(count)s transactions."
+msgstr[0] "Kategorijos pritaikytos %(count)s operacijai."
+msgstr[1] "Kategorijos pritaikytos %(count)s operacijoms."
+msgstr[2] "Kategorijos pritaikytos %(count)s operaciju."
+
+# Added by Codex i18n sweep
+msgid "Applied %(count)s subscription decision."
+msgid_plural "Applied %(count)s subscription decisions."
+msgstr[0] "Pritaikytas %(count)s prenumeratos sprendimas."
+msgstr[1] "Pritaikyti %(count)s prenumeratu sprendimai."
+msgstr[2] "Pritaikyta %(count)s prenumeratu sprendimu."
+
+# Added by Codex i18n sweep
+msgid "Applied %(count)s income source decision."
+msgid_plural "Applied %(count)s income source decisions."
+msgstr[0] "Pritaikytas %(count)s pajamu saltinio sprendimas."
+msgstr[1] "Pritaikyti %(count)s pajamu saltiniu sprendimai."
+msgstr[2] "Pritaikyta %(count)s pajamu saltiniu sprendimu."
+
+# Added by Codex i18n sweep
+msgid "Imported %(added)s new transactions into %(account)s. Skipped %(dups)s duplicate and %(skipped)s unsupported rows."
+msgid_plural "Imported %(added)s new transactions into %(account)s. Skipped %(dups)s duplicates and %(skipped)s unsupported rows."
+msgstr[0] "I %(account)s importuota %(added)s nauja operacija. Praleista %(dups)s dublikatas ir %(skipped)s nepalaikomu eiluciu."
+msgstr[1] "I %(account)s importuotos %(added)s naujos operacijos. Praleisti %(dups)s dublikatai ir %(skipped)s nepalaikomu eiluciu."
+msgstr[2] "I %(account)s importuota %(added)s nauju operaciju. Praleista %(dups)s dublikatu ir %(skipped)s nepalaikomu eiluciu."
+
+# Added by Codex i18n sweep
+msgid "Your password can’t be too similar to your other personal information."
+msgstr "Slaptažodis negali būti per daug panašus į jūsų asmeninę informaciją."
+
+# Added by Codex i18n sweep
+msgid "Your password can’t be a commonly used password."
+msgstr "Slaptažodis negali būti dažnai naudojamas slaptažodis."
+
+# Added by Codex i18n sweep
+msgid "Your password can’t be entirely numeric."
+msgstr "Slaptažodis negali būti sudarytas vien iš skaičių."
+
+# Added by Codex i18n sweep
+msgid "This password is too common."
+msgstr "Šis slaptažodis yra per dažnai naudojamas."
+
+# Added by Codex i18n sweep
+msgid "This password is entirely numeric."
+msgstr "Šis slaptažodis sudarytas vien iš skaičių."
+
+# Added by Codex i18n sweep
+msgid "The password is too similar to the %(verbose_name)s."
+msgstr "Slaptažodis per daug panašus į lauką „%(verbose_name)s“."
+msgid "Please fix the errors below."
+msgstr "Pataisykite žemiau nurodytas klaidas."
+
+msgid "This email is already in use."
+msgstr "Šis el. paštas jau naudojamas."
+
+msgid "Invalid beta code."
+msgstr "Neteisingas beta kodas."
+
+msgid "Too many registration attempts. Please try again later."
+msgstr "Per daug registracijos bandymų. Bandykite dar kartą vėliau."
+
+msgid "Too many registration attempts for this email. Please try again later."
+msgstr "Per daug registracijos bandymų su šiuo el. paštu. Bandykite dar kartą vėliau."
+
+msgid "Activate your MoneyCoach account"
+msgstr "Aktyvuokite savo MoneyCoach paskyrą"
+
+msgid "Hi %(name)s,"
+msgstr "Sveiki, %(name)s,"
+
+msgid "Please activate your account by clicking the link below:"
+msgstr "Aktyvuokite savo paskyrą paspaudę žemiau esančią nuorodą:"
+
+msgid "If you did not create this account, you can ignore this email."
+msgstr "Jei nekūrėte šios paskyros, galite ignoruoti šį laišką."
+
+msgid "Registration successful. Check your email to activate your account."
+msgstr "Registracija sėkminga. Patikrinkite el. paštą ir aktyvuokite paskyrą."
+
+msgid "Invalid activation link."
+msgstr "Neteisinga aktyvavimo nuoroda."
+
+msgid "Account activated. You can now log in."
+msgstr "Paskyra aktyvuota. Dabar galite prisijungti."
+
+msgid "Activation link expired or invalid."
+msgstr "Aktyvavimo nuoroda nebegalioja arba yra neteisinga."

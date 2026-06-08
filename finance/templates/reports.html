@@ -7,6 +7,7 @@
     <h2 class="text-dark" style="margin:0;">{% trans "Reports" %}</h2>
 </div>
 
+{% if user.is_staff or user.is_superuser %}
 <div class="card">
   <div class="flex items-center gap-4" style="flex-wrap:wrap;">
     <strong class="text-dark">{% trans "Select Period:" %}</strong>
@@ -80,6 +81,8 @@
       </div>
   {% endif %}
 </div>
+
+{% endif %}
 
 <div class="card">
     <div class="card-title">{% trans "Balance Anomalies History" %}</div>

@@ -8,7 +8,7 @@ from django.db.models import Sum
 from openai import OpenAI
 from django.utils import timezone
 from .models import Transaction, Category, SavingsGoal, MoneySource
-from .utils import _normalize_merchant
+from .utils import _normalize_merchant, default_category_name
 
 EXAMPLES_TOTAL_CAP = 60
 EXAMPLES_PER_CATEGORY = 5
@@ -84,6 +84,9 @@ def _call_openai_rows(user, rows, examples, cats):
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
     client = OpenAI(api_key=api_key)
+    fallback_category = default_category_name("other", user)
+    if fallback_category not in cats:
+        fallback_category = "Other" if "Other" in cats else (cats[0] if cats else "Other")
 
     schema = {
         "type":"object",
@@ -123,7 +126,7 @@ def _call_openai_rows(user, rows, examples, cats):
         "1) Choose exactly ONE category from the provided list. Do NOT invent categories.\n"
         "2) If current_category_source == 'user', RETURN THE SAME category (do NOT change it).\n"
         "3) Use amount/in_out and text cues (merchant | notes | user_note). Prefer precision.\n"
-        "4) If unsure, pick a broad bucket (e.g., 'Other').\n\n"
+        f"4) If unsure, pick the broad bucket '{fallback_category}'.\n\n"
         f"Allowed categories: {', '.join(cats)}\n\n"
         "Ground-truth examples (respect '(LOCKED)'):\n" + "\n".join(example_lines)
     )
@@ -155,7 +158,7 @@ def _call_openai_rows(user, rows, examples, cats):
     out = {}
     for r in data.get("results", []):
         out[int(r.get("id"))] = {
-            "category": r.get("category") or "Other",
+            "category": r.get("category") or fallback_category,
             "confidence": float(r.get("confidence") or 0),
             "reason": (r.get("reason") or "")[:500]
         }

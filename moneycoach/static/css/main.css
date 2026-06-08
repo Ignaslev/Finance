@@ -240,6 +240,35 @@ td {
 .mt-4 { margin-top: 1rem; }
 .mt-8 { margin-top: 2rem; }
 
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.profile-user-line {
+    font-size: 0.95rem;
+    min-width: 0;
+    text-align: right;
+}
+
+.profile-user-line strong,
+.mobile-menu-user {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.mobile-menu-user {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--text-dark);
+    max-width: 100%;
+}
+
 
 
 
@@ -818,6 +847,30 @@ td {
     /* FONT SIZES */
     h2 { font-size: 1.5rem; margin-top: 1rem !important; }
 
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 1.5rem;
+    }
+
+    .profile-page-header {
+        display: block;
+    }
+
+    .profile-user-line {
+        display: block;
+        margin-top: 0.25rem;
+        text-align: left;
+        font-size: 0.9rem;
+        max-width: 100%;
+    }
+
+    .profile-user-line strong {
+        display: block;
+        margin-top: 0.1rem;
+    }
+
     /* MODALS -> BOTTOM SHEETS */
     .modal-content {
         position: fixed;
@@ -867,6 +920,10 @@ td {
     padding: 2rem 1.5rem 1.5rem 1.5rem;
     animation: slideUpBottom 0.3s ease-out;
     box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
 /* Menu Grid Layout */

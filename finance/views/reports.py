@@ -18,12 +18,13 @@ from finance.models import (
 )
 from finance.services import _advisor_build_payload, _advisor_call_model
 # Move _reconcile_global to utils or keep here if private
-from finance.utils import _reconcile_global, _normalize_merchant, looks_like_self_transfer
+from finance.utils import _reconcile_global, _normalize_merchant, category_names_for, looks_like_self_transfer
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
+from django.utils.translation import gettext as _, ngettext
 
-SUBSCRIPTIONS_CATEGORY_NAME = "Subscriptions"
-INCOME_CATEGORY_NAME = "Income"
+SUBSCRIPTIONS_CATEGORY_NAMES = category_names_for("subscriptions")
+INCOME_CATEGORY_NAMES = category_names_for("income")
 SUBSCRIPTION_IGNORE_TERMS = (
     "atm", "bank", "bankas", "cash", "withdraw", "withdrawal",
     "brink", "brinks", "transfer", "paved", "mokej", "mokėj",
@@ -80,9 +81,9 @@ def _subscription_display_name(canonical: str, fallback: str = "") -> str:
     return SUBSCRIPTION_CANONICAL_LABELS.get(canonical, fallback or canonical.title())
 
 def _tx_is_subscription_category(tx) -> bool:
+    name = tx.category_fk.name if tx.category_fk else tx.category
     return (
-        (tx.category_fk and tx.category_fk.name == SUBSCRIPTIONS_CATEGORY_NAME)
-        or (tx.category == SUBSCRIPTIONS_CATEGORY_NAME)
+        name in SUBSCRIPTIONS_CATEGORY_NAMES
     )
 
 
@@ -281,9 +282,9 @@ def _canonical_income_source(raw_merchant: str) -> str:
 
 
 def _tx_is_income_category(tx) -> bool:
+    name = tx.category_fk.name if tx.category_fk else tx.category
     return (
-        (tx.category_fk and tx.category_fk.name == INCOME_CATEGORY_NAME)
-        or (tx.category == INCOME_CATEGORY_NAME)
+        name in INCOME_CATEGORY_NAMES
     )
 
 
@@ -689,7 +690,10 @@ def statistics(request):
 
         "cat_labels_json": json.dumps(cat_labels),
         "cat_values_json": json.dumps(cat_values),
-        "share_note": f"Share of total spending from {start_key} to {end_key}.",
+        "share_note": _("Share of total spending from %(start)s to %(end)s.") % {
+            "start": start_key,
+            "end": end_key,
+        },
 
         "cat_summary_rows": cat_summary_rows,
         "start_date": start_date.strftime("%Y-%m-%d"),
@@ -733,7 +737,7 @@ def review_subscription_candidates(request):
 def review_subscription_candidates_apply(request):
     changes_raw = request.POST.get("decisions_json")
     if not changes_raw:
-        messages.info(request, "No changes to apply.")
+        messages.info(request, _("No changes to apply."))
         return redirect("review_subscription_candidates")
 
     try:
@@ -741,11 +745,11 @@ def review_subscription_candidates_apply(request):
         if not isinstance(mapping, dict):
             mapping = {}
     except Exception:
-        messages.error(request, "Invalid data format.")
+        messages.error(request, _("Invalid data format."))
         return redirect("review_subscription_candidates")
 
     if not mapping:
-        messages.info(request, "No changes selected.")
+        messages.info(request, _("No changes selected."))
         return redirect("review_subscription_candidates")
 
     applied = 0
@@ -774,9 +778,16 @@ def review_subscription_candidates_apply(request):
         applied += 1
 
     if applied:
-        messages.success(request, f"Applied {applied} subscription decision(s).")
+        messages.success(
+            request,
+            ngettext(
+                "Applied %(count)s subscription decision.",
+                "Applied %(count)s subscription decisions.",
+                applied,
+            ) % {"count": applied},
+        )
     else:
-        messages.info(request, "Nothing changed.")
+        messages.info(request, _("Nothing changed."))
 
     return redirect("review_subscription_candidates")
 
@@ -811,7 +822,7 @@ def subscription_untrack(request):
     display_name = (request.POST.get("display_name") or "").strip()[:255]
 
     if not norm:
-        messages.error(request, "Missing subscription.")
+        messages.error(request, _("Missing subscription."))
         return redirect("statistics")
 
     SubscriptionDecision.objects.update_or_create(
@@ -823,7 +834,7 @@ def subscription_untrack(request):
         },
     )
 
-    messages.success(request, "Subscription removed from tracking.")
+    messages.success(request, _("Subscription removed from tracking."))
     return redirect("statistics")
 
 
@@ -834,7 +845,7 @@ def subscription_retrack(request):
     display_name = (request.POST.get("display_name") or "").strip()[:255]
 
     if not norm:
-        messages.error(request, "Missing subscription.")
+        messages.error(request, _("Missing subscription."))
         return redirect("untracked_subscriptions")
 
     SubscriptionDecision.objects.update_or_create(
@@ -846,7 +857,7 @@ def subscription_retrack(request):
         },
     )
 
-    messages.success(request, "Subscription tracked again.")
+    messages.success(request, _("Subscription tracked again."))
     return redirect("untracked_subscriptions")
 
 @login_required
@@ -874,7 +885,7 @@ def review_income_sources(request):
 def review_income_sources_apply(request):
     changes_raw = request.POST.get("decisions_json")
     if not changes_raw:
-        messages.info(request, "No changes to apply.")
+        messages.info(request, _("No changes to apply."))
         return redirect("review_income_sources")
 
     try:
@@ -882,11 +893,11 @@ def review_income_sources_apply(request):
         if not isinstance(mapping, dict):
             mapping = {}
     except Exception:
-        messages.error(request, "Invalid data format.")
+        messages.error(request, _("Invalid data format."))
         return redirect("review_income_sources")
 
     if not mapping:
-        messages.info(request, "No changes selected.")
+        messages.info(request, _("No changes selected."))
         return redirect("review_income_sources")
 
     applied = 0
@@ -915,9 +926,16 @@ def review_income_sources_apply(request):
         applied += 1
 
     if applied:
-        messages.success(request, f"Applied {applied} income source decision(s).")
+        messages.success(
+            request,
+            ngettext(
+                "Applied %(count)s income source decision.",
+                "Applied %(count)s income source decisions.",
+                applied,
+            ) % {"count": applied},
+        )
     else:
-        messages.info(request, "Nothing changed.")
+        messages.info(request, _("Nothing changed."))
 
     return redirect("review_income_sources")
 
@@ -949,7 +967,7 @@ def income_source_untrack(request):
     display_name = (request.POST.get("display_name") or "").strip()[:255]
 
     if not norm:
-        messages.error(request, "Missing income source.")
+        messages.error(request, _("Missing income source."))
         return redirect("statistics")
 
     IncomeSourceDecision.objects.update_or_create(
@@ -961,7 +979,7 @@ def income_source_untrack(request):
         },
     )
 
-    messages.success(request, "Income source removed from this statistic.")
+    messages.success(request, _("Income source removed from this statistic."))
     return redirect("statistics")
 
 
@@ -972,7 +990,7 @@ def income_source_retrack(request):
     display_name = (request.POST.get("display_name") or "").strip()[:255]
 
     if not norm:
-        messages.error(request, "Missing income source.")
+        messages.error(request, _("Missing income source."))
         return redirect("untracked_income_sources")
 
     IncomeSourceDecision.objects.update_or_create(
@@ -984,7 +1002,7 @@ def income_source_retrack(request):
         },
     )
 
-    messages.success(request, "Income source tracked again.")
+    messages.success(request, _("Income source tracked again."))
     return redirect("untracked_income_sources")
 
 @login_required
@@ -1106,13 +1124,13 @@ def reports_generate(request):
     start_str = (request.POST.get("start") or "").strip()
 
     if rtype not in (AdvisorReport.TYPE_MONTHLY, AdvisorReport.TYPE_WEEKLY):
-        messages.error(request, "Invalid report type.")
+        messages.error(request, _("Invalid report type."))
         return redirect("reports")
 
     try:
         start = datetime.strptime(start_str, "%Y-%m-%d").date()
     except Exception:
-        messages.error(request, "Invalid start date.")
+        messages.error(request, _("Invalid start date."))
         return redirect("reports")
 
     if rtype == AdvisorReport.TYPE_MONTHLY:
@@ -1127,7 +1145,7 @@ def reports_generate(request):
         defaults={"payload": {}, "response": {}}
     )
     if not created and report.response:
-        messages.info(request, "Report already exists.")
+        messages.info(request, _("Report already exists."))
         return redirect("/reports/" + qargs)
 
     prev = (AdvisorReport.objects
@@ -1146,5 +1164,12 @@ def reports_generate(request):
     report.response = response
     report.save(update_fields=["payload", "response"])
 
-    messages.success(request, f"{rtype.title()} report generated for {start} – {end}.")
+    messages.success(
+        request,
+        _("%(type)s report generated for %(start)s - %(end)s.") % {
+            "type": rtype.title(),
+            "start": start,
+            "end": end,
+        },
+    )
     return redirect("/reports/" + qargs)

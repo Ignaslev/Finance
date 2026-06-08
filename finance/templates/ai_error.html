@@ -30,10 +30,13 @@
             <a href="/" class="btn" style="background: #edf2f7; color: var(--text-medium);">
                 {% trans "Back to Upload" %}
             </a>
-            <a href="/ai/full/" class="btn btn-primary">
+            <form method="post" action="{% url 'ai_run_uncategorized' %}" style="margin:0;">
+                {% csrf_token %}
+            <button type="submit" class="btn btn-primary">
                 <i class="ph ph-arrow-clockwise" style="vertical-align: middle; margin-right: 5px;"></i>
                 {% trans "Try Again" %}
-            </a>
+            </button>
+            </form>
         </div>
 
     </div>

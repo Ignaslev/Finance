@@ -2,8 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
 from django.utils import timezone
 from django.db.models import Sum
 from django.db import transaction as dbtx
@@ -12,9 +10,14 @@ from datetime import date as _date
 from calendar import monthrange
 from collections import defaultdict
 from django.core.mail import mail_admins
-from django import forms
 from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile, FeedbackTicket
-from finance.utils import ensure_default_categories, _ledger_balance_by_source, _maybe_log_balance_anomaly
+from finance.utils import (
+    category_names_for,
+    default_category_name,
+    ensure_default_categories,
+    _ledger_balance_by_source,
+    _maybe_log_balance_anomaly,
+)
 from django.conf import settings
 
 from datetime import timedelta
@@ -26,70 +29,23 @@ from django.core.mail import send_mail, mail_admins
 from django.conf import settings
 from finance.models import UserProfile
 from django.utils import translation
-# Paste: register, category_list, category_edit, category_delete, profile, onboarding_mark_done
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 
-class BetaRegistrationForm(UserCreationForm):
-    beta_access_code = forms.CharField(
-        label=_("Beta code"),
-        max_length=100,
-        required=True,
-        strip=True,
-    )
 
-    def clean_beta_access_code(self):
-        code = (self.cleaned_data.get("beta_access_code") or "").strip()
-        expected = (getattr(settings, "BETA_ACCESS_CODE", "") or "").strip()
+def _safe_next_url(request, raw_url, fallback):
+    if raw_url and url_has_allowed_host_and_scheme(
+        raw_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return raw_url
+    return fallback
 
-        if not getattr(settings, "BETA_REGISTRATION_ENABLED", True):
-            raise forms.ValidationError(_("Beta registration is currently closed."))
-
-        if not expected or code != expected:
-            raise forms.ValidationError(_("Invalid beta access code."))
-
-        return code
-
-def register(request):
-    if request.method == "POST":
-        raise Exception("DEBUG: NEW REGISTER VIEW IS RUNNING")
-        form = BetaRegistrationForm(request.POST)
-        if form.is_valid():
-            beta_count = UserProfile.objects.filter(
-                is_beta_tester=True,
-                user__is_active=True,
-                user__is_staff=False,
-                user__is_superuser=False,
-            ).count()
-
-            if beta_count >= getattr(settings, "BETA_USER_LIMIT", 100):
-                form.add_error(None, _("Beta is currently full."))
-            else:
-                user = form.save()
-
-                # === AUTO-POPULATE START ===
-                ensure_default_categories(user)
-                MoneySource.objects.create(user=user, name="Main Account", type="bank", is_active=True)
-                MoneySource.objects.create(user=user, name="Cash Wallet", type="cash", is_active=True)
-                MoneySource.objects.create(user=user, name="Savings", type="savings", is_active=True)
-                # === AUTO-POPULATE END ===
-
-                prof, _created = UserProfile.objects.get_or_create(user=user)
-                prof.is_beta_tester = True
-                prof.beta_joined_at = timezone.now()
-                prof.save(update_fields=["is_beta_tester", "beta_joined_at"])
-
-                login(request, user)
-                messages.success(request, _("Welcome! We've set up your default accounts and categories."))
-                print("REGISTER FORM FIELDS:", list(form.fields.keys()))
-                return redirect("overview")
-    else:
-        form = BetaRegistrationForm()
-    return render(request, "register.html", {"form": form})
 
 @login_required
 def category_list(request):
-    if not Category.objects.filter(user=request.user).exists():
-        Category.objects.bulk_create([Category(user=request.user, name=n) for n in settings.DEFAULT_CATEGORIES])
+    ensure_default_categories(request.user)
 
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()
@@ -120,7 +76,10 @@ def category_edit(request, pk):
 def category_delete(request, pk):
     cat = get_object_or_404(Category, pk=pk, user=request.user)
     if request.method == "POST":
-        other, _ = Category.objects.get_or_create(user=request.user, name="Other")
+        other, _ = Category.objects.get_or_create(
+            user=request.user,
+            name=default_category_name("other", request.user),
+        )
         with dbtx.atomic():
             Transaction.objects.filter(user=request.user, category_fk=cat).update(category_fk=other)
             cat.delete()
@@ -141,7 +100,10 @@ def profile(request):
             # --- QUOTA: max categories per user ---
             MAX_CATEGORIES_PER_USER = getattr(settings, "MAX_CATEGORIES_PER_USER", 200)
             if Category.objects.filter(user=request.user).count() >= MAX_CATEGORIES_PER_USER:
-                messages.error(request, _(f"You can have at most {MAX_CATEGORIES_PER_USER} categories."))
+                messages.error(
+                    request,
+                    _("You can have at most %(count)s categories.") % {"count": MAX_CATEGORIES_PER_USER},
+                )
                 return redirect("profile")
 
             name = (request.POST.get("name") or "").strip()
@@ -162,11 +124,14 @@ def profile(request):
             cat_id = request.POST.get("cat_id")
             cat = get_object_or_404(Category, id=cat_id, user=request.user)
 
-            if cat.name == "Other":
-                messages.error(request, _("“Other” cannot be deleted."))
+            if cat.name in category_names_for("other"):
+                messages.error(request, _('"Other" cannot be deleted.'))
                 return redirect("profile")
 
-            other, _o = Category.objects.get_or_create(user=request.user, name="Other")
+            other, _o = Category.objects.get_or_create(
+                user=request.user,
+                name=default_category_name("other", request.user),
+            )
             with dbtx.atomic():
                 Transaction.objects.filter(user=request.user, category_fk=cat).update(category_fk=other)
                 cat.delete()
@@ -205,7 +170,10 @@ def profile(request):
             # --- QUOTA: max money sources per user ---
             MAX_MONEY_SOURCES_PER_USER = getattr(settings, "MAX_MONEY_SOURCES_PER_USER", 25)
             if MoneySource.objects.filter(user=request.user).count() >= MAX_MONEY_SOURCES_PER_USER:
-                messages.error(request, _(f"You can have at most {MAX_MONEY_SOURCES_PER_USER} accounts."))
+                messages.error(
+                    request,
+                    _("You can have at most %(count)s accounts.") % {"count": MAX_MONEY_SOURCES_PER_USER},
+                )
                 return redirect("profile")
 
             name = (request.POST.get("name") or "").strip()
@@ -227,7 +195,7 @@ def profile(request):
             if new_name:
                 exists = MoneySource.objects.filter(user=request.user, name=new_name).exclude(id=acc.id).exists()
                 if exists:
-                    messages.error(request, _('Another account named “%(name)s” already exists.') % {"name": new_name})
+                    messages.error(request, _('Another account named "%(name)s" already exists.') % {"name": new_name})
                 else:
                     acc.name = new_name
                     acc.save(update_fields=["name", "updated_at"])
@@ -241,7 +209,8 @@ def profile(request):
             acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
             acc.is_active = not acc.is_active
             acc.save(update_fields=["is_active", "updated_at"])
-            messages.success(request, (_("Activated") if acc.is_active else _("Deactivated")) + f' “{acc.name}”.')
+            status_text = _("Activated") if acc.is_active else _("Deactivated")
+            messages.success(request, _('%(status)s "%(name)s".') % {"status": status_text, "name": acc.name})
             return redirect("profile")
 
         if action == "setdefault":
@@ -256,9 +225,9 @@ def profile(request):
                 # Keep session too (optional/backward-compat), but DB is the real persistence now
                 request.session["default_src_id"] = acc.id
 
-                messages.success(request, f'“{acc.name}” set as default import account.')
+                messages.success(request, _('"%(name)s" set as default import account.') % {"name": acc.name})
             except (MoneySource.DoesNotExist, ValueError):
-                messages.error(request, "Account not found or inactive.")
+                messages.error(request, _("Account not found or inactive."))
             return redirect("profile")
 
         if action == "setbalance":
@@ -329,7 +298,7 @@ def profile(request):
             if raw == "":
                 cat.monthly_cap = None
                 cat.save(update_fields=["monthly_cap"])
-                messages.success(request, _('Removed cap for “%(name)s”.') % {"name": cat.name})
+                messages.success(request, _('Removed cap for "%(name)s".') % {"name": cat.name})
             else:
                 try:
                     val = Decimal(raw)
@@ -337,7 +306,7 @@ def profile(request):
                         raise InvalidOperation
                     cat.monthly_cap = val
                     cat.save(update_fields=["monthly_cap"])
-                    messages.success(request, _('Saved cap for “%(name)s”.') % {"name": cat.name})
+                    messages.success(request, _('Saved cap for "%(name)s".') % {"name": cat.name})
                 except (InvalidOperation, TypeError):
                     messages.error(request, _("Enter a valid non-negative number."))
             return redirect("profile")
@@ -347,7 +316,10 @@ def profile(request):
             # --- QUOTA: max goals per user ---
             MAX_GOALS_PER_USER = getattr(settings, "MAX_GOALS_PER_USER", 50)
             if SavingsGoal.objects.filter(user=request.user).count() >= MAX_GOALS_PER_USER:
-                messages.error(request, _(f"You can have at most {MAX_GOALS_PER_USER} goals."))
+                messages.error(
+                    request,
+                    _("You can have at most %(count)s goals.") % {"count": MAX_GOALS_PER_USER},
+                )
                 return redirect("profile")
 
             name = (request.POST.get("goal_name") or "").strip()
@@ -420,7 +392,7 @@ def profile(request):
 
     m3 = []
     y, m = prev_year, prev_month
-    for _ in range(3):
+    for month_offset in range(3):
         m3.append((y, m))
         if m == 1: y, m = y - 1, 12
         else: m -= 1
@@ -473,7 +445,10 @@ def profile(request):
         "type_choices": MoneySource.TYPE_CHOICES,
         "default_id": prof.default_import_source_id,
         "caps_rows": caps_rows,
-        "caps_window_note": f"Based on average spending across {m3[0][0]:04d}-{m3[0][1]:02d} to {m3[-1][0]:04d}-{m3[-1][1]:02d}.",
+        "caps_window_note": _("Based on average spending across %(start)s to %(end)s.") % {
+            "start": f"{m3[0][0]:04d}-{m3[0][1]:02d}",
+            "end": f"{m3[-1][0]:04d}-{m3[-1][1]:02d}",
+        },
         "goals": goals,
 
         # Categories for the Profile categories card
@@ -490,7 +465,11 @@ def set_preferred_language(request):
 
     if lang not in valid_langs:
         messages.error(request, _("Invalid language selected."))
-        return redirect(request.POST.get("next") or request.META.get("HTTP_REFERER") or "overview")
+        return redirect(_safe_next_url(
+            request,
+            request.POST.get("next") or request.META.get("HTTP_REFERER"),
+            "overview",
+        ))
 
     prof, _created = UserProfile.objects.get_or_create(user=request.user)
     prof.preferred_language = lang
@@ -499,7 +478,11 @@ def set_preferred_language(request):
     translation.activate(lang)
     request.LANGUAGE_CODE = lang
 
-    return redirect(request.POST.get("next") or request.META.get("HTTP_REFERER") or "overview")
+    return redirect(_safe_next_url(
+        request,
+        request.POST.get("next") or request.META.get("HTTP_REFERER"),
+        "overview",
+    ))
 
 
 @login_required
@@ -519,7 +502,7 @@ def onboarding_mark_done(request):
         updated_fields.append("ready_dismissed")
     else:
         # Unknown step – just bounce back without changing anything
-        return redirect(request.META.get("HTTP_REFERER") or "overview")
+        return redirect(_safe_next_url(request, request.META.get("HTTP_REFERER"), "overview"))
 
     updated_fields.append("updated_at")
     state.save(update_fields=updated_fields)
@@ -527,7 +510,7 @@ def onboarding_mark_done(request):
     from django.utils.translation import gettext as _
     messages.success(request, _("Thanks! We've saved your onboarding progress."))
 
-    return redirect(request.META.get("HTTP_REFERER") or "overview")
+    return redirect(_safe_next_url(request, request.META.get("HTTP_REFERER"), "overview"))
 
 @login_required
 def feedback(request):
@@ -544,25 +527,25 @@ def feedback(request):
         valid_pages = {p for p, _ in FeedbackTicket.PAGE_CHOICES}
 
         if kind not in valid_kinds:
-            messages.error(request, "Pasirinkite tipą (Bug arba Idėja).")
+            messages.error(request, _("Choose a valid type (bug or idea)."))
             return redirect("feedback")
 
         if page not in valid_pages:
             page = FeedbackTicket.PAGE_OTHER
 
         if not message:
-            messages.error(request, "Aprašymas negali būti tuščias.")
+            messages.error(request, _("Description cannot be empty."))
             return redirect("feedback")
 
         if len(message) > 5000:
-            messages.error(request, "Aprašymas per ilgas (maks. 5000 simbolių).")
+            messages.error(request, _("Description is too long (maximum 5000 characters)."))
             return redirect("feedback")
 
         # Daily cap
         today = timezone.localdate()
         sent_today = FeedbackTicket.objects.filter(user=request.user, created_at__date=today).count()
         if sent_today >= MAX_PER_DAY:
-            messages.error(request, "Šiandienos limitas pasiektas. Bandykite rytoj.")
+            messages.error(request, _("Today's feedback limit has been reached. Please try again tomorrow."))
             return redirect("feedback")
 
         FeedbackTicket.objects.create(
@@ -587,7 +570,7 @@ def feedback(request):
             # Never break ticket creation if email fails
             pass
 
-        messages.success(request, "Ačiū! Jūsų pranešimas išsiųstas.")
+        messages.success(request, _("Thank you! Your message has been sent."))
         return redirect("feedback")
 
     tickets = FeedbackTicket.objects.filter(user=request.user).order_by("-created_at")
@@ -611,7 +594,7 @@ def profile_delete_account(request):
         password = (request.POST.get("password") or "").strip()
 
         if not password or not request.user.check_password(password):
-            messages.error(request, "Neteisingas slaptažodis.")
+            messages.error(request, _("Incorrect password."))
             return render(request, "account_delete_confirm.html", {
                 "scheduled": scheduled,
                 "scheduled_for": prof.account_delete_scheduled_for,
@@ -655,7 +638,7 @@ def profile_delete_account(request):
         except Exception:
             pass
 
-        messages.success(request, "Paskyros ištrynimas suplanuotas. Galite atšaukti per 24 val.")
+        messages.success(request, _("Account deletion has been scheduled. You can cancel it within 24 hours."))
         return redirect("profile")
 
     # GET → show confirmation page
@@ -672,7 +655,7 @@ def profile_cancel_delete_account(request):
     prof, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if not prof.account_delete_scheduled_for or prof.account_delete_canceled_at:
-        messages.info(request, "Nėra suplanuoto ištrynimo.")
+        messages.info(request, _("No account deletion is currently scheduled."))
         return redirect("profile")
 
     prof.account_delete_canceled_at = timezone.now()
@@ -691,5 +674,5 @@ def profile_cancel_delete_account(request):
     except Exception:
         pass
 
-    messages.success(request, "Paskyros ištrynimas atšauktas.")
+    messages.success(request, _("Account deletion has been canceled."))
     return redirect("profile")

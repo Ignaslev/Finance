@@ -10,11 +10,11 @@ from django.utils.translation import gettext_lazy as _
 CATEGORY_CHOICES = [(c, c) for c in getattr(settings, "DEFAULT_CATEGORIES", [])]
 
 SOURCE_CHOICES = [
-    ("unknown", "Unknown"),
-    ("user", "User"),
-    ("ai", "AI"),
-    ("rule", "Rule"),
-    ("import", "Import"),
+    ("unknown", _("Unknown")),
+    ("user", _("User")),
+    ("ai", _("AI")),
+    ("rule", _("Rule")),
+    ("import", _("Import")),
 ]
 
 
@@ -34,10 +34,10 @@ class Category(models.Model):
 
 class MoneySource(models.Model):
     TYPE_CHOICES = [
-        ("bank", "Bank account"),
-        ("cash", "Cash reserve"),
-        ("savings", "Savings account"),
-        ("investment", "Investment"),
+        ("bank", _("Bank account")),
+        ("cash", _("Cash reserve")),
+        ("savings", _("Savings account")),
+        ("investment", _("Investment")),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="money_sources")
@@ -65,7 +65,7 @@ class MoneySource(models.Model):
 class Transaction(models.Model):
     IN = "in"
     OUT = "out"
-    IO_CHOICES = [(IN, "Income"), (OUT, "Spending")]
+    IO_CHOICES = [(IN, _("Income")), (OUT, _("Spending"))]
 
     import_batch = models.ForeignKey(
         "ImportBatch",
@@ -613,8 +613,8 @@ class FeedbackTicket(models.Model):
     KIND_BUG = "bug"
     KIND_IDEA = "idea"
     KIND_CHOICES = [
-        (KIND_BUG, "Bug"),
-        (KIND_IDEA, "Idea"),
+        (KIND_BUG, _("Bug")),
+        (KIND_IDEA, _("Idea")),
     ]
 
     STATUS_NEW = "new"
@@ -622,10 +622,10 @@ class FeedbackTicket(models.Model):
     STATUS_DONE = "done"
     STATUS_REJECTED = "rejected"
     STATUS_CHOICES = [
-        (STATUS_NEW, "New"),
-        (STATUS_IN_PROGRESS, "In progress"),
-        (STATUS_DONE, "Done"),
-        (STATUS_REJECTED, "Rejected"),
+        (STATUS_NEW, _("New")),
+        (STATUS_IN_PROGRESS, _("In progress")),
+        (STATUS_DONE, _("Done")),
+        (STATUS_REJECTED, _("Rejected")),
     ]
 
     PAGE_OVERVIEW = "overview"
@@ -636,13 +636,13 @@ class FeedbackTicket(models.Model):
     PAGE_AI = "ai"
     PAGE_OTHER = "other"
     PAGE_CHOICES = [
-        (PAGE_OVERVIEW, "Overview"),
-        (PAGE_TRANSACTIONS, "Transactions"),
-        (PAGE_IMPORT, "Import"),
-        (PAGE_ASSETS, "Assets"),
-        (PAGE_PROFILE, "Profile"),
-        (PAGE_AI, "AI"),
-        (PAGE_OTHER, "Other"),
+        (PAGE_OVERVIEW, _("Overview")),
+        (PAGE_TRANSACTIONS, _("Transactions")),
+        (PAGE_IMPORT, _("Import")),
+        (PAGE_ASSETS, _("Assets")),
+        (PAGE_PROFILE, _("Profile")),
+        (PAGE_AI, _("AI")),
+        (PAGE_OTHER, _("Other")),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feedback_tickets")

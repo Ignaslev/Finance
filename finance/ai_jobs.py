@@ -15,7 +15,7 @@ User = get_user_model()
 
 def _fake_request_for_user(user):
     rf = RequestFactory()
-    req = rf.get("/ai/full/")
+    req = rf.post("/ai/full/")
     req.user = user
     # minimal session so ai_full_categorize can stamp timestamps
     store = SessionStore()

@@ -7,26 +7,14 @@ from django.utils.translation import gettext as _
 
 from .models import (
     Transaction,
-    Category,
     BalanceSnapshot,
     OnboardingState,   # <- persistent progress
     AiRun,
 )
+from .utils import ensure_default_categories
 
 # You can tweak this here if you like, or set it in settings and read from there.
 MIN_USER_LABELS = getattr(settings, "MIN_USER_LABELS", 30)
-
-
-def ensure_default_categories(user):
-    """
-    Seed default categories for a user (idempotent).
-    Uses the single source of truth from settings.DEFAULT_CATEGORIES.
-    """
-    default_categories = getattr(settings, "DEFAULT_CATEGORIES", [])
-    have = set(Category.objects.filter(user=user).values_list("name", flat=True))
-    need = [Category(user=user, name=n) for n in default_categories if n not in have]
-    if need:
-        Category.objects.bulk_create(need)
 
 
 def onboarding(request):
@@ -92,7 +80,7 @@ def onboarding(request):
     if not has_balance:
         return {
             "onboarding": {
-                "text": _("Now set a manual balance snapshot so we have a reference point for balances."),
+                "text": _("Now enter the current balance in your account so the app can perform calculations."),
                 "cta_text": _("Set a Balance"),
                 "cta_href": reverse("profile"),
                 "code": "balance",

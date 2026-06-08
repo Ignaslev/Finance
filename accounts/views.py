@@ -8,16 +8,34 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from finance.models import UserProfile
+from finance.utils import ensure_default_categories
 from django.contrib.auth import get_user_model
 from .forms import RegisterForm
+from .throttling import client_ip, is_limited, record_attempt
 
 User = get_user_model()
 
 
 def register(request):
     if request.method == "POST":
+        ip = client_ip(request)
+        email = (request.POST.get("email") or "").strip().lower()
+
+        if is_limited("register-ip", ip, limit=20, window_seconds=60 * 60):
+            form = RegisterForm(request.POST)
+            form.add_error(None, _("Too many registration attempts. Please try again later."))
+            messages.error(request, _("Too many registration attempts. Please try again later."))
+            return render(request, "accounts/register.html", {"form": form}, status=429)
+
+        if email and is_limited("register-email", email, limit=5, window_seconds=60 * 60):
+            form = RegisterForm(request.POST)
+            form.add_error(None, _("Too many registration attempts for this email. Please try again later."))
+            messages.error(request, _("Too many registration attempts. Please try again later."))
+            return render(request, "accounts/register.html", {"form": form}, status=429)
+
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
@@ -32,7 +50,9 @@ def register(request):
             prof, _created = UserProfile.objects.get_or_create(user=user)
             prof.is_beta_tester = True
             prof.beta_joined_at = timezone.now()
-            prof.save(update_fields=["is_beta_tester", "beta_joined_at"])
+            prof.preferred_language = form.cleaned_data.get("preferred_language") or UserProfile.LANG_LT
+            prof.save(update_fields=["is_beta_tester", "beta_joined_at", "preferred_language"])
+            ensure_default_categories(user, language=prof.preferred_language)
 
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
@@ -40,12 +60,14 @@ def register(request):
                 reverse("accounts_activate", kwargs={"uidb64": uid, "token": token})
             )
 
-            subject = "Activate your MoneyCoach account"
+            subject = _("Activate your MoneyCoach account")
             body = (
-                f"Hi {user.first_name},\n\n"
-                f"Please activate your account by clicking the link below:\n"
+                _("Hi %(name)s,") % {"name": user.first_name}
+                + "\n\n"
+                + _("Please activate your account by clicking the link below:")
+                + "\n"
                 f"{activation_link}\n\n"
-                f"If you did not create this account, you can ignore this email."
+                + _("If you did not create this account, you can ignore this email.")
             )
 
             send_mail(
@@ -56,10 +78,13 @@ def register(request):
                 fail_silently=False,
             )
 
-            messages.success(request, "Registration successful. Check your email to activate your account.")
+            messages.success(request, _("Registration successful. Check your email to activate your account."))
             return redirect("/accounts/login/")
         else:
-            messages.error(request, "Please fix the errors below.")
+            record_attempt("register-ip", ip, window_seconds=60 * 60)
+            if email:
+                record_attempt("register-email", email, window_seconds=60 * 60)
+            messages.error(request, _("Please fix the errors below."))
     else:
         form = RegisterForm()
 
@@ -71,12 +96,12 @@ def activate(request, uidb64, token):
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
     except Exception:
-        return HttpResponseBadRequest("Invalid activation link.")
+        return HttpResponseBadRequest(_("Invalid activation link."))
 
     if default_token_generator.check_token(user, token):
         user.is_active = True
         user.save(update_fields=["is_active"])
-        messages.success(request, "Account activated. You can now log in.")
+        messages.success(request, _("Account activated. You can now log in."))
         return redirect("login")
 
-    return HttpResponseBadRequest("Activation link expired or invalid.")
+    return HttpResponseBadRequest(_("Activation link expired or invalid."))

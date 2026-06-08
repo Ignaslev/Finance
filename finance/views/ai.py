@@ -5,14 +5,33 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _, ngettext
 import os, json
 
 from finance.models import Transaction, Category, AiRun, AiRunItem
-from finance.utils import ensure_default_categories, _normalize_merchant, looks_like_self_transfer
+from finance.utils import (
+    category_names_for,
+    default_category_name,
+    ensure_default_categories,
+    find_category_by_kind,
+    _normalize_merchant,
+    looks_like_self_transfer,
+)
 from finance.services import _pick_examples, _call_openai_rows
 
 BATCH_SIZE = 50
 AUTO_CHANGE_THRESHOLD = 0.90
+
+
+def _safe_next_url(request, raw_url, fallback):
+    if raw_url and url_has_allowed_host_and_scheme(
+        raw_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return raw_url
+    return fallback
 
 @login_required
 @require_POST
@@ -20,7 +39,7 @@ def ai_dismiss_notification(request, run_id):
     run = get_object_or_404(AiRun, id=run_id, user=request.user)
     run.notified_at = timezone.now()
     run.save(update_fields=['notified_at'])
-    return redirect(request.META.get('HTTP_REFERER') or 'upload')
+    return redirect(_safe_next_url(request, request.META.get('HTTP_REFERER'), 'upload'))
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -37,6 +56,7 @@ AUTO_CHANGE_THRESHOLD = 0.90
 
 
 @login_required
+@require_POST
 def ai_full_categorize(request):
     """
     Modes:
@@ -72,8 +92,8 @@ def ai_full_categorize(request):
     cats_by_name = {c.name: c for c in Category.objects.filter(user=request.user)}
 
     # ---------- HARD RULE 1: Internal transfer if merchant matches user's own name ----------
-    TRANSFER_NAME = "Internal transfer"
-    transfer_cat = cats_by_name.get(TRANSFER_NAME)
+    TRANSFER_NAME = default_category_name("internal_transfer", request.user)
+    transfer_cat = find_category_by_kind(request.user, "internal_transfer")
 
     # Fallback for older users if category wasn't created for some reason
     if transfer_cat is None:
@@ -108,8 +128,8 @@ def ai_full_categorize(request):
                 )
 
     # ---------- HARD RULE 2: Income prefill for IN & empty (AFTER transfer rule) ----------
-    INCOME_NAME = "Income"
-    income_cat = cats_by_name.get(INCOME_NAME)
+    INCOME_NAME = default_category_name("income", request.user)
+    income_cat = find_category_by_kind(request.user, "income")
 
     if income_cat:
         prefill_income_qs = (
@@ -213,13 +233,13 @@ def ai_full_categorize(request):
                 continue
 
             # Guard: Never assign "Income" to OUT rows (rule safety)
-            if t.in_out == Transaction.OUT and suggested_name == "Income":
+            if t.in_out == Transaction.OUT and suggested_name in category_names_for("income"):
                 continue
 
             current_name = (t.category_fk.name if t.category_fk else (t.category or "")).strip()
 
             # Determine if this is a "Fresh Assignment" or a "Change"
-            is_new_assignment = (not current_name or current_name == "Other")
+            is_new_assignment = (not current_name or current_name in category_names_for("other"))
 
             # Threshold: 0.70 for fresh assignments, 0.90 for overwrites
             apply_threshold = 0.70 if is_new_assignment else AUTO_CHANGE_THRESHOLD
@@ -286,6 +306,7 @@ def ai_full_categorize(request):
 
 
 @login_required
+@require_POST
 def ai_run_uncategorized(request):
     base = Transaction.objects.filter(user=request.user, is_deleted=False)
     eligible_qs = (
@@ -296,7 +317,7 @@ def ai_run_uncategorized(request):
     n = eligible_qs.count()
 
     if n == 0:
-        messages.info(request, "No eligible uncategorized transactions to categorize.")
+        messages.info(request, _("No eligible uncategorized transactions to categorize."))
         return redirect("upload")
     request.session["last_ai_pre"] = {
         "kind": "uncategorized",
@@ -306,9 +327,12 @@ def ai_run_uncategorized(request):
 
     request.session["last_ai_run_started_at"] = timezone.now().isoformat()
 
-    return redirect("/ai/full/?mode=uncat")
+    request.GET = request.GET.copy()
+    request.GET["mode"] = "uncat"
+    return ai_full_categorize(request)
 
 @login_required
+@require_POST
 def ai_recheck_all(request):
     """
     Re-evaluate categories:
@@ -327,14 +351,14 @@ def ai_recheck_all(request):
         mode = "all"
         kind = "recheck_all"
         if n == 0:
-            messages.info(request, "No eligible transactions to recheck (excluding user-labeled).")
+            messages.info(request, _("No eligible transactions to recheck (excluding user-labeled)."))
             return redirect("upload")
     else:
         n = base.filter(category_source="ai").count()
         mode = "ai"
         kind = "recheck_ai"
         if n == 0:
-            messages.info(request, "No AI-labeled transactions to recheck.")
+            messages.info(request, _("No AI-labeled transactions to recheck."))
             return redirect("upload")
 
     # PRG card + last run timestamp
@@ -345,7 +369,9 @@ def ai_recheck_all(request):
     }
     request.session["last_ai_run_started_at"] = timezone.now().isoformat()
 
-    return redirect(f"/ai/full/?mode={mode}")
+    request.GET = request.GET.copy()
+    request.GET["mode"] = mode
+    return ai_full_categorize(request)
 
 @login_required
 def review_low_conf(request):
@@ -374,17 +400,17 @@ def review_low_apply(request):
     # 1. Read the JSON payload
     changes_raw = request.POST.get("changes_json")
     if not changes_raw:
-        messages.info(request, "No changes to apply.")
+        messages.info(request, _("No changes to apply."))
         return redirect("review_low_conf")
 
     try:
         mapping = json.loads(changes_raw)
     except Exception:
-        messages.error(request, "Invalid data format.")
+        messages.error(request, _("Invalid data format."))
         return redirect("review_low_conf")
 
     if not mapping:
-        messages.info(request, "No changes selected.")
+        messages.info(request, _("No changes selected."))
         return redirect("review_low_conf")
 
     # 2. Optimizing the DB fetch
@@ -421,7 +447,10 @@ def review_low_apply(request):
             tx.save(update_fields=["category_fk", "category", "category_source", "ai_suggested_fk", "ai_confidence"])
             applied += 1
 
-    messages.success(request, f"Applied {applied} changes.")
+    messages.success(
+        request,
+        ngettext("Applied %(count)s change.", "Applied %(count)s changes.", applied) % {"count": applied},
+    )
     return redirect("review_low_conf")
 
 @login_required
@@ -494,7 +523,7 @@ def teach_ai(request):
                 pairs.append((k[len("mk__"):], v))
 
         if not pairs:
-            messages.error(request, "Select categories for at least one merchant.")
+            messages.error(request, _("Select categories for at least one merchant."))
             return redirect("teach_ai")
 
         cat_ids = {int(cid) for _, cid in pairs if str(cid).isdigit()}
@@ -521,7 +550,7 @@ def teach_ai(request):
             for t in qs_apply:
                 if _normalize_merchant(t.merchant or "") == norm:
                     # Guard: never set Income on OUT
-                    if cat.name == "Income":
+                    if cat.name in category_names_for("income"):
                         continue
                     batch_ids.append(t.id)
 
@@ -537,9 +566,16 @@ def teach_ai(request):
                 applied += len(batch_ids)
 
         if applied:
-            messages.success(request, f"Applied categories to {applied} transaction(s).")
+            messages.success(
+                request,
+                ngettext(
+                    "Applied categories to %(count)s transaction.",
+                    "Applied categories to %(count)s transactions.",
+                    applied,
+                ) % {"count": applied},
+            )
         else:
-            messages.info(request, "Nothing to apply.")
+            messages.info(request, _("Nothing to apply."))
         return redirect("upload")
 
     # ---------------- GET: build one row per normalized merchant (OUT only) ----------------

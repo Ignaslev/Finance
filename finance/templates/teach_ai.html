@@ -25,7 +25,13 @@
                     {% for r in rows %}
                         <tr>
                             <td>{{ r.merchant_display }}</td>
-                            <td>{{ r.flow|title }}</td>
+                            <td>
+                                {% if r.flow == "in" %}
+                                    {% trans "Income" %}
+                                {% else %}
+                                    {% trans "Spending" %}
+                                {% endif %}
+                            </td>
                             <td>{{ r.count }}</td>
                             <td>
                                 <select name="{{ r.form_key }}">

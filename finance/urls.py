@@ -1,5 +1,4 @@
 from django.urls import path
-from django.contrib.auth import views as auth_views
 from . import views as f
 from .views import transactions
 from .views import settings as settings_views
@@ -43,10 +42,6 @@ urlpatterns = [
     path("categories/", f.category_list, name="category_list"),
     path("categories/<int:pk>/edit/", f.category_edit, name="category_edit"),
     path("categories/<int:pk>/delete/", f.category_delete, name="category_delete"),
-
-
-    path("login/",  auth_views.LoginView.as_view(template_name="login.html"), name="login"),
-    path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
 
     path("tx/<int:tx_id>/delete/", f.tx_delete, name="tx_delete"),
     path("tx/<int:tx_id>/restore/", f.tx_restore, name="tx_restore"),

@@ -33,7 +33,7 @@
             <div class="profile-dropdown">
 
                 <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid #f7fafc; display:flex; align-items:center; gap:0.5rem;">
-                    <span style="font-size:0.8rem; color:var(--text-light); text-transform:uppercase;">Lang</span>
+                    <span style="font-size:0.8rem; color:var(--text-light); text-transform:uppercase;">{% trans "Language" %}</span>
                    <form action="{% url 'set_preferred_language' %}" method="post" style="margin:0; display:flex; gap:0.3rem;">
                         {% csrf_token %}
                         <input name="next" type="hidden" value="{{ request.get_full_path }}">
@@ -82,8 +82,8 @@
               </form>
 
               {# Auth links #}
-              <a href="/accounts/login/" class="nav-item">Login</a>
-              <a href="/accounts/register/" class="nav-item">Register</a>
+              <a href="/accounts/login/" class="nav-item">{% trans "Login" %}</a>
+              <a href="/accounts/register/" class="nav-item">{% trans "Register" %}</a>
           </div>
         {% endif %}
 
@@ -156,7 +156,7 @@
     <div id="mobileMenu" class="mobile-menu-overlay" onclick="toggleMobileMenu()" style="display:none;">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
             <div style="text-align:center; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #eee;">
-                <div style="font-weight:700; font-size:1.1rem; color:var(--text-dark);">{{ user.username }}</div>
+                <div class="mobile-menu-user">{{ user.email|default:user.username }}</div>
 
                 <div style="margin-top:0.5rem; display:flex; justify-content:center;">
                    <form action="{% url 'set_preferred_language' %}" method="post" style="margin:0; display:flex; gap:0.3rem;">
@@ -192,7 +192,6 @@
                     <span>{% trans "Guide" %}</span>
                 </a>
 
-            </div>
             </div>
             <form action="{% url 'logout' %}" method="post" style="margin-top:1.5rem;">
                 {% csrf_token %}

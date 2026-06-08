@@ -9,6 +9,78 @@ from django.conf import settings
 from .models import Category, Transaction, BalanceAnomaly, BalanceSnapshot
 from django.db.models import Sum, Case, When, F, DecimalField
 
+DEFAULT_CATEGORIES_BY_LANGUAGE = {
+    "en": [
+        "Income", "Cash", "Dining", "Fitness & Health",
+        "Groceries", "Shopping", "Crypto", "Utilities",
+        "Other", "Subscriptions", "Transportation", "Internal transfer",
+    ],
+    "lt": [
+        "Pajamos", "Grynieji", "Kavinės ir restoranai", "Sportas ir sveikata",
+        "Maisto prekės", "Pirkiniai", "Kripto", "Komunaliniai",
+        "Kita", "Prenumeratos", "Transportas", "Vidinis pavedimas",
+    ],
+}
+
+CATEGORY_NAME_ALIASES = {
+    "income": {"Income", "Pajamos"},
+    "other": {"Other", "Kita"},
+    "subscriptions": {"Subscriptions", "Prenumeratos"},
+    "internal_transfer": {"Internal transfer", "Vidinis pavedimas"},
+}
+
+
+def normalized_language(language):
+    language = (language or "lt").lower()
+    return "en" if language.startswith("en") else "lt"
+
+
+def preferred_language_for_user(user):
+    try:
+        return normalized_language(user.profile.preferred_language)
+    except Exception:
+        return "lt"
+
+
+def default_categories_for_language(language):
+    return DEFAULT_CATEGORIES_BY_LANGUAGE[normalized_language(language)]
+
+
+def category_names_for(kind):
+    return CATEGORY_NAME_ALIASES.get(kind, set())
+
+
+def default_category_name(kind, user_or_language=None):
+    if hasattr(user_or_language, "profile") or hasattr(user_or_language, "is_authenticated"):
+        language = preferred_language_for_user(user_or_language)
+    else:
+        language = normalized_language(user_or_language)
+
+    localized = {
+        "income": {"en": "Income", "lt": "Pajamos"},
+        "other": {"en": "Other", "lt": "Kita"},
+        "subscriptions": {"en": "Subscriptions", "lt": "Prenumeratos"},
+        "internal_transfer": {"en": "Internal transfer", "lt": "Vidinis pavedimas"},
+    }
+    return localized.get(kind, {}).get(language, localized.get(kind, {}).get("lt", "Other"))
+
+
+def default_money_source_name(user_or_language=None):
+    if hasattr(user_or_language, "profile") or hasattr(user_or_language, "is_authenticated"):
+        language = preferred_language_for_user(user_or_language)
+    else:
+        language = normalized_language(user_or_language)
+
+    return {
+        "en": "Primary account",
+        "lt": "Pagrindinė sąskaita",
+    }.get(language, "Pagrindinė sąskaita")
+
+
+def find_category_by_kind(user, kind):
+    names = category_names_for(kind)
+    return Category.objects.filter(user=user, name__in=names).first()
+
 
 def _normalize_text_basic(s: str) -> str:
     s = (s or "").lower()
@@ -84,9 +156,14 @@ def parse_decimal_filter(s):
     except InvalidOperation:
         return None
 
-def ensure_default_categories(user):
+def ensure_default_categories(user, language=None):
+    if Category.objects.filter(user=user).exists():
+        return
+
+    language = normalized_language(language or preferred_language_for_user(user))
+    default_names = default_categories_for_language(language)
     have = set(Category.objects.filter(user=user).values_list("name", flat=True))
-    need = [Category(user=user, name=n) for n in settings.DEFAULT_CATEGORIES if n not in have]
+    need = [Category(user=user, name=n) for n in default_names if n not in have]
     if need:
         Category.objects.bulk_create(need)
 

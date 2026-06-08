@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.core.mail import send_mail, mail_admins
 from django.urls import reverse
-from django.utils.translation import gettext as _
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _, ngettext
 
 from finance.models import (
     Transaction,
@@ -29,9 +30,19 @@ from finance.models import (
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
-    parse_decimal_filter
+    parse_decimal_filter, category_names_for, default_money_source_name
 )
 from django.db import transaction as db_transaction
+
+
+def _safe_next_url(request, raw_url, fallback):
+    if raw_url and url_has_allowed_host_and_scheme(
+        raw_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return raw_url
+    return fallback
 
 @login_required
 def tx_edit(request, pk):
@@ -48,10 +59,10 @@ def tx_edit(request, pk):
                 tx.category_source = "user"
             tx.user_note = user_note
             tx.save(update_fields=["category_fk", "category", "category_source", "user_note"])
-            messages.success(request, "Saved.")
+            messages.success(request, _("Saved."))
         except Exception as e:
-            messages.error(request, f"Error: {e}")
-        return redirect(request.GET.get("next") or "upload")
+            messages.error(request, _("Error: %(error)s") % {"error": e})
+        return redirect(_safe_next_url(request, request.GET.get("next"), "upload"))
     return render(request, "tx_edit.html", {"tx": tx, "categories": categories})
 
 @login_required
@@ -59,7 +70,12 @@ def tx_edit(request, pk):
 def tx_add(request):
     sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
     if not sources:
-        primary_src = MoneySource.objects.create(user=request.user, name="Primary account", type="bank", is_active=True)
+        primary_src = MoneySource.objects.create(
+            user=request.user,
+            name=default_money_source_name(request.user),
+            type="bank",
+            is_active=True,
+        )
         sources = [primary_src]
     categories = Category.objects.filter(user=request.user).order_by("name")
     if not categories.exists():
@@ -76,7 +92,7 @@ def tx_add(request):
         user_note  = (request.POST.get("user_note") or "").strip()[:2000]
         src_id     = request.POST.get("money_source") or ""
         cat_id     = request.POST.get("category") or ""
-        next_url   = request.POST.get("next") or "upload"
+        next_url = _safe_next_url(request, request.POST.get("next"), "upload")
 
         try:
             d = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -85,7 +101,7 @@ def tx_add(request):
         try:
             amount = Decimal(amount_str)
         except (InvalidOperation, TypeError):
-            messages.error(request, "Enter a valid amount (e.g., 12.34).")
+            messages.error(request, _("Enter a valid amount (e.g., 12.34)."))
             return redirect("tx_add")
         try:
             src = MoneySource.objects.get(id=int(src_id), user=request.user, is_active=True)
@@ -102,7 +118,7 @@ def tx_add(request):
         fp = f"{d.isoformat()}|{merchant}|{str(amount)}|{currency}|{in_out}|{src.id}"
 
         if Transaction.objects.filter(user=request.user, fingerprint=fp).exists():
-            messages.info(request, "This transaction already exists (duplicate skipped).")
+            messages.info(request, _("This transaction already exists (duplicate skipped)."))
             return redirect(next_url)
 
         Transaction.objects.create(
@@ -120,14 +136,18 @@ def tx_add(request):
             category_fk=cat,
             category=(cat.name if cat else None),
         )
-        messages.success(request, "Transaction added.")
+        messages.success(request, _("Transaction added."))
         return redirect(next_url)
 
     ctx = {
         "today": timezone.localdate().strftime("%Y-%m-%d"),
         "sources": sources,
         "categories": categories,
-        "next": request.GET.get("next") or request.META.get("HTTP_REFERER") or "/",
+        "next": _safe_next_url(
+            request,
+            request.GET.get("next") or request.META.get("HTTP_REFERER"),
+            "/",
+        ),
         "default_currency": "EUR",
     }
     return render(request, "tx_add.html", ctx)
@@ -137,10 +157,10 @@ def tx_bulk_category_apply(request):
     if request.method != "POST":
         return redirect("upload")
 
-    next_url = request.POST.get("next") or "/"
+    next_url = _safe_next_url(request, request.POST.get("next"), "/")
     changes_raw = request.POST.get("changes_json")
     if not changes_raw:
-        messages.info(request, "No changes to apply.")
+        messages.info(request, _("No changes to apply."))
         return redirect(next_url)
 
     try:
@@ -150,7 +170,7 @@ def tx_bulk_category_apply(request):
     except Exception:
         mapping = {}
     if not mapping:
-        messages.info(request, "No changes to apply.")
+        messages.info(request, _("No changes to apply."))
         return redirect(next_url)
 
     cat_ids, tx_ids = set(), []
@@ -184,9 +204,16 @@ def tx_bulk_category_apply(request):
         applied += 1
 
     if applied:
-        messages.success(request, f"Applied changes to {applied} transaction(s).")
+        messages.success(
+            request,
+            ngettext(
+                "Applied changes to %(count)s transaction.",
+                "Applied changes to %(count)s transactions.",
+                applied,
+            ) % {"count": applied},
+        )
     else:
-        messages.info(request, "Nothing changed.")
+        messages.info(request, _("Nothing changed."))
 
     sep = "&" if "?" in next_url else "?"
     return redirect(f"{next_url}{sep}clear_local=1")
@@ -505,7 +532,10 @@ def upload(request):
     sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
     if not sources:
         primary_src = MoneySource.objects.create(
-            user=request.user, name="Primary account", type="bank", is_active=True
+            user=request.user,
+            name=default_money_source_name(request.user),
+            type="bank",
+            is_active=True,
         )
         sources = [primary_src]
 
@@ -573,7 +603,7 @@ def upload(request):
         if imports_today >= MAX_IMPORTS_PER_DAY:
             messages.error(
                 request,
-                f"Daily import limit reached ({MAX_IMPORTS_PER_DAY}). Try again tomorrow."
+                _("Daily import limit reached (%(limit)s). Try again tomorrow.") % {"limit": MAX_IMPORTS_PER_DAY},
             )
             return redirect("upload")
 
@@ -597,7 +627,7 @@ def upload(request):
 
             MAX_UPLOAD_BYTES = getattr(settings, "MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
             if len(raw) > MAX_UPLOAD_BYTES:
-                messages.error(request, "File is too large to import.")
+                messages.error(request, _("File is too large to import."))
                 return redirect("upload")
 
             # ---- CSV import via bank importers ----
@@ -607,25 +637,31 @@ def upload(request):
                     if not importer or not sniff or not sniff.ok:
                         messages.error(
                             request,
-                            "Could not detect CSV format. Please choose the bank and try again."
+                            _("Could not detect CSV format. Please choose the bank and try again.")
                         )
                         return redirect("upload")
                 else:
                     importer = IMPORTERS.get(bank)
                     if not importer:
-                        messages.error(request, "Unknown bank format selected.")
+                        messages.error(request, _("Unknown bank format selected."))
                         return redirect("upload")
 
                     sniff = importer.sniff(raw=raw, filename=filename)
                     if not sniff.ok:
                         sugg_imp, sugg = _pick_best_importer(raw, filename)
                         suggestion = (sugg_imp.label if sugg_imp else "")
-                        messages.error(
-                            request,
-                            f"This file does not look like {importer.label}. "
-                            f"{('It looks like: ' + suggestion + '. ') if suggestion else ''}"
-                            "Please choose the correct bank and try again."
-                        )
+                        if suggestion:
+                            messages.error(
+                                request,
+                                _("This file does not look like %(bank)s. It looks like: %(suggestion)s. Please choose the correct bank and try again.")
+                                % {"bank": importer.label, "suggestion": suggestion},
+                            )
+                        else:
+                            messages.error(
+                                request,
+                                _("This file does not look like %(bank)s. Please choose the correct bank and try again.")
+                                % {"bank": importer.label},
+                            )
                         return redirect("upload")
 
                 parsed = importer.parse_raw(raw=raw, filename=filename)
@@ -652,7 +688,7 @@ def upload(request):
                             return row[a]
                     return None
 
-                for _, r in df.iterrows():
+                for row_idx, r in df.iterrows():
                     date_val   = pick_row(r, "data", "date", "operacijos data", "operation date", "transaction date")
                     merchant   = pick_row(
                         r,
@@ -697,7 +733,8 @@ def upload(request):
             if len(rows) > MAX_ROWS_PER_IMPORT:
                 messages.error(
                     request,
-                    f"This file has {len(rows)} rows, which exceeds the per-import limit ({MAX_ROWS_PER_IMPORT})."
+                    _("This file has %(count)s rows, which exceeds the per-import limit (%(limit)s).")
+                    % {"count": len(rows), "limit": MAX_ROWS_PER_IMPORT},
                 )
                 return redirect("upload")
 
@@ -786,17 +823,25 @@ def upload(request):
                 )
                 added = len(created_fps)
 
-            # ---------------- NEW: store batch counts ----------------
-            batch.added_count = added
-            batch.skipped_count = skipped_count
-            batch.dup_count = db_dups
-            batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
+            # Keep "Undo last upload" meaningful: duplicate-only uploads should not create an empty batch.
+            if added == 0 and not Transaction.objects.filter(import_batch=batch).exists():
+                batch.delete()
+            else:
+                batch.added_count = added
+                batch.skipped_count = skipped_count
+                batch.dup_count = db_dups
+                batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
 
-            msg = (
-                f"Imported into: {import_src.name}. Parsed {parsed_count}, skipped {skipped_count}. "
-                f"Added {added} new transaction{'s' if added != 1 else ''}. "
-                f"(DB dups: {db_dups}, blocked by deleted: {blocked_deleted}.) "
-            )
+            msg = _(
+                "Imported into: %(account)s. Parsed %(parsed)s, skipped %(skipped)s. Added %(added)s new transactions. (DB duplicates: %(dups)s, blocked by deleted: %(blocked)s.)"
+            ) % {
+                "account": import_src.name,
+                "parsed": parsed_count,
+                "skipped": skipped_count,
+                "added": added,
+                "dups": db_dups,
+                "blocked": blocked_deleted,
+            }
             if added > 0:
                 messages.success(request, msg, extra_tags="safe")
             else:
@@ -830,7 +875,7 @@ def upload(request):
             return redirect("upload")
 
         except Exception as e:
-            messages.error(request, f"Failed to import file: {e}")
+            messages.error(request, _("Failed to import file: %(error)s") % {"error": e})
             return redirect("upload")
 
     # -------------------- LIST (GET) --------------------
@@ -893,7 +938,10 @@ def upload(request):
     categories = Category.objects.filter(user=request.user).order_by("name")
 
     ensure_default_categories(request.user)
-    income_exists = Category.objects.filter(user=request.user, name="Income").exists()
+    income_exists = Category.objects.filter(
+        user=request.user,
+        name__in=category_names_for("income"),
+    ).exists()
     try:
         state = request.user.onboarding_state
         cats_done = bool(state and state.categories_done and income_exists)
@@ -977,7 +1025,7 @@ def upload(request):
 def refund_pair_delete(request):
     tx_out_id = request.POST.get("tx_out_id")
     tx_in_id = request.POST.get("tx_in_id")
-    next_url = request.POST.get("next") or "upload"
+    next_url = _safe_next_url(request, request.POST.get("next"), "upload")
 
     try:
         tx_out = Transaction.objects.get(
@@ -1018,7 +1066,7 @@ def refund_pair_delete(request):
 def refund_pair_ignore(request):
     tx_out_id = request.POST.get("tx_out_id")
     tx_in_id = request.POST.get("tx_in_id")
-    next_url = request.POST.get("next") or "upload"
+    next_url = _safe_next_url(request, request.POST.get("next"), "upload")
 
     try:
         tx_out = Transaction.objects.get(
@@ -1058,11 +1106,11 @@ def tx_delete(request, tx_id):
             tx.deleted_at = timezone.now()
             tx.deleted_note = note
             tx.save(update_fields=["is_deleted", "deleted_at", "deleted_note"])
-            messages.success(request, "Transaction deleted.")
+            messages.success(request, _("Transaction deleted."))
         else:
-            messages.info(request, "Transaction was already deleted.")
-        return redirect(request.POST.get("next") or "upload")
-    messages.error(request, "Invalid request method.")
+            messages.info(request, _("Transaction was already deleted."))
+        return redirect(_safe_next_url(request, request.POST.get("next"), "upload"))
+    messages.error(request, _("Invalid request method."))
     return redirect("upload")
 
 @login_required
@@ -1073,11 +1121,11 @@ def tx_restore(request, tx_id):
             tx.is_deleted = False
             tx.deleted_at = None
             tx.save(update_fields=["is_deleted", "deleted_at"])
-            messages.success(request, "Transaction restored.")
+            messages.success(request, _("Transaction restored."))
         else:
-            messages.info(request, "Transaction is not deleted.")
-        return redirect(request.POST.get("next") or "deleted_list")
-    messages.error(request, "Invalid request method.")
+            messages.info(request, _("Transaction is not deleted."))
+        return redirect(_safe_next_url(request, request.POST.get("next"), "deleted_list"))
+    messages.error(request, _("Invalid request method."))
     return redirect("deleted_list")
 
 @login_required

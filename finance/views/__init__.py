@@ -22,7 +22,7 @@ from .reports import (
     income_source_retrack,
 )
 from .settings import (
-    profile, register, category_list, category_edit, category_delete,
+    profile, category_list, category_edit, category_delete,
     onboarding_mark_done, profile_delete_account, profile_cancel_delete_account
 )
 # UNCOMMENTED THESE LINES:

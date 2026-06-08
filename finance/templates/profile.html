@@ -3,10 +3,10 @@
 {% block title %}{% trans "Profile" %} · Money Compass{% endblock %}
 {% block content %}
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-header profile-page-header">
     <h2 class="text-dark" style="margin:0;">{% trans "Profile" %}</h2>
-    <div class="text-medium" style="font-size:0.95rem;">
-      {% trans "User" %}: <strong class="text-dark">{{ request.user.username }}</strong>
+    <div class="profile-user-line text-medium">
+      <span>{% trans "User" %}:</span> <strong class="text-dark">{{ request.user.email|default:request.user.username }}</strong>
     </div>
 </div>
 
@@ -166,7 +166,7 @@
           <tr>
             <td style="font-weight:500;">{{ c.name }}</td>
             <td>
-              {% if c.name != "Other" %}
+              {% if c.name != "Other" and c.name != "Kita" %}
                 <form method="post"
                       action="{% url 'profile' %}"
                       style="margin:0; display:inline;"
