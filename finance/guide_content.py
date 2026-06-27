@@ -28,7 +28,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "You can track spending by category, monitor net worth, use AI categorization, view charts, manage investments, and receive AI-generated financial reports.",
+                    "text": "You can track spending by category, monitor net worth, use AI categorization, view charts, manage investments, and review balance anomalies.",
                 },
                 {
                     "type": "note",
@@ -52,6 +52,7 @@ GUIDE_CONTENT = {
                     "mobile-nav.png",
                     "Mobile navigation example",
                     "Mobile navigation.",
+                    variant="mobile",
                 ),
                 {
                     "type": "table",
@@ -59,7 +60,7 @@ GUIDE_CONTENT = {
                     "rows": [
                         ["Dashboard", "View total net worth, income vs spending, category breakdown, savings goals, and monthly net balance."],
                         ["Statistics", "Review all-time totals, income sources, subscriptions, merchants, and categorization coverage."],
-                        ["Reports", "Read AI-generated monthly and weekly financial summaries."],
+                        ["Reports", "Review balance anomaly history. Monthly and weekly AI reports are admin-only during beta."],
                         ["Portfolio", "Track crypto and stock / ETF holdings with live prices and total value."],
                         ["Transactions", "Upload bank statements, browse, filter, categorize, hide, and restore transactions."],
                         ["Profile / Settings", "Manage accounts, categories, savings goals, language preference, and data deletion."],
@@ -93,6 +94,12 @@ GUIDE_CONTENT = {
                     "type": "heading",
                     "text": "Register and log in",
                 },
+                image(
+                    "en",
+                    "registration.png",
+                    "MoneyCompass registration page",
+                    "Create an account, choose your language, and enter the beta code.",
+                ),
                 {
                     "type": "list",
                     "items": [
@@ -158,15 +165,14 @@ GUIDE_CONTENT = {
                 {
                     "type": "list",
                     "items": [
-                        "SEB Bank",
-                        "Swedbank",
-                        "Revolut",
-                        "Generic CSV or XLSX files with date, merchant, and amount columns",
+                        "CSV exports from SEB Bank, Swedbank, and Revolut",
+                        "XLSX / Excel files with recognizable date, merchant, amount, and optional currency columns",
                     ],
                 },
                 {
                     "type": "heading",
                     "text": "Upload process",
+                    "anchor": "upload-process",
                 },
                 image(
                     "en",
@@ -199,7 +205,14 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Add a manual transaction",
+                    "anchor": "manual-transaction",
                 },
+                image(
+                    "en",
+                    "manual-transaction.png",
+                    "Manual transaction form",
+                    "Add a transaction that is not included in a bank statement.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "For cash purchases or transactions that are not in a bank statement, use Add Manual on the Transactions page.",
@@ -243,6 +256,12 @@ GUIDE_CONTENT = {
                     "type": "heading",
                     "text": "Assigning categories inline",
                 },
+                image(
+                    "en",
+                    "transaction-list.png",
+                    "Transaction list with inline category controls",
+                    "Browse transactions and assign categories directly in the list.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "In the transaction table, change the Category dropdown on any row. A pending-change indicator appears, and a sticky Apply Changes bar lets you save all changes at once.",
@@ -250,6 +269,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Editing a transaction",
+                    "anchor": "edit-transaction",
                 },
                 image(
                     "en",
@@ -272,6 +292,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Refund detection",
+                    "anchor": "refund-detection",
                 },
                 image(
                     "en",
@@ -297,6 +318,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Creating categories",
+                    "anchor": "creating-categories",
                 },
                 image(
                     "en",
@@ -328,25 +350,27 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
+                    "text": "Deleting categories",
+                    "anchor": "deleting-categories",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "When a category is deleted, transactions using that category are reassigned to Other.",
+                },
+                {
+                    "type": "heading",
                     "text": "Spending caps",
+                    "anchor": "spending-caps",
                 },
                 image(
                     "en",
                     "category-caps.png",
                     "Category spending caps section",
-                    "Monthly category spending caps.",
+                    "Set a monthly category limit and compare it with the suggested average.",
                 ),
                 {
                     "type": "paragraph",
-                    "text": "You can set a monthly spending cap for each category. When a cap is set, the Dashboard category chart shows a cap line.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Deleting categories",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "When a category is deleted, transactions using that category are reassigned to Other.",
+                    "text": "Set a monthly spending cap for each category in Profile. The Dashboard category chart shows the cap line, while Statistics compares spending with the cap for the selected period.",
                 },
             ],
         },
@@ -361,18 +385,24 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "AI categorization starts only after onboarding is complete and at least 30 transactions have been categorized manually.",
+                    "text": "The onboarding banner stays active until at least 30 transactions have been categorized manually. User-set categories are always protected from automatic changes.",
                 },
                 {
                     "type": "table",
                     "headers": ["Confidence", "Action"],
                     "rows": [
-                        ["90% or higher", "Auto-applied."],
-                        ["80%–89%", "Auto-applied as category."],
-                        ["Below 80%", "Parked for manual review on the Low-confidence page."],
+                        ["New uncategorized transaction, 70% or higher", "The suggested category can be applied automatically."],
+                        ["Changing an existing non-user category, 90% or higher", "The existing category can be replaced automatically."],
+                        ["Below the applicable threshold", "The suggestion may be parked for review on the Low-confidence page."],
                         ["User-set category", "Never overwritten by AI."],
                     ],
                 },
+                image(
+                    "en",
+                    "ai-review.png",
+                    "Low-confidence AI category review",
+                    "Review AI suggestions that need your decision.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "The AI learns from your existing categorized transactions. The more accurately you categorize transactions manually, the better future suggestions become.",
@@ -391,6 +421,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Total net worth",
+                    "anchor": "total-net-worth",
                 },
                 image(
                     "en",
@@ -405,6 +436,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Accounts and assets",
+                    "anchor": "accounts-assets",
                 },
                 image(
                     "en",
@@ -415,6 +447,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Net worth history",
+                    "anchor": "net-worth-history",
                 },
                 image(
                     "en",
@@ -425,6 +458,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Savings goals",
+                    "anchor": "savings-goals",
                 },
                 image(
                     "en",
@@ -435,6 +469,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Income vs spending",
+                    "anchor": "income-spending",
                 },
                 image(
                     "en",
@@ -445,6 +480,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Net by month",
+                    "anchor": "net-by-month",
                 },
                 image(
                     "en",
@@ -455,6 +491,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Spending by category",
+                    "anchor": "spending-by-category",
                 },
                 image(
                     "en",
@@ -477,53 +514,105 @@ GUIDE_CONTENT = {
                     "type": "paragraph",
                     "text": "The Statistics page shows all-time earned, all-time spent, lifetime net, average monthly income and spending, transaction count, categorization coverage, and merchant insights.",
                 },
+                image(
+                    "en",
+                    "statistics-summary.png",
+                    "Statistics summary cards",
+                    "All-time totals, monthly averages, and categorization coverage.",
+                ),
                 {
                     "type": "heading",
                     "text": "Income sources",
+                    "anchor": "income-sources",
                 },
                 {
                     "type": "paragraph",
                     "text": "Money Compass detects income sources from incoming transactions. You can review, track, untrack, or retrack income sources.",
                 },
+                image(
+                    "en",
+                    "statistics-income-sources.png",
+                    "Income source statistics",
+                    "Review detected income sources and their contribution to total income.",
+                ),
                 {
                     "type": "heading",
                     "text": "Subscriptions",
+                    "anchor": "subscriptions",
                 },
                 {
                     "type": "paragraph",
                     "text": "Money Compass detects recurring outgoing payments as possible subscriptions. You can review candidates, confirm them, dismiss them, or retrack previously untracked subscriptions.",
                 },
+                image(
+                    "en",
+                    "statistics-subscriptions.png",
+                    "Subscription statistics",
+                    "Track active subscriptions and their monthly cost.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Financial runway",
+                    "anchor": "financial-runway",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Financial Runway estimates how many months your selected assets could cover your recent spending. The default burn rate uses outgoing transactions from the last 90 days. Configure Scenario lets you include or exclude specific accounts, categories, and uncategorized spending.",
+                },
+                image(
+                    "en",
+                    "statistics-runway.png",
+                    "Financial runway and scenario controls",
+                    "Estimate how long your available assets could cover your current spending rate.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Category share",
+                    "anchor": "category-share",
+                },
+                image(
+                    "en",
+                    "statistics-categories.png",
+                    "Spending category statistics",
+                    "Compare category totals, limits, and monthly averages.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Weekday spending",
+                    "anchor": "weekday-spending",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "This chart totals outgoing spending by weekday over the last 90 days. It uses the same category selection as the Category Share analysis.",
+                },
+                image(
+                    "en",
+                    "statistics-weekday.png",
+                    "Weekday spending chart",
+                    "See which days of the week account for the most spending.",
+                ),
             ],
         },
         {
             "id": "reports",
             "title": "Reports",
-            "subtitle": "AI-generated financial summaries",
+            "subtitle": "Balance checks and anomaly history",
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Reports are AI-generated summaries of your finances written in plain language.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Monthly reports",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "Monthly reports are generated automatically after a month ends and include a written summary and key metrics.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Weekly reports",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "Weekly reports are generated automatically every Monday.",
+                    "text": "During the beta, regular users see Balance Anomaly History on this page. Monthly and weekly AI reports are available only to administrators.",
                 },
                 {
                     "type": "heading",
                     "text": "Balance reconciliation",
+                    "anchor": "balance-reconciliation",
                 },
+                image(
+                    "en",
+                    "reports-reconciliation.png",
+                    "Balance anomaly history",
+                    "Compare expected and entered balances between snapshots.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "The reconciliation table compares consecutive balance snapshots and checks whether imported transactions explain the difference between them.",
@@ -536,9 +625,26 @@ GUIDE_CONTENT = {
             "subtitle": "Track crypto and stock / ETF holdings",
             "body": [
                 {
+                    "type": "heading",
+                    "text": "Portfolio overview",
+                    "anchor": "portfolio-overview",
+                },
+                {
                     "type": "paragraph",
                     "text": "The Portfolio page lets you track cryptocurrency and stock / ETF holdings with current EUR prices and calculated total value.",
                 },
+                image(
+                    "en",
+                    "portfolio-overview.png",
+                    "Portfolio overview",
+                    "Track crypto, stocks, ETFs, and their total value.",
+                ),
+                image(
+                    "en",
+                    "portfolio-add.png",
+                    "Add a cryptocurrency holding",
+                    "Search for an asset and enter the quantity you own.",
+                ),
                 {
                     "type": "list",
                     "items": [
@@ -565,6 +671,77 @@ GUIDE_CONTENT = {
                     "text": "Profile controls your accounts, categories, savings goals, language preference, balance snapshots, and data deletion settings.",
                 },
                 {
+                    "type": "heading",
+                    "text": "Accounts and balance anchors",
+                    "anchor": "profile-accounts",
+                },
+                image(
+                    "en",
+                    "accounts-setup.png",
+                    "Account management settings",
+                    "Add accounts, update balances, rename them, or choose a default import account.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Add one account for each bank, cash wallet, savings balance, or investment balance you want to include. Saving a balance creates a new anchor: future imported transactions are applied after that timestamp, and the Reports page can compare consecutive anchors for unexplained differences.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Savings goals",
+                    "anchor": "profile-savings-goals",
+                },
+                image(
+                    "en",
+                    "profile-goals.png",
+                    "Savings goal settings",
+                    "Create a goal, link one or more accounts, and track progress.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "A savings goal totals the balances of the accounts you select. You can pause, reactivate, or delete a goal without changing the linked accounts.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Investment display preference",
+                    "anchor": "profile-preferences",
+                },
+                image(
+                    "en",
+                    "profile-preferences.png",
+                    "Investment tax display preference",
+                    "Optionally show investment account values after a flat 15% estimate on Dashboard and Statistics.",
+                ),
+                {
+                    "type": "note",
+                    "text": "This is only a display estimate. It does not change stored balances, transactions, or the full values shown on the Portfolio page.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Language",
+                    "anchor": "profile-language",
+                },
+                image(
+                    "en",
+                    "profile-language.png",
+                    "Language preference",
+                    "Choose English or Lithuanian as the default interface language.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "The saved language is used on future visits. The EN / LT switch in the navigation can also change the current interface.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Data and account deletion",
+                    "anchor": "profile-deletion",
+                },
+                image(
+                    "en",
+                    "profile-deletion.png",
+                    "Account deletion controls",
+                    "Schedule account deletion with a 24-hour cancellation period.",
+                ),
+                {
                     "type": "table",
                     "headers": ["Action", "Where to go"],
                     "rows": [
@@ -589,6 +766,13 @@ GUIDE_CONTENT = {
             "title": "Quick Reference",
             "subtitle": "Where to find common actions",
             "body": [
+                image(
+                    "en",
+                    "quick-reference-menu.png",
+                    "MoneyCompass mobile menu",
+                    "The mobile menu provides quick access to reports, settings, the guide, and community.",
+                    variant="mobile",
+                ),
                 {
                     "type": "table",
                     "headers": ["I want to...", "Where to go"],
@@ -601,7 +785,7 @@ GUIDE_CONTENT = {
                         ["Find uncategorized transactions", "Transactions → Uncategorized"],
                         ["Hide an internal transfer", "Transactions → Edit → Delete section"],
                         ["Restore deleted transaction", "Transactions → Deleted → Restore"],
-                        ["Read AI financial report", "Reports"],
+                        ["Review balance anomalies", "Reports → Balance Anomalies History"],
                         ["Track crypto or stocks", "Portfolio"],
                         ["Create a savings goal", "Profile → Savings Goals"],
                         ["Detect subscriptions", "Statistics → Review subscriptions"],
@@ -632,7 +816,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Galite sekti išlaidas pagal kategorijas, stebėti grynąją vertę, naudoti DI kategorizavimą, peržiūrėti diagramas, valdyti investicijas ir gauti DI sugeneruotas finansines ataskaitas.",
+                    "text": "Galite sekti išlaidas pagal kategorijas, stebėti grynąją vertę, naudoti DI kategorizavimą, peržiūrėti diagramas, valdyti investicijas ir tikrinti likučio anomalijas.",
                 },
                 {
                     "type": "note",
@@ -656,6 +840,7 @@ GUIDE_CONTENT = {
                     "mobile-nav.png",
                     "Mobilios navigacijos pavyzdys",
                     "Mobilioji navigacija.",
+                    variant="mobile",
                 ),
                 {
                     "type": "table",
@@ -663,7 +848,7 @@ GUIDE_CONTENT = {
                     "rows": [
                         ["Apžvalga", "Matote bendrą grynąją vertę, pajamas ir išlaidas, kategorijų analizę, taupymo tikslus ir mėnesinį balansą."],
                         ["Statistika", "Peržiūrite viso laikotarpio sumas, pajamų šaltinius, prenumeratas, pardavėjus ir kategorizavimo aprėptį."],
-                        ["Ataskaitos", "Skaitote DI sugeneruotas mėnesines ir savaitines finansų apžvalgas."],
+                        ["Ataskaitos", "Peržiūrite likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos beta metu skirtos tik administratoriams."],
                         ["Portfelis", "Sekate kripto ir akcijų / ETF pozicijas su realiomis kainomis ir bendra verte."],
                         ["Operacijos", "Įkeliate banko išrašus, naršote, filtruojate, kategorizuojate, paslepiate ir atkuriate operacijas."],
                         ["Profilis / Nustatymai", "Valdote sąskaitas, kategorijas, taupymo tikslus, kalbą ir duomenų ištrynimą."],
@@ -697,6 +882,12 @@ GUIDE_CONTENT = {
                     "type": "heading",
                     "text": "Registracija ir prisijungimas",
                 },
+                image(
+                    "lt",
+                    "registration.png",
+                    "MoneyCompass registracijos puslapis",
+                    "Sukurkite paskyrą, pasirinkite kalbą ir įveskite beta kodą.",
+                ),
                 {
                     "type": "list",
                     "items": [
@@ -762,15 +953,14 @@ GUIDE_CONTENT = {
                 {
                     "type": "list",
                     "items": [
-                        "SEB bankas",
-                        "Swedbank",
-                        "Revolut",
-                        "Bendriniai CSV arba XLSX failai su datos, pardavėjo ir sumos stulpeliais",
+                        "SEB, Swedbank ir Revolut CSV išrašai",
+                        "XLSX / Excel failai su atpažįstamais datos, pardavėjo, sumos ir pasirinktinai valiutos stulpeliais",
                     ],
                 },
                 {
                     "type": "heading",
                     "text": "Įkėlimo eiga",
+                    "anchor": "upload-process",
                 },
                 image(
                     "lt",
@@ -803,7 +993,14 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Pridėti operaciją rankiniu būdu",
+                    "anchor": "manual-transaction",
                 },
+                image(
+                    "lt",
+                    "manual-transaction.png",
+                    "Rankinio operacijos įvedimo forma",
+                    "Pridėkite operaciją, kurios nėra banko išraše.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "Grynųjų pirkimams arba operacijoms, kurių nėra banko išraše, naudokite Pridėti rankiniu būdu Operacijų puslapyje.",
@@ -847,6 +1044,12 @@ GUIDE_CONTENT = {
                     "type": "heading",
                     "text": "Kategorijų priskyrimas sąraše",
                 },
+                image(
+                    "lt",
+                    "transaction-list.png",
+                    "Operacijų sąrašas su kategorijų valdikliais",
+                    "Naršykite operacijas ir priskirkite kategorijas tiesiai sąraše.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "Operacijų lentelėje pakeiskite Kategorijos išskleidžiamąjį sąrašą bet kurioje eilutėje. Atsiras laukiančio pakeitimo indikatorius ir lipni Pritaikyti pakeitimus juosta.",
@@ -854,6 +1057,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Operacijos redagavimas",
+                    "anchor": "edit-transaction",
                 },
                 image(
                     "lt",
@@ -876,6 +1080,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Grąžinimų aptikimas",
+                    "anchor": "refund-detection",
                 },
                 image(
                     "lt",
@@ -901,6 +1106,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Kategorijų kūrimas",
+                    "anchor": "creating-categories",
                 },
                 image(
                     "lt",
@@ -932,25 +1138,27 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
+                    "text": "Kategorijų trynimas",
+                    "anchor": "deleting-categories",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Ištrynus kategoriją, visos tos kategorijos operacijos perkeliamos į Kita.",
+                },
+                {
+                    "type": "heading",
                     "text": "Išlaidų limitai",
+                    "anchor": "spending-caps",
                 },
                 image(
                     "lt",
                     "category-caps.png",
                     "Kategorijų išlaidų limitų skiltis",
-                    "Mėnesiniai kategorijų limitai.",
+                    "Nustatykite mėnesio limitą ir palyginkite jį su siūlomu vidurkiu.",
                 ),
                 {
                     "type": "paragraph",
-                    "text": "Kiekvienai kategorijai galite nustatyti mėnesinį išlaidų limitą. Kai limitas nustatytas, Apžvalgos kategorijų diagramoje rodoma limito linija.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Kategorijų trynimas",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "Ištrynus kategoriją, visos tos kategorijos operacijos perkeliamos į Kita.",
+                    "text": "Profilyje kiekvienai kategorijai galite nustatyti mėnesinį išlaidų limitą. Apžvalgos kategorijų diagramoje rodoma limito linija, o Statistikoje išlaidos lyginamos su pasirinkto laikotarpio limitu.",
                 },
             ],
         },
@@ -965,18 +1173,24 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "DI kategorizavimas prasideda tik baigus pradinį nustatymą ir rankiniu būdu sukategorizavus bent 30 operacijų.",
+                    "text": "Pradinio nustatymo juosta lieka aktyvi, kol rankiniu būdu sukategorizuojate bent 30 operacijų. Vartotojo nustatytų kategorijų DI niekada automatiškai nekeičia.",
                 },
                 {
                     "type": "table",
                     "headers": ["Pasitikėjimas", "Veiksmas"],
                     "rows": [
-                        ["90% arba daugiau", "Automatiškai pritaikoma."],
-                        ["80%–89%", "Automatiškai pritaikoma kaip kategorija."],
-                        ["Mažiau nei 80%", "Atidedama rankinei peržiūrai Mažo pasitikėjimo puslapyje."],
+                        ["Nauja nekategorizuota operacija, 70% arba daugiau", "Siūloma kategorija gali būti pritaikyta automatiškai."],
+                        ["Esamos ne vartotojo kategorijos keitimas, 90% arba daugiau", "Esama kategorija gali būti pakeista automatiškai."],
+                        ["Mažiau už taikomą ribą", "Pasiūlymas gali būti paliktas peržiūrai Mažo pasitikėjimo puslapyje."],
                         ["Vartotojo nustatyta kategorija", "DI niekada neperrašo."],
                     ],
                 },
+                image(
+                    "lt",
+                    "ai-review.png",
+                    "Mažo pasitikėjimo DI pasiūlymų peržiūra",
+                    "Peržiūrėkite DI pasiūlymus, kuriems reikia jūsų sprendimo.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "DI mokosi iš jūsų jau sukategorizuotų operacijų. Kuo tiksliau kategorizuojate rankiniu būdu, tuo geresni tampa būsimi pasiūlymai.",
@@ -995,6 +1209,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Bendra grynoji vertė",
+                    "anchor": "total-net-worth",
                 },
                 image(
                     "lt",
@@ -1009,6 +1224,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Sąskaitos ir turtas",
+                    "anchor": "accounts-assets",
                 },
                 image(
                     "lt",
@@ -1019,6 +1235,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Grynosios vertės istorija",
+                    "anchor": "net-worth-history",
                 },
                 image(
                     "lt",
@@ -1029,6 +1246,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Taupymo tikslai",
+                    "anchor": "savings-goals",
                 },
                 image(
                     "lt",
@@ -1039,6 +1257,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Pajamos ir išlaidos",
+                    "anchor": "income-spending",
                 },
                 image(
                     "lt",
@@ -1049,6 +1268,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Mėnesinis balansas",
+                    "anchor": "net-by-month",
                 },
                 image(
                     "lt",
@@ -1059,6 +1279,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "heading",
                     "text": "Išlaidos pagal kategoriją",
+                    "anchor": "spending-by-category",
                 },
                 image(
                     "lt",
@@ -1081,53 +1302,105 @@ GUIDE_CONTENT = {
                     "type": "paragraph",
                     "text": "Statistikos puslapyje matote viso laikotarpio pajamas, išlaidas, grynąjį rezultatą, mėnesinius vidurkius, operacijų skaičių, kategorizavimo aprėptį ir pardavėjų analizę.",
                 },
+                image(
+                    "lt",
+                    "statistics-summary.png",
+                    "Statistikos suvestinės kortelės",
+                    "Viso laikotarpio sumos, mėnesio vidurkiai ir kategorizavimo aprėptis.",
+                ),
                 {
                     "type": "heading",
                     "text": "Pajamų šaltiniai",
+                    "anchor": "income-sources",
                 },
                 {
                     "type": "paragraph",
                     "text": "Money Compass aptinka pajamų šaltinius iš gaunamų operacijų. Juos galite peržiūrėti, sekti, nebesekti arba vėl pradėti sekti.",
                 },
+                image(
+                    "lt",
+                    "statistics-income-sources.png",
+                    "Pajamų šaltinių statistika",
+                    "Peržiūrėkite aptiktus pajamų šaltinius ir jų dalį bendrose pajamose.",
+                ),
                 {
                     "type": "heading",
                     "text": "Prenumeratos",
+                    "anchor": "subscriptions",
                 },
                 {
                     "type": "paragraph",
                     "text": "Money Compass aptinka pasikartojančius išeinančius mokėjimus kaip galimas prenumeratas. Kandidatus galite patvirtinti, atmesti arba vėl pradėti sekti anksčiau nebesektas prenumeratas.",
                 },
+                image(
+                    "lt",
+                    "statistics-subscriptions.png",
+                    "Prenumeratų statistika",
+                    "Stebėkite aktyvias prenumeratas ir jų mėnesio kainą.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Finansinis išgyvenimas",
+                    "anchor": "financial-runway",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Finansinis rezervas apskaičiuoja, kiek mėnesių pasirinktas turtas galėtų padengti dabartines išlaidas. Numatytasis išlaidų tempas skaičiuojamas pagal paskutinių 90 dienų išeinančias operacijas. Scenarijaus nustatymuose galite įtraukti arba atmesti konkrečias sąskaitas, kategorijas ir nekategorizuotas išlaidas.",
+                },
+                image(
+                    "lt",
+                    "statistics-runway.png",
+                    "Finansinio rezervo ir scenarijaus valdikliai",
+                    "Įvertinkite, kiek laiko turimas turtas galėtų padengti dabartinį išlaidų tempą.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Kategorijų dalis",
+                    "anchor": "category-share",
+                },
+                image(
+                    "lt",
+                    "statistics-categories.png",
+                    "Išlaidų kategorijų statistika",
+                    "Palyginkite kategorijų sumas, limitus ir mėnesio vidurkius.",
+                ),
+                {
+                    "type": "heading",
+                    "text": "Išlaidos pagal savaitės dieną",
+                    "anchor": "weekday-spending",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Diagrama susumuoja paskutinių 90 dienų išeinančias operacijas pagal savaitės dieną. Ji naudoja tą patį kategorijų pasirinkimą kaip Kategorijų dalies analizė.",
+                },
+                image(
+                    "lt",
+                    "statistics-weekday.png",
+                    "Išlaidų pagal savaitės dieną diagrama",
+                    "Pamatykite, kuriomis savaitės dienomis išleidžiate daugiausia.",
+                ),
             ],
         },
         {
             "id": "ataskaitos",
             "title": "Ataskaitos",
-            "subtitle": "DI sugeneruotos finansų apžvalgos",
+            "subtitle": "Likučių patikra ir anomalijų istorija",
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Ataskaitos yra DI sugeneruotos jūsų finansų suvestinės, parašytos paprasta kalba.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Mėnesinės ataskaitos",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "Mėnesinės ataskaitos generuojamos automatiškai pasibaigus mėnesiui ir apima rašytinę suvestinę bei pagrindinius rodiklius.",
-                },
-                {
-                    "type": "heading",
-                    "text": "Savaitinės ataskaitos",
-                },
-                {
-                    "type": "paragraph",
-                    "text": "Savaitinės ataskaitos generuojamos automatiškai kiekvieną pirmadienį.",
+                    "text": "Beta versijoje įprasti naudotojai šiame puslapyje mato Likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos prieinamos tik administratoriams.",
                 },
                 {
                     "type": "heading",
                     "text": "Likučių suderinimas",
+                    "anchor": "balance-reconciliation",
                 },
+                image(
+                    "lt",
+                    "reports-reconciliation.png",
+                    "Likučio anomalijų istorija",
+                    "Palyginkite laukiamą ir įvestą likutį tarp momentinių įrašų.",
+                ),
                 {
                     "type": "paragraph",
                     "text": "Likučių suderinimo lentelė lygina iš eilės einančias likučio momentines reikšmes ir tikrina, ar importuotos operacijos paaiškina skirtumą tarp jų.",
@@ -1140,9 +1413,26 @@ GUIDE_CONTENT = {
             "subtitle": "Kripto ir akcijų / ETF pozicijų sekimas",
             "body": [
                 {
+                    "type": "heading",
+                    "text": "Portfelio apžvalga",
+                    "anchor": "portfolio-overview",
+                },
+                {
                     "type": "paragraph",
                     "text": "Portfelio puslapyje galite sekti kriptovaliutų ir akcijų / ETF pozicijas su dabartinėmis EUR kainomis ir apskaičiuota bendra verte.",
                 },
+                image(
+                    "lt",
+                    "portfolio-overview.png",
+                    "Portfelio apžvalga",
+                    "Stebėkite kripto, akcijas, ETF ir bendrą jų vertę.",
+                ),
+                image(
+                    "lt",
+                    "portfolio-add.png",
+                    "Kriptovaliutos pozicijos pridėjimas",
+                    "Suraskite turtą ir įveskite turimą kiekį.",
+                ),
                 {
                     "type": "list",
                     "items": [
@@ -1169,6 +1459,77 @@ GUIDE_CONTENT = {
                     "text": "Profilyje valdote sąskaitas, kategorijas, taupymo tikslus, kalbą, likučio momentines reikšmes ir duomenų ištrynimo nustatymus.",
                 },
                 {
+                    "type": "heading",
+                    "text": "Sąskaitos ir likučio atskaitos taškai",
+                    "anchor": "profile-accounts",
+                },
+                image(
+                    "lt",
+                    "accounts-setup.png",
+                    "Sąskaitų valdymo nustatymai",
+                    "Pridėkite sąskaitas, atnaujinkite likučius, pervadinkite arba pasirinkite numatytąją importo sąskaitą.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Pridėkite po sąskaitą kiekvienam bankui, grynųjų pinigų piniginei, santaupoms ar investiciniam likučiui. Išsaugojus likutį sukuriamas naujas atskaitos taškas: po jo įkeltos operacijos naudojamos tolimesniems skaičiavimams, o Ataskaitose galima palyginti du atskaitos taškus ir rasti nepaaiškintus skirtumus.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Taupymo tikslai",
+                    "anchor": "profile-savings-goals",
+                },
+                image(
+                    "lt",
+                    "profile-goals.png",
+                    "Taupymo tikslų nustatymai",
+                    "Sukurkite tikslą, susiekite vieną ar kelias sąskaitas ir stebėkite pažangą.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Taupymo tikslas susumuoja pasirinktų sąskaitų likučius. Tikslą galite pristabdyti, vėl aktyvuoti arba ištrinti nekeisdami susietų sąskaitų.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Investicijų rodymo nuostata",
+                    "anchor": "profile-preferences",
+                },
+                image(
+                    "lt",
+                    "profile-preferences.png",
+                    "Investicijų mokesčio rodymo nuostata",
+                    "Pasirinktinai Apžvalgoje ir Statistikoje rodykite investicijų vertę atėmus fiksuotą 15% įvertį.",
+                ),
+                {
+                    "type": "note",
+                    "text": "Tai tik rodymo įvertis. Jis nekeičia išsaugotų likučių, operacijų ar visos Portfelio puslapyje rodomos vertės.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Kalba",
+                    "anchor": "profile-language",
+                },
+                image(
+                    "lt",
+                    "profile-language.png",
+                    "Kalbos nuostata",
+                    "Pasirinkite lietuvių arba anglų kalbą kaip numatytąją sąsajos kalbą.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Išsaugota kalba naudojama kitų apsilankymų metu. Dabartinę sąsają taip pat galite perjungti navigacijoje pasirinkdami EN arba LT.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Duomenų ir paskyros ištrynimas",
+                    "anchor": "profile-deletion",
+                },
+                image(
+                    "lt",
+                    "profile-deletion.png",
+                    "Paskyros ištrynimo valdikliai",
+                    "Suplanuokite paskyros ištrynimą ir prireikus atšaukite jį per 24 valandas.",
+                ),
+                {
                     "type": "table",
                     "headers": ["Veiksmas", "Kur eiti"],
                     "rows": [
@@ -1193,6 +1554,13 @@ GUIDE_CONTENT = {
             "title": "Greita nuorodų lentelė",
             "subtitle": "Kur rasti dažniausius veiksmus",
             "body": [
+                image(
+                    "lt",
+                    "quick-reference-menu.png",
+                    "MoneyCompass mobilusis meniu",
+                    "Mobiliajame meniu greitai pasieksite ataskaitas, nustatymus, gidą ir bendruomenę.",
+                    variant="mobile",
+                ),
                 {
                     "type": "table",
                     "headers": ["Noriu...", "Kur eiti"],
@@ -1205,7 +1573,7 @@ GUIDE_CONTENT = {
                         ["Rasti nekategorizuotas operacijas", "Operacijos → Nekategorizuotos"],
                         ["Paslėpti vidinį pervedimą", "Operacijos → Redaguoti → Trynimo sekcija"],
                         ["Atkurti ištrintą operaciją", "Operacijos → Ištrintos → Atkurti"],
-                        ["Skaityti DI finansinę ataskaitą", "Ataskaitos"],
+                        ["Peržiūrėti likučio anomalijas", "Ataskaitos → Likučio anomalijų istorija"],
                         ["Sekti kripto arba akcijas", "Portfelis"],
                         ["Sukurti taupymo tikslą", "Profilis → Taupymo tikslai"],
                         ["Aptikti prenumeratas", "Statistika → Peržiūrėti prenumeratas"],

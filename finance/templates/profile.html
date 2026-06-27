@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% load i18n l10n %}
+{% load i18n l10n guide_links %}
 {% block title %}{% trans "Profile" %} · Money Compass{% endblock %}
 {% block content %}
+<div class="profile-page">
 
 <div class="page-header profile-page-header">
     <h2 class="text-dark" style="margin:0;">{% trans "Profile" %}</h2>
@@ -12,8 +13,11 @@
 
 
 
-<div class="card">
-  <div class="card-title">{% trans "Accounts" %}</div>
+<div class="card profile-accounts-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Accounts" %}</span>
+    {% guide_icon "profile_accounts" %}
+  </div>
 
   <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid #edf2f7;">
     {% csrf_token %}
@@ -125,8 +129,11 @@
 </div>
 
 {# --- Categories management card (simple: add + delete inside Profile) --- #}
-<div class="card">
-  <div class="card-title">{% trans "Categories" %}</div>
+<div class="card profile-categories-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Categories" %}</span>
+    {% guide_icon "categories" %}
+  </div>
 
   <form method="post"
         action="{% url 'profile' %}"
@@ -199,9 +206,12 @@
 </div>
 
 
-<div class="card">
+<div class="card profile-caps-card">
     <div class="flex justify-between items-center mb-4">
-        <div class="card-title" style="margin:0;">{% trans "Category Caps (Monthly)" %}</div>
+        <div class="card-title title-with-guide" style="margin:0;">
+          <span>{% trans "Category Caps (Monthly)" %}</span>
+          {% guide_icon "category_caps" %}
+        </div>
         <div style="font-size:0.85em; color:var(--text-light);">{{ caps_window_note }}</div>
     </div>
 
@@ -232,7 +242,7 @@
                 <input type="hidden" name="action" value="setcap">
                 <input type="hidden" name="id" value="{{ r.id }}">
                 <input type="number" step="0.01" name="amount"
-                       value="{% if r.cap is not None %}{{ r.cap }}{% endif %}"
+                       value="{% if r.cap is not None %}{{ r.cap|unlocalize }}{% endif %}"
                        placeholder="{% trans 'No limit' %}"
                        style="width:8rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px;">
                 <button type="submit" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.85rem;">{% trans "Save" %}</button>
@@ -252,8 +262,11 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-title">{% trans "Savings Goals" %}</div>
+<div class="card profile-goals-card">
+    <div class="card-title title-with-guide">
+      <span>{% trans "Savings Goals" %}</span>
+      {% guide_icon "profile_goals" %}
+    </div>
 
     <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid #edf2f7;">
       {% csrf_token %}
@@ -364,8 +377,11 @@
     </div>
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Preferences" %}</div>
+<div class="card profile-preferences-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Preferences" %}</span>
+    {% guide_icon "profile_preferences" %}
+  </div>
 
   <form method="post" style="background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid #edf2f7;">
     {% csrf_token %}
@@ -387,8 +403,11 @@
   </form>
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Language" %}</div>
+<div class="card profile-language-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Language" %}</span>
+    {% guide_icon "profile_language" %}
+  </div>
 
   <p class="text-medium">
     {% trans "Choose your default app language. Reports will be generated in this language too." %}
@@ -413,8 +432,11 @@
   </form>
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Account deletion" %}</div>
+<div class="card profile-delete-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Account deletion" %}</span>
+    {% guide_icon "profile_deletion" %}
+  </div>
 
   {% if request.user.profile.account_delete_scheduled_for %}
     <p class="text-medium">
@@ -446,5 +468,6 @@
 
 
 
+</div>
 {% endblock %}
 

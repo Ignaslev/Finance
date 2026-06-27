@@ -1,14 +1,16 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block title %}{% trans "Upload" %} · Money Compass{% endblock %}
 {% block content %}
+<div class="transactions-page">
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-title-row transactions-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
     <h2 class="text-dark" style="margin:0;">{% trans "Transactions" %}</h2>
     <a href="{% url 'tx_add' %}" class="btn btn-primary">{% trans "Add Manual" %}</a>
 </div>
 
-<div class="flex gap-4 mb-4" style="font-size: 0.95rem;">
+<div class="transaction-tabs flex gap-4 mb-4" style="font-size: 0.95rem;">
   <a href="/review/ai/" class="text-teal" style="text-decoration:none; font-weight:500;">{% trans "AI-categorized" %}</a>
   <a href="/review/low/" class="text-teal" style="text-decoration:none; font-weight:500;">
     {% trans "Low-confidence" %} {% if low_conf_count %}<span style="background:#fff3cd; color:#7a5d00; padding:0 6px; border-radius:8px; font-size:0.8em;">{{ low_conf_count }}</span>{% endif %}
@@ -34,8 +36,11 @@
   </div>
 {% endif %}
 
-<div class="card">
-    <div class="card-title">{% trans "Upload Statement" %}</div>
+<div class="card import-card">
+    <div class="card-title title-with-guide">
+      <span>{% trans "Upload Statement" %}</span>
+      {% guide_icon "upload" %}
+    </div>
         <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}" class="upload-form">
   {% csrf_token %}
 
@@ -58,9 +63,14 @@
 
   </div>
 
-  <div class="upload-field">
+  <div class="upload-field upload-file-field">
     <label>{% trans "File (CSV/Excel)" %}</label>
-    <input type="file" name="file" required class="upload-control" />
+    <label class="upload-dropzone">
+      <span class="upload-dropzone-icon"><i class="ph ph-file-arrow-up"></i></span>
+      <strong>{% trans "File (CSV/Excel)" %}</strong>
+      <span>Revolut · SEB · Swedbank</span>
+      <input type="file" name="file" required class="upload-control" />
+    </label>
   </div>
 
   <div class="upload-actions">
@@ -84,7 +94,7 @@
 
 </div>
 
-<div class="card">
+<div class="card filter-card">
     <div class="flex justify-between items-center mb-4">
         <div class="card-title" style="margin:0;">{% trans "Filter & Search" %}</div>
         <form method="get" style="display:flex; align-items:center; gap:0.5rem;">
@@ -161,7 +171,7 @@
 </div>
 
 {% if page_obj %}
-<div class="card" style="padding:0; overflow:hidden;">
+<div class="card transaction-list-card" style="padding:0; overflow:hidden;">
   <div style="padding:1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
     <span class="text-medium" style="font-size:0.9rem;">
         {% blocktrans with total=total %}Total {{ total }} items{% endblocktrans %}
@@ -203,7 +213,10 @@
                 <th>{% trans "Category" %}</th>
                 <th class="col-user-note" style="display:none;">{% trans "User note" %}</th>
                 <th>{% trans "Set by" %}</th>
-                <th>{% trans "Edit" %}</th>
+                <th class="edit-column-heading">
+                  <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                  <span class="sr-only">{% trans "Edit" %}</span>
+                </th>
               </tr>
           </thead>
           <tbody>
@@ -252,7 +265,15 @@
                 {% endif %}
               </td>
 
-              <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}" class="text-teal">{% trans "Edit" %}</a></td>
+              <td>
+                <a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path|urlencode }}"
+                   class="icon-action"
+                   aria-label="{% trans 'Edit' %}"
+                   title="{% trans 'Edit' %}">
+                  <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                  <span class="sr-only">{% trans "Edit" %}</span>
+                </a>
+              </td>
             </tr>
           {% endfor %}
           </tbody>
@@ -296,10 +317,17 @@
 
 {% if refund_candidates %}
   <div id="found-refunds" class="card" style="margin-top:16px;">
-    <div class="card-title">{% trans "Found refunds" %}</div>
+    <div class="card-title title-with-guide">
+      <span>{% trans "Found refunds" %}</span>
+      {% guide_icon "refund_detection" %}
+    </div>
 
     <p class="text-medium" style="margin-bottom:1rem;">
-      {% trans "These look like possible refunds: one outgoing and one incoming transaction with nearly the same amount, within 45 days." %}
+      {% if LANGUAGE_CODE|slice:":2" == "lt" %}
+        Tai gali būti grąžinimas: viena išeinanti ir viena gaunama operacija turi tiksliai tokią pačią sumą bei valiutą ir įvyko ne didesniu kaip 10 dienų skirtumu.
+      {% else %}
+        These look like possible refunds: one outgoing and one incoming transaction with the exact same amount and currency, within 10 days.
+      {% endif %}
     </p>
 
     <div style="overflow-x:auto;">
@@ -482,4 +510,5 @@
   refreshUI();
 </script>
 
+</div>
 {% endblock %}

@@ -1245,3 +1245,12 @@ td {
     box-shadow: none;
     background: transparent;
 }
+
+.guide-image-wrap-mobile {
+    text-align: center;
+}
+
+.guide-image-mobile {
+    width: min(100%, 430px);
+    margin: 0 auto;
+}

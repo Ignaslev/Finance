@@ -1,0 +1,256 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoneyCompass</title>
+
+  <style>
+    :root{
+      --max-width: 1200px;
+      --pad-x: 72px;
+      --pad-y: 64px;
+
+      /* “3 knobs” you can tweak safely */
+      --title-size: 64px;
+      --headline-size: 24px;
+      --body-size: 23px;
+    }
+
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #fff;
+      background: url("{% static 'img/landing-bg.webp' %}") center/cover no-repeat fixed;
+    }
+
+    .bg-overlay {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .bg-overlay::before{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,0.35) 0%,
+        rgba(0,0,0,0.18) 45%,
+        rgba(0,0,0,0.00) 100%);
+    }
+
+    .wrap{
+      position: relative;
+      width: min(var(--max-width), 92vw);
+      padding: var(--pad-y) var(--pad-x);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    /* Landing-only text styles (don’t rely on h1/h2 globally) */
+    .hero-title{
+      margin: 0 0 14px;
+      font-size: var(--title-size);
+      line-height: 1.03;
+      letter-spacing: -0.02em;
+      text-shadow: 0 6px 22px rgba(0,0,0,0.25);
+    }
+
+    .hero-headline{
+      margin: 30px 0 30px;
+      font-size: var(--headline-size);
+      line-height: 1.25;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 6px 22px rgba(0,0,0,0.22);
+      max-width: 680px;
+    }
+
+    .sub{
+      margin: 0 0 28px;
+      font-size: var(--body-size);
+      line-height: 1.5;
+      max-width: 680px;
+      color: rgba(255,255,255,0.86);
+      text-shadow: 0 6px 22px rgba(0,0,0,0.22);
+    }
+
+    .btns{
+      display:flex;
+      gap:16px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-weight: 700;
+      text-decoration:none;
+      border: 0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      min-width: 170px;
+    }
+    .btn.login{
+      background: rgba(26, 160, 99, 0.95);
+      color: #fff;
+    }
+    .btn.register{
+      background: rgba(123, 85, 214, 0.95);
+      color: #fff;
+    }
+
+    .btn.guide{
+      background: rgba(255,255,255,0.92);
+      color: #1a202c;
+    }
+
+    .btn.community{
+      gap: 10px;
+      background: #5F70BE;
+      color: #fff;
+    }
+    .btn.community img{
+      width: 26px;
+      height: 26px;
+      flex: 0 0 26px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .mascot{
+      display:flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .mascot img{
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      filter: drop-shadow(0 14px 28px rgba(0,0,0,0.25));
+      opacity: 0.98;
+    }
+
+    /* Mobile */
+    @media (max-width: 980px){
+      :root{
+        --pad-x: 22px;
+        --pad-y: 28px;
+
+        /* Mobile “3 knobs” */
+        --title-size: 42px;
+        --headline-size: 20px;
+        --body-size: 20px;
+      }
+
+      .wrap{
+        grid-template-columns: 1fr;
+        gap: 45px;                 /* more space between text and mascot */
+        align-items: start;
+      }
+
+      .btns{
+        justify-content: center;   /* center buttons on mobile */
+        margin-top: 20px;          /* more space from text */
+      }
+
+      .mascot{
+        justify-content: center;
+        margin-top: 10px;          /* extra gap from buttons */
+      }
+      .mascot img{
+        max-width: 300px;
+      }
+
+      .bg-overlay::before{
+        background: linear-gradient(180deg,
+          rgba(0,0,0,0.42) 0%,
+          rgba(0,0,0,0.18) 55%,
+          rgba(0,0,0,0.00) 100%);
+      }
+
+      .legal-links{
+        bottom: 14px;
+        font-size: 13px;
+      }
+    }
+
+    /* LEGAL LINKS */
+    .legal-links{
+      position: absolute;
+      left: 50%;
+      bottom: 40px;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 20px;
+      color: rgba(255,255,255,0.88);
+      z-index: 2; /* above overlay */
+      white-space: nowrap;
+    }
+    .legal-links a{
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1px;
+    }
+    .legal-links a:hover{
+      opacity: 0.7;
+    }
+    .legal-links .sep{
+      margin: 0 10px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-overlay">
+    <div class="wrap">
+      <div class="copy">
+        <h1 class="hero-title">MoneyCompass</h1>
+
+        <h2 class="hero-headline">
+          Matykite aiškų savo pajamų, išlaidų ir grynojo turto vaizdą.
+        </h2>
+
+        <p class="sub">
+          Importuokite operacijas iš savo banko, tvarkykite duomenis ir stebėkite augimą. Paprasta, saugu ir valdoma jūsų.
+        </p>
+
+        <div class="btns">
+          <a class="btn login" href="/accounts/login/">Prisijungti</a>
+          <a class="btn register" href="/accounts/register/">Registruotis</a>
+          <a class="btn guide" href="{% url 'guide' %}">Gidas</a>
+          <a class="btn community"
+             href="https://discord.gg/xZFqDaB87s"
+             target="_blank"
+             rel="noopener noreferrer">
+            <img src="{% static 'img/discord-community.png' %}" alt="" aria-hidden="true">
+            <span>{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</span>
+          </a>
+        </div>
+
+      </div>
+
+      <div class="mascot">
+        <img src="{% static 'img/mascot.png' %}" alt="MoneyCompass talismanas">
+      </div>
+    </div>
+            <div class="legal-links">
+      <a href="/privacy/">Privatumas</a>
+      <span class="sep">|</span>
+      <a href="/terms/">Sąlygos</a>
+      <span class="sep">|</span>
+      <a href="/contact/">Kontaktai</a>
+    </div>
+  </div>
+</body>
+</html>

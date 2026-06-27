@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Categories" %} · Money Compass{% endblock %}
 {% block content %}
+<div class="categories-page">
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
   <h2 class="text-dark" style="margin:0;">{% trans "Categories" %}</h2>
   <a href="{% url 'profile' %}"
      class="btn"
@@ -13,7 +14,10 @@
 </div>
 
 <div class="card">
-  <div class="card-title">{% trans "Categories" %}</div>
+  <div class="card-title title-with-guide">
+    <span>{% trans "Categories" %}</span>
+    {% guide_icon "categories" %}
+  </div>
 
   <form method="post"
         action="{% url 'category_list' %}"
@@ -49,7 +53,12 @@
       <tbody>
         {% for c in categories %}
           <tr>
-            <td style="font-weight:500;">{{ c.name }}</td>
+            <td style="font-weight:500;">
+              <span class="category-name">
+                <span class="category-dot" {% if c.color %}style="background:{{ c.color }};"{% endif %}></span>
+                {{ c.name }}
+              </span>
+            </td>
             <td>
               {% if c.name != "Other" and c.name != "Kita" %}
                 <form method="post"
@@ -80,4 +89,5 @@
   </div>
 </div>
 
+</div>
 {% endblock %}

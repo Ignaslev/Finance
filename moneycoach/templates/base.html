@@ -14,78 +14,74 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/redesign.css' %}">
+    {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% if user.is_authenticated %}is-authenticated{% else %}is-public{% endif %} {% block body_class %}{% endblock %}">
 
     <nav class="navbar">
-        <a href="/" class="nav-brand" style="text-decoration:none;">Money Compass</a>
-        <div class="nav-links">
-            <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">{% trans "Dashboard" %}</a>
-            <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">{% trans "Statistics" %}</a>
-            <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">{% trans "Reports" %}</a>
-            <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">{% trans "Portfolio" %}</a>
-            <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">{% trans "Transactions" %}</a>
-        </div>
+        <div class="navbar-inner">
+            <a href="/" class="nav-brand" style="text-decoration:none;">MoneyCompass</a>
+            <div class="nav-links">
+                <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">{% trans "Dashboard" %}</a>
+                <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">{% trans "Statistics" %}</a>
+                <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">{% trans "Reports" %}</a>
+                <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">{% trans "Portfolio" %}</a>
+                <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">{% trans "Transactions" %}</a>
+            </div>
 
-        {% if user.is_authenticated %}
-        <div class="nav-profile-container desktop-only">
-            <div class="nav-profile">{{ user.username.0|upper }}</div>
-            <div class="profile-dropdown">
+            {% if user.is_authenticated %}
+            <div class="nav-profile-container desktop-only">
+                <div class="nav-profile">{{ user.username.0|upper }}</div>
+                <div class="profile-dropdown">
 
-                <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid #f7fafc; display:flex; align-items:center; gap:0.5rem;">
-                    <span style="font-size:0.8rem; color:var(--text-light); text-transform:uppercase;">{% trans "Language" %}</span>
-                   <form action="{% url 'set_preferred_language' %}" method="post" style="margin:0; display:flex; gap:0.3rem;">
-                        {% csrf_token %}
-                        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                    <div class="dropdown-language">
+                        <span>{% trans "Language" %}</span>
+                       <form action="{% url 'set_preferred_language' %}" method="post">
+                            {% csrf_token %}
+                            <input name="next" type="hidden" value="{{ request.get_full_path }}">
 
-                        <button type="submit" name="language" value="en"
-                                style="background:none; border:none; cursor:pointer; font-size:0.85rem;
-                                       {% if LANGUAGE_CODE == 'en' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
-                            EN
-                        </button>
-                        <span style="color:#eee;">|</span>
-                        <button type="submit" name="language" value="lt"
-                                style="background:none; border:none; cursor:pointer; font-size:0.85rem;
-                                       {% if LANGUAGE_CODE == 'lt' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
-                            LT
-                        </button>
+                            <button type="submit" name="language" value="en"
+                                    class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">
+                                EN
+                            </button>
+                            <button type="submit" name="language" value="lt"
+                                    class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">
+                                LT
+                            </button>
+                        </form>
+                    </div>
+
+                    <a href="{% url 'profile' %}" class="dropdown-item">{% trans "Profile" %}</a>
+                    <a href="{% url 'guide' %}" class="dropdown-item">{% trans "Guide" %}</a>
+                    <a href="https://discord.gg/xZFqDaB87s"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="dropdown-item">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
+                    <a href="{% url 'feedback' %}" class="dropdown-item">{% trans "Feedback" %}</a>
+                    <form action="{% url 'logout' %}" method="post" style="margin:0;">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item dropdown-button">{% trans "Log Out" %}</button>
                     </form>
                 </div>
-
-                <a href="{% url 'profile' %}" class="dropdown-item">{% trans "Profile" %}</a>
-                <a href="{% url 'guide' %}" class="dropdown-item">{% trans "Guide" %}</a>
-                <a href="{% url 'feedback' %}" class="dropdown-item">{% trans "Feedback" %}</a>
-                <form action="{% url 'logout' %}" method="post" style="margin:0;">
-                  {% csrf_token %}
-                  <button type="submit" class="dropdown-item" style="background:none; border:0; width:100%; text-align:left; cursor:pointer; font-family:inherit;">{% trans "Log Out" %}</button>
-                </form>
             </div>
+            {% else %}
+              <div class="nav-links public-nav-actions">
+                  <form action="{% url 'set_language' %}" method="post" class="language-switch">
+                      {% csrf_token %}
+                      <input name="next" type="hidden" value="{{ request.get_full_path }}">
+
+                      <button type="submit" name="language" value="en"
+                              class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+                      <button type="submit" name="language" value="lt"
+                              class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</button>
+                  </form>
+
+                  <a href="/accounts/login/" class="nav-item">{% trans "Login" %}</a>
+                  <a href="/accounts/register/" class="nav-item">{% trans "Register" %}</a>
+              </div>
+            {% endif %}
         </div>
-        {% else %}
-          <div class="nav-links" style="display:flex; align-items:center; gap:1rem;">
-              {# Language switch (public) #}
-              <form action="{% url 'set_language' %}" method="post" style="margin:0; display:flex; gap:.35rem; align-items:center;">
-                  {% csrf_token %}
-                  <input name="next" type="hidden" value="{{ request.get_full_path }}">
-
-                  <button type="submit" name="language" value="en"
-                          style="background:none; border:none; cursor:pointer; font-size:0.85rem;
-                                 {% if LANGUAGE_CODE == 'en' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
-                      EN
-                  </button>
-                  <span style="color:#e2e8f0;">|</span>
-                  <button type="submit" name="language" value="lt"
-                          style="background:none; border:none; cursor:pointer; font-size:0.85rem;
-                                 {% if LANGUAGE_CODE == 'lt' %}font-weight:700; color:var(--primary-teal);{% else %}color:var(--text-medium);{% endif %}">
-                      LT
-                  </button>
-              </form>
-
-              {# Auth links #}
-              <a href="/accounts/login/" class="nav-item">{% trans "Login" %}</a>
-              <a href="/accounts/register/" class="nav-item">{% trans "Register" %}</a>
-          </div>
-        {% endif %}
 
     </nav>
 
@@ -119,17 +115,17 @@
 {% endif %}
 
 
-    <div class="container">
+    <main class="container app-container">
         {% if messages %}
             {% for message in messages %}
-                <div class="card" style="background: {% if message.tags == 'success' %}#d1fae5{% elif message.tags == 'error' %}#fee2e2{% else %}#e0f2f1{% endif %}; color: {% if message.tags == 'success' %}#065f46{% elif message.tags == 'error' %}#991b1b{% else %}#004d40{% endif %}; padding: 1rem; margin-top: 1rem;">
+                <div class="flash-message flash-{{ message.tags|default:'info' }}">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
         {% block content %}
         {% endblock %}
-    </div>
+    </main>
 
 
 
@@ -193,6 +189,10 @@
                 </a>
 
             </div>
+            <a href="https://discord.gg/xZFqDaB87s"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="mobile-community-link">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
             <form action="{% url 'logout' %}" method="post" style="margin-top:1.5rem;">
                 {% csrf_token %}
                 <button type="submit" class="btn" style="width:100%; background:#fff5f5; color:#c53030; border:1px solid #feb2b2;">{% trans "Log Out" %}</button>

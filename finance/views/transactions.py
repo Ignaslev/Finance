@@ -391,7 +391,7 @@ def _build_refund_candidates(user, filtered_qs):
             if tx_out.currency != tx_in.currency:
                 continue
 
-            # Refund should be same day or later, within 45 days
+            # Refund should be same day or later, within the configured 10-day window.
             days_apart = (tx_in.date - tx_out.date).days
             if days_apart < 0 or days_apart > REFUND_MAX_DAYS:
                 continue

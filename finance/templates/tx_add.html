@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Add transaction" %} · MoneyCoach{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width: 720px; margin: 1.5rem auto;">
-    <h2 class="card-title">{% trans "Add transaction" %}</h2>
+    <h2 class="card-title title-with-guide">
+      <span>{% trans "Add transaction" %}</span>
+      {% guide_icon "manual_transaction" %}
+    </h2>
 
     {% if messages %}
       <ul style="padding:0; list-style:none; margin:.5rem 0 1rem 0;">

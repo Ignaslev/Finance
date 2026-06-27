@@ -1,0 +1,317 @@
+{% load static i18n %}
+{% get_current_language as ACTIVE_LANGUAGE_CODE %}
+{% with LANGUAGE_CODE=landing_language|default:ACTIVE_LANGUAGE_CODE %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'lt' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% if LANGUAGE_CODE == 'lt' %}MoneyCompass padeda importuoti banko operacijas, analizuoti išlaidas ir matyti aiškų finansų vaizdą vienoje vietoje.{% else %}MoneyCompass helps you import bank transactions, understand spending, and see your financial picture clearly in one place.{% endif %}">
+    <title>MoneyCompass</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/landing-redesign.css' %}">
+</head>
+<body class="mc-landing-page">
+<div class="landing-shell">
+    <header class="landing-header">
+        <div class="landing-header-inner">
+            <a href="/" class="landing-brand" aria-label="MoneyCompass">
+                <span class="landing-brand-dot" aria-hidden="true"></span>
+                <span>MoneyCompass</span>
+            </a>
+
+            <nav class="landing-nav" aria-label="{% if LANGUAGE_CODE == 'lt' %}Pagrindinė navigacija{% else %}Main navigation{% endif %}">
+                <a href="#features">{% if LANGUAGE_CODE == "lt" %}Funkcijos{% else %}Features{% endif %}</a>
+                <a href="#how-it-works">{% if LANGUAGE_CODE == "lt" %}Kaip veikia{% else %}How it works{% endif %}</a>
+                <a href="#community">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
+                <a href="{% url 'guide' %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+            </nav>
+
+            <div class="landing-actions">
+                <a href="{% url 'login' %}" class="landing-login">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
+                <a href="{% url 'register' %}" class="landing-register">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
+            </div>
+
+            <button type="button"
+                    class="landing-menu-button"
+                    id="landingMenuButton"
+                    aria-expanded="false"
+                    aria-controls="landingMobileMenu"
+                    aria-label="{% if LANGUAGE_CODE == 'lt' %}Atidaryti meniu{% else %}Open menu{% endif %}">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <div class="landing-mobile-menu" id="landingMobileMenu">
+        <a href="#features">{% if LANGUAGE_CODE == "lt" %}Funkcijos{% else %}Features{% endif %}</a>
+        <a href="#how-it-works">{% if LANGUAGE_CODE == "lt" %}Kaip veikia{% else %}How it works{% endif %}</a>
+        <a href="#community">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
+        <a href="{% url 'guide' %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+
+        <div class="landing-mobile-menu-actions">
+            <a href="{% url 'login' %}">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
+            <a href="{% url 'register' %}" class="primary">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
+        </div>
+
+        <form action="{% url 'set_language' %}" method="post" class="landing-language">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="lt" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</button>
+            <button type="submit" name="language" value="en" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+        </form>
+    </div>
+
+    <main>
+        <section class="landing-hero">
+            <div class="landing-hero-inner">
+                <div class="landing-hero-copy">
+                    <div class="landing-beta-pill">
+                        <span aria-hidden="true">●</span>
+                        {% if LANGUAGE_CODE == "lt" %}Atvira beta · pirmieji 100 vartotojų{% else %}Open beta · first 100 users{% endif %}
+                    </div>
+
+                    <h1>
+                        {% if LANGUAGE_CODE == "lt" %}
+                            Matykite aiškų savo pinigų vaizdą
+                        {% else %}
+                            See a clear picture of your money
+                        {% endif %}
+                    </h1>
+
+                    <p class="landing-hero-lead">
+                        {% if LANGUAGE_CODE == "lt" %}
+                            Importuokite operacijas iš savo banko, tvarkykite duomenis ir stebėkite augimą. Paprasta, saugu ir valdoma jūsų.
+                        {% else %}
+                            Import transactions from your bank, organize your data and track your progress. Simple, safe and controlled by you.
+                        {% endif %}
+                    </p>
+
+                    <div class="landing-hero-buttons">
+                        <a href="{% url 'register' %}" class="landing-button landing-button-light">
+                            {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
+                        </a>
+                        <a href="{% url 'guide' %}" class="landing-button landing-button-outline">
+                            {% if LANGUAGE_CODE == "lt" %}Žiūrėti gidą{% else %}View guide{% endif %}
+                        </a>
+                    </div>
+
+                    <div class="landing-trust-row">
+                        <span>✓ {% if LANGUAGE_CODE == "lt" %}Be banko prijungimo{% else %}No bank connection{% endif %}</span>
+                        <span>✓ {% if LANGUAGE_CODE == "lt" %}Tavo duomenys - tik tavo{% else %}Your data stays yours{% endif %}</span>
+                        <span>✓ {% if LANGUAGE_CODE == "lt" %}CSV / Excel importas{% else %}CSV / Excel import{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="landing-hero-visual" aria-hidden="true">
+                    <img src="{% static 'img/landing-phone-dashboard.png' %}" class="landing-hero-phone" alt="">
+                    <img src="{% static 'img/mascot.png' %}" class="landing-hero-mascot" alt="">
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-metrics" aria-label="{% if LANGUAGE_CODE == 'lt' %}MoneyCompass privalumai{% else %}MoneyCompass benefits{% endif %}">
+            <div class="landing-metrics-inner">
+                <div class="landing-metric">
+                    <strong>100%</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Tavo duomenų kontrolė{% else %}Control of your data{% endif %}</span>
+                </div>
+                <div class="landing-metric">
+                    <strong>30 s</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Importas iš išrašo{% else %}Statement import{% endif %}</span>
+                </div>
+                <div class="landing-metric">
+                    <strong>8+</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Kategorijų analizė{% else %}Category analysis{% endif %}</span>
+                </div>
+                <div class="landing-metric">
+                    <strong>0 €</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Beta kaina{% else %}Beta price{% endif %}</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-features" id="features">
+            <div class="landing-section-heading">
+                <span class="landing-eyebrow">{% if LANGUAGE_CODE == "lt" %}Funkcijos{% else %}Features{% endif %}</span>
+                <h2>
+                    {% if LANGUAGE_CODE == "lt" %}
+                        Viskas, ko reikia tvarkingiems finansams
+                    {% else %}
+                        Everything you need for organized finances
+                    {% endif %}
+                </h2>
+            </div>
+
+            <div class="landing-feature-list" id="how-it-works">
+                <article class="landing-feature">
+                    <div class="landing-feature-copy">
+                        <span class="landing-feature-tag green">{% if LANGUAGE_CODE == "lt" %}Visas vaizdas{% else %}Full picture{% endif %}</span>
+                        <h3>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Visas finansų vaizdas vienoje vietoje
+                            {% else %}
+                                Your full financial picture in one place
+                            {% endif %}
+                        </h3>
+                        <p>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Matyk pajamas, išlaidas ir pinigų likutį aiškiai. Grynasis turtas, sąskaitos ir tendencijos - viename skydelyje.
+                            {% else %}
+                                See income, spending and remaining money clearly. Net worth, accounts and trends live together on one dashboard.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="landing-feature-visual" aria-hidden="true">
+                        <img src="{% static 'img/landing-phone-dashboard.png' %}" alt="">
+                    </div>
+                </article>
+
+                <article class="landing-feature is-reversed">
+                    <div class="landing-feature-copy">
+                        <span class="landing-feature-tag blue">{% if LANGUAGE_CODE == "lt" %}Analizė{% else %}Analysis{% endif %}</span>
+                        <h3>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Sužinok, kam išleidi daugiausia
+                            {% else %}
+                                Discover where you spend the most
+                            {% endif %}
+                        </h3>
+                        <p>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                MoneyCompass suskirsto operacijas į kategorijas ir parodo tavo išlaidų įpročius - kad galėtum taupyti ten, kur svarbu.
+                            {% else %}
+                                MoneyCompass groups transactions into categories and reveals your spending habits, helping you save where it matters.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="landing-feature-visual" aria-hidden="true">
+                        <img src="{% static 'img/landing-phone-statistics.png' %}" alt="">
+                    </div>
+                </article>
+
+                <article class="landing-feature">
+                    <div class="landing-feature-copy">
+                        <span class="landing-feature-tag purple">{% if LANGUAGE_CODE == "lt" %}Importas ir privatumas{% else %}Import and privacy{% endif %}</span>
+                        <h3>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Tiesiog įkelk banko išrašą
+                            {% else %}
+                                Simply upload a bank statement
+                            {% endif %}
+                        </h3>
+                        <p>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Įkelk operacijas iš CSV ar Excel ir pamatyk jas aiškiai suskirstytas. Be banko prijungimo, be slaptažodžių - duomenis valdai pats.
+                            {% else %}
+                                Upload transactions from CSV or Excel and see them clearly organized. No bank connection, no bank password - you control the data.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="landing-feature-visual" aria-hidden="true">
+                        <img src="{% static 'img/landing-phone-import.png' %}" alt="">
+                    </div>
+                </article>
+            </div>
+
+            <div class="landing-community-wrap" id="community">
+                <div class="landing-community">
+                    <div class="landing-community-copy">
+                        <h2>{% if LANGUAGE_CODE == "lt" %}Prisijunk prie bendruomenės{% else %}Join the community{% endif %}</h2>
+                        <p>
+                            {% if LANGUAGE_CODE == "lt" %}
+                                Dalinkis idėjomis, gauk pagalbą ir formuok MoneyCompass ateitį kartu su mumis Discord serveryje.
+                            {% else %}
+                                Share ideas, get help and shape the future of MoneyCompass with us in the Discord server.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <a href="https://discord.gg/xZFqDaB87s"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="landing-community-button">
+                        {% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %} →
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-final-cta">
+            <div class="landing-final-inner">
+                <img src="{% static 'img/mascot.png' %}" alt="">
+                <h2>{% if LANGUAGE_CODE == "lt" %}Tapk vienu iš pirmųjų 100{% else %}Be one of the first 100{% endif %}</h2>
+                <p>
+                    {% if LANGUAGE_CODE == "lt" %}
+                        Išbandyk MoneyCompass nemokamai ir padėk mums jį tobulinti.
+                    {% else %}
+                        Try MoneyCompass free and help us improve it.
+                    {% endif %}
+                </p>
+                <div class="landing-final-actions">
+                    <a href="{% url 'register' %}" class="landing-button landing-button-light">
+                        {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
+                    </a>
+                    <span class="landing-beta-code">
+                        {% if LANGUAGE_CODE == "lt" %}Beta kodas:{% else %}Beta code:{% endif %} <strong>Noriutestuoti</strong>
+                    </span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="landing-footer">
+        <div class="landing-footer-inner">
+            <div class="landing-footer-top">
+                <a href="/" class="landing-brand">
+                    <span class="landing-brand-dot" aria-hidden="true"></span>
+                    <span>MoneyCompass</span>
+                </a>
+                <nav class="landing-footer-links" aria-label="{% if LANGUAGE_CODE == 'lt' %}Teisinės nuorodos{% else %}Legal links{% endif %}">
+                    <a href="{% url 'privacy' %}">{% if LANGUAGE_CODE == "lt" %}Privatumas{% else %}Privacy{% endif %}</a>
+                    <a href="{% url 'terms' %}">{% if LANGUAGE_CODE == "lt" %}Sąlygos{% else %}Terms{% endif %}</a>
+                    <a href="{% url 'contact' %}">{% if LANGUAGE_CODE == "lt" %}Kontaktai{% else %}Contact{% endif %}</a>
+                </nav>
+            </div>
+            <div class="landing-footer-copy">© 2026 MoneyCompass. {% if LANGUAGE_CODE == "lt" %}Visos teisės saugomos.{% else %}All rights reserved.{% endif %}</div>
+        </div>
+    </footer>
+</div>
+
+<script>
+    (function () {
+        const button = document.getElementById("landingMenuButton");
+        const menu = document.getElementById("landingMobileMenu");
+        if (!button || !menu) return;
+
+        function closeMenu() {
+            button.classList.remove("is-open");
+            menu.classList.remove("is-open");
+            button.setAttribute("aria-expanded", "false");
+            document.body.classList.remove("menu-open");
+        }
+
+        button.addEventListener("click", function () {
+            const willOpen = !menu.classList.contains("is-open");
+            button.classList.toggle("is-open", willOpen);
+            menu.classList.toggle("is-open", willOpen);
+            button.setAttribute("aria-expanded", String(willOpen));
+            document.body.classList.toggle("menu-open", willOpen);
+        });
+
+        menu.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", closeMenu);
+        });
+
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 760) closeMenu();
+        });
+    }());
+</script>
+</body>
+</html>
+{% endwith %}

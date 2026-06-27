@@ -1,15 +1,19 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Overview" %} · MoneyCoach{% endblock %}
 {% block content %}
+<div class="dashboard-page">
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-title-row dashboard-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
     <h2 class="text-dark" style="margin:0;">{% trans "Dashboard" %}</h2>
     <div class="text-medium" style="font-size:0.9rem;">{{ now_val|date:"l, F j" }}</div>
 </div>
 
-<div class="card" style="padding:2rem;">
-    <div class="text-medium" style="text-align:center; font-size:0.9rem; margin-bottom:0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">{% trans "Total Net Worth" %}</div>
+<div class="card net-worth-card" style="padding:2rem;">
+    <div class="text-medium title-with-guide" style="display:flex; justify-content:center; font-size:0.9rem; margin-bottom:0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        <span>{% trans "Total Net Worth" %}</span>
+        {% guide_icon "dashboard_net_worth" %}
+    </div>
     <div style="text-align:center; font-size:2.8rem; font-weight:800; color:var(--text-dark); margin-bottom:2.5rem; letter-spacing: -0.02em;">
         {{ total_net_worth|floatformat:2 }} <span style="font-size:1.2rem; color:var(--text-medium); font-weight:500;">EUR</span>
     </div>
@@ -35,9 +39,12 @@
     {% endif %}
 </div>
 
-<div class="card">
+<div class="card dashboard-accounts-card">
     <div class="flex justify-between items-center mb-4">
-        <div class="card-title" style="margin:0;">{% trans "Accounts & Assets" %}</div>
+        <div class="card-title title-with-guide" style="margin:0;">
+            <span>{% trans "Accounts & Assets" %}</span>
+            {% guide_icon "dashboard_accounts" %}
+        </div>
         <a href="{% url 'profile' %}" class="btn" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#edf2f7; color:var(--text-medium);">{% trans "Manage" %}</a>
     </div>
     <div style="overflow-x:auto;">
@@ -70,17 +77,23 @@
 
 
 
-<div class="card">
-    <div class="card-title">{% trans "Net Worth History" %}</div>
+<div class="card dashboard-history-card">
+    <div class="card-title title-with-guide">
+        <span>{% trans "Net Worth History" %}</span>
+        {% guide_icon "dashboard_history" %}
+    </div>
     <div style="height:320px; width:100%;">
         <canvas id="netWorthChart"></canvas>
     </div>
 </div>
 
 {% if goals %}
-<div class="card" style=" border:1px solid #e1f0e1;">
+<div class="card dashboard-goals-card" style=" border:1px solid #e1f0e1;">
   <div class="flex justify-between items-center mb-4">
-    <div class="card-title" style="margin:0;">{% trans "Savings Goals" %}</div>
+    <div class="card-title title-with-guide" style="margin:0;">
+        <span>{% trans "Savings Goals" %}</span>
+        {% guide_icon "dashboard_goals" %}
+    </div>
     <a href="{% url 'profile' %}" class="text-teal" style="font-size:0.9rem;">{% trans "Manage" %}</a>
   </div>
   <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
@@ -104,15 +117,21 @@
 </div>
 {% endif %}
 
-<div class="card">
-  <div class="card-title">{% trans "Income vs Spending" %}</div>
+<div class="card dashboard-income-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Income vs Spending" %}</span>
+    {% guide_icon "dashboard_income" %}
+  </div>
   <div style="max-width:1000px; margin:0.75rem auto 0;">
     <canvas id="incomeSpending"></canvas>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Net by Month" %}</div>
+<div class="card dashboard-net-month-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Net by Month" %}</span>
+    {% guide_icon "dashboard_net_month" %}
+  </div>
   <div style="margin-top:0.5rem; overflow-x:auto;">
     <table>
       <thead><tr><th>{% trans "Month" %}</th><th>{% trans "Net" %}</th></tr></thead>
@@ -131,8 +150,11 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Spending per Category" %}</div>
+<div class="card dashboard-category-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Spending per Category" %}</span>
+    {% guide_icon "dashboard_categories" %}
+  </div>
   {% if cat_names %}
     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
       {% for cname in cat_names %}
@@ -367,4 +389,5 @@
         renderMonthButtons();
     })();
 </script>
+</div>
 {% endblock %}

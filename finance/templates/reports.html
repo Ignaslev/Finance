@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Reports" %} · Money Compass{% endblock %}
 {% block content %}
+<div class="reports-page">
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
     <h2 class="text-dark" style="margin:0;">{% trans "Reports" %}</h2>
 </div>
 
@@ -85,7 +86,10 @@
 {% endif %}
 
 <div class="card">
-    <div class="card-title">{% trans "Balance Anomalies History" %}</div>
+    <div class="card-title title-with-guide">
+      <span>{% trans "Balance Anomalies History" %}</span>
+      {% guide_icon "reports_balance" %}
+    </div>
 
     {% if anomaly_history %}
     <div style="overflow-x:auto;">
@@ -140,4 +144,5 @@
     {% endif %}
 </div>
 
+</div>
 {% endblock %}

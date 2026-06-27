@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Statistics" %} · Money Compass{% endblock %}
 {% block content %}
+<div class="statistics-page">
 
-<div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
+<div class="page-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
     <h2 class="text-dark" style="margin:0;">{% trans "Statistics" %}</h2>
 </div>
 
@@ -15,7 +16,7 @@
 
 {% if not empty_state %}
 
-<div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; margin: 2rem 0;">
+<div class="statistics-summary-grid" style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; margin: 2rem 0;">
   <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
     <div class="text-medium" style="font-size:.9em;">{% trans "All-time earned" %}</div>
     <div class="text-teal" style="font-weight:700; font-size:1.4em;">{{ total_in|floatformat:2 }} EUR</div>
@@ -84,7 +85,10 @@
 <div class="card">
   <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
     <div>
-      <div class="card-title" style="margin:0;">{% trans "Income Sources" %}</div>
+      <div class="card-title title-with-guide" style="margin:0;">
+        <span>{% trans "Income Sources" %}</span>
+        {% guide_icon "statistics_income" %}
+      </div>
       <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
         {% trans "Based on incoming transactions categorized as Income." %}
       </div>
@@ -209,7 +213,10 @@
 <div class="card">
   <div class="flex justify-between items-start" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
     <div>
-      <div class="card-title" style="margin:0;">{% trans "Subscriptions" %}</div>
+      <div class="card-title title-with-guide" style="margin:0;">
+        <span>{% trans "Subscriptions" %}</span>
+        {% guide_icon "statistics_subscriptions" %}
+      </div>
       <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
        {% trans "Tracked from your Subscriptions category and approved findings. A subscription is considered active if it was charged this month or last month." %}
       </div>
@@ -357,11 +364,14 @@
 
 
 
-<div class="card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
+<div class="card statistics-runway-card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
     <div class="flex justify-between items-start">
         <div>
             <div class="flex items-center gap-2">
-                <div class="text-medium" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">{% trans "Financial Runway" %}</div>
+                <div class="text-medium title-with-guide" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">
+                  <span>{% trans "Financial Runway" %}</span>
+                  {% guide_icon "statistics_runway" %}
+                </div>
                 {% if is_simulated %}
                     <span style="background:#e6fffa; color:var(--primary-teal-dark); font-size:0.7rem; padding:1px 6px; border-radius:4px; font-weight:600;">{% trans "CUSTOM VIEW" %}</span>
                 {% endif %}
@@ -395,9 +405,12 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card statistics-category-card">
   <div class="flex justify-between items-center" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
-      <div class="card-title" style="margin:0;">{% trans "Category Share" %}</div>
+      <div class="card-title title-with-guide" style="margin:0;">
+        <span>{% trans "Category Share" %}</span>
+        {% guide_icon "statistics_categories" %}
+      </div>
 
       <div class="flex items-center gap-4" style="flex-wrap:wrap;">
         <button type="button" id="editCatsBtn" class="btn" style="background:#edf2f7; color:var(--text-dark); padding:0.5rem 1rem; font-size:0.9rem;">{% trans "Filter Categories" %}</button>
@@ -493,8 +506,11 @@
   {% endif %}
 </div>
 
-<div class="card">
-  <div class="card-title">{% trans "Weekday Spending (Last 90 Days)" %}</div>
+<div class="card statistics-weekday-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Weekday Spending (Last 90 Days)" %}</span>
+    {% guide_icon "statistics_weekday" %}
+  </div>
   <div style="max-width:1000px; margin:0 auto;">
     <canvas id="weekdayChart"></canvas>
   </div>
@@ -694,4 +710,5 @@
   function closeRunwayModal() { document.getElementById('runwayModal').style.display = 'none'; }
 </script>
 {% endif %}
+</div>
 {% endblock %}

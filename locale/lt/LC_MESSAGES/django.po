@@ -1863,8 +1863,11 @@ msgid "Found refunds"
 msgstr "Rasti grąžinimai"
 
 #: finance/templates/upload.html:302
-msgid "These look like possible refunds: one outgoing and one incoming transaction with nearly the same amount, within 45 days."
-msgstr "Tai panasu i galimus grazinimus: viena iseinanti ir viena ieinanti beveik tokios pacios sumos operacija per 45 dienas."
+msgid "These look like possible refunds: one outgoing and one incoming transaction with the exact same amount and currency, within 10 days."
+msgstr "Tai gali būti grąžinimas: viena išeinanti ir viena gaunama operacija turi tiksliai tokią pačią sumą bei valiutą ir įvyko ne didesniu kaip 10 dienų skirtumu."
+
+msgid "Open the relevant guide section"
+msgstr "Atidaryti susijusią gido skiltį"
 
 #: finance/templates/upload.html:309
 msgid "Spent"

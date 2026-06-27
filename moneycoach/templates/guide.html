@@ -35,7 +35,7 @@
                 {% endif %}
 
                 {% if block.type == "heading" %}
-                    <h2>{{ block.text }}</h2>
+                    <h2{% if block.anchor %} id="{{ block.anchor }}"{% endif %}>{{ block.text }}</h2>
                 {% endif %}
 
                 {% if block.type == "note" %}

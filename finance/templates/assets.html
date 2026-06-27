@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Portfolio" %} · Money Compass{% endblock %}
 {% block content %}
 
 <div class="assets-page">
 
     <div class="assets-header">
-        <h2 class="text-dark assets-title">{% trans "Portfolio" %}</h2>
+        <h2 class="text-dark assets-title title-with-guide">
+            <span>{% trans "Portfolio" %}</span>
+            {% guide_icon "portfolio" %}
+        </h2>
 
         <div class="assets-total">
             <div class="text-medium assets-total-label">{% trans "Total Net Worth" %}</div>
@@ -56,7 +59,13 @@
                                         <td class="asset-td-right">{{ h.quantity|floatformat:4 }}</td>
                                         <td class="asset-td-right asset-strong asset-td-last">{{ h.value|floatformat:2 }}</td>
                                         <td class="asset-td-right asset-td-action">
-                                            <a href="{% url 'asset_edit' h.id %}" class="text-teal asset-edit-link">{% trans "Edit" %}</a>
+                                            <a href="{% url 'asset_edit' h.id %}"
+                                               class="icon-action asset-edit-link"
+                                               aria-label="{% trans 'Edit' %}"
+                                               title="{% trans 'Edit' %}">
+                                                <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                                                <span class="sr-only">{% trans "Edit" %}</span>
+                                            </a>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -125,7 +134,13 @@
                                         <td class="asset-td-right">{{ h.quantity|floatformat:2 }}</td>
                                         <td class="asset-td-right asset-strong asset-td-last">{{ h.value|floatformat:2 }}</td>
                                         <td class="asset-td-right asset-td-action">
-                                            <a href="{% url 'asset_edit' h.id %}" class="text-teal asset-edit-link">{% trans "Edit" %}</a>
+                                            <a href="{% url 'asset_edit' h.id %}"
+                                               class="icon-action asset-edit-link"
+                                               aria-label="{% trans 'Edit' %}"
+                                               title="{% trans 'Edit' %}">
+                                                <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                                                <span class="sr-only">{% trans "Edit" %}</span>
+                                            </a>
                                         </td>
                                     </tr>
                                 {% endfor %}

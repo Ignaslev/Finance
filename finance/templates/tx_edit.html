@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n guide_links %}
 {% block title %}{% trans "Edit transaction" %} · MoneyCoach{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width: 720px; margin: 1.5rem auto;">
-    <h2 class="card-title">{% trans "Edit transaction" %}</h2>
+    <h2 class="card-title title-with-guide">
+      <span>{% trans "Edit transaction" %}</span>
+      {% guide_icon "edit_transaction" %}
+    </h2>
 
     <div class="row" style="margin:.75rem 0 1rem 0; font-size:0.95rem;">
         <strong>{{ tx.date|date:"Y-m-d" }}</strong>
