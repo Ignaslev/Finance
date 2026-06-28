@@ -447,7 +447,7 @@ tbody tr:hover td {
 .dashboard-title-row,
 .net-worth-card,
 .dashboard-goals-card,
-.dashboard-net-month-card {
+.dashboard-category-card {
     grid-column: 1 / -1;
 }
 
@@ -476,11 +476,11 @@ tbody tr:hover td {
     order: 4;
 }
 
-.dashboard-category-card {
+.dashboard-net-month-card {
     order: 4;
 }
 
-.dashboard-net-month-card {
+.dashboard-category-card {
     order: 5;
 }
 
@@ -775,6 +775,7 @@ tbody tr:hover td {
 }
 
 .profile-page-header,
+.profile-billing-card,
 .profile-accounts-card,
 .profile-categories-card,
 .profile-caps-card,
@@ -1211,11 +1212,11 @@ tbody tr:hover td {
     }
 
     .dashboard-category-card {
-        order: 6;
+        order: 7;
     }
 
     .dashboard-net-month-card {
-        order: 7;
+        order: 6;
     }
 
     .statistics-page .statistics-summary-grid {

@@ -32,6 +32,7 @@ from finance.utils import (
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
     parse_decimal_filter, category_names_for, default_money_source_name
 )
+from finance.subscriptions import access_context, require_paid_access
 from django.db import transaction as db_transaction
 
 
@@ -83,6 +84,10 @@ def tx_add(request):
         categories = Category.objects.filter(user=request.user).order_by("name")
 
     if request.method == "POST":
+        blocked = require_paid_access(request)
+        if blocked:
+            return blocked
+
         date_str   = (request.POST.get("date") or "").strip()
         merchant   = (request.POST.get("merchant") or "").strip()[:255]
         amount_str = (request.POST.get("amount") or "").strip().replace(",", ".")
@@ -591,6 +596,10 @@ def upload(request):
 
     # -------------------- IMPORT (POST) --------------------
     if request.method == "POST" and request.FILES.get("file"):
+        blocked = require_paid_access(request)
+        if blocked:
+            return blocked
+
         # --- quotas: block abusive importing ---
         MAX_IMPORTS_PER_DAY = getattr(settings, "MAX_IMPORTS_PER_DAY", 20)
 
@@ -1003,6 +1012,7 @@ def upload(request):
         "tx_delete_scheduled_for": (tx_delete_req.scheduled_for if tx_delete_req else None),
         "all_tx_count": all_tx_count,
         "refund_candidates": refund_candidates,
+        "subscription_access": access_context(request.user),
         "onboarding_state": {
             "categories_done": cats_done,
             "has_income": income_exists,

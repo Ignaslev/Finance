@@ -84,6 +84,7 @@ TEMPLATES = [
                 "finance.context_processors.onboarding",
                 "finance.context_processors.ai_notifications",
                 "finance.context_processors.pending_delete_banner",
+                "finance.context_processors.subscription_access",
             ],
         },
     },
@@ -245,3 +246,12 @@ MAX_GOALS_PER_USER = int(os.getenv("MAX_GOALS_PER_USER", "50"))
 BETA_REGISTRATION_ENABLED = env_bool("BETA_REGISTRATION_ENABLED", True)
 BETA_USER_LIMIT = int(os.getenv("BETA_USER_LIMIT", "100"))
 BETA_ACCESS_CODE = env("BETA_ACCESS_CODE", "")
+BETA_FREE_DAYS = int(os.getenv("BETA_FREE_DAYS", "365"))
+TRIAL_FREE_DAYS = int(os.getenv("TRIAL_FREE_DAYS", "14"))
+
+# Stripe Billing
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_MONTHLY = env("STRIPE_PRICE_MONTHLY", "price_1TmwO2Ftoq7RCq7B35ByJTWR")
+STRIPE_PRICE_YEARLY = env("STRIPE_PRICE_YEARLY", "price_1TmwO2Ftoq7RCq7BX5gGrdho")

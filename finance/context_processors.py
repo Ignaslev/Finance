@@ -183,3 +183,12 @@ def pending_delete_banner(request):
         }
 
     return {}
+
+
+def subscription_access(request):
+    if not request.user.is_authenticated:
+        return {}
+
+    from finance.subscriptions import access_context
+
+    return {"subscription_access": access_context(request.user)}

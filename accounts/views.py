@@ -11,6 +11,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from finance.models import UserProfile
+from finance.subscriptions import grant_beta_access
 from finance.utils import ensure_default_categories
 from django.contrib.auth import get_user_model
 from .forms import RegisterForm
@@ -48,10 +49,9 @@ def register(request):
             user.save()
 
             prof, _created = UserProfile.objects.get_or_create(user=user)
-            prof.is_beta_tester = True
-            prof.beta_joined_at = timezone.now()
             prof.preferred_language = form.cleaned_data.get("preferred_language") or UserProfile.LANG_LT
-            prof.save(update_fields=["is_beta_tester", "beta_joined_at", "preferred_language"])
+            prof.save(update_fields=["preferred_language"])
+            grant_beta_access(prof, joined_at=timezone.now())
             ensure_default_categories(user, language=prof.preferred_language)
 
             uid = urlsafe_base64_encode(force_bytes(user.pk))

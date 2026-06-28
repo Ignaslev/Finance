@@ -2768,3 +2768,136 @@ msgstr "Paskyra aktyvuota. Dabar galite prisijungti."
 
 msgid "Activation link expired or invalid."
 msgstr "Aktyvavimo nuoroda nebegalioja arba yra neteisinga."
+
+# Added by Codex Stripe billing implementation
+msgid "Subscription"
+msgstr "Prenumerata"
+
+msgid "Beta access"
+msgstr "Beta prieiga"
+
+msgid "Beta access is active."
+msgstr "Beta prieiga aktyvi."
+
+msgid "Your free beta year is active until %(until)s."
+msgstr "Jūsų nemokami beta metai aktyvūs iki %(until)s."
+
+msgid "Free trial is active."
+msgstr "Nemokamas bandomasis laikotarpis aktyvus."
+
+msgid "Your trial is active until %(until)s."
+msgstr "Bandomasis laikotarpis aktyvus iki %(until)s."
+
+msgid "Manual access is active."
+msgstr "Rankinė prieiga aktyvi."
+
+msgid "Access is active until %(until)s."
+msgstr "Prieiga aktyvi iki %(until)s."
+
+msgid "Subscription is active."
+msgstr "Prenumerata aktyvi."
+
+msgid "Your plan is set to cancel at the end of the current period on %(until)s."
+msgstr "Jūsų planas bus atšauktas dabartinio laikotarpio pabaigoje, %(until)s."
+
+msgid "Your paid plan renews on %(until)s."
+msgstr "Mokamas planas atsinaujins %(until)s."
+
+msgid "Access is active."
+msgstr "Prieiga aktyvi."
+
+msgid "Access has ended."
+msgstr "Prieiga baigėsi."
+
+msgid "Choose a monthly or yearly plan to continue importing transactions, creating categories and using AI categorisation."
+msgstr "Pasirinkite mėnesinį arba metinį planą, kad galėtumėte toliau importuoti operacijas, kurti kategorijas ir naudoti DI kategorizavimą."
+
+msgid "Monthly"
+msgstr "Mėnesinis"
+
+msgid "Yearly"
+msgstr "Metinis"
+
+msgid "Manage billing"
+msgstr "Tvarkyti mokėjimus"
+
+msgid "Payments are not configured yet."
+msgstr "Mokėjimai dar nesukonfigūruoti."
+
+msgid "Payments are not configured yet. Please try again later."
+msgstr "Mokėjimai dar nesukonfigūruoti. Bandykite dar kartą vėliau."
+
+msgid "No payment is needed right now."
+msgstr "Šiuo metu mokėti nereikia."
+
+msgid "You already have an active subscription. Use Manage billing to make changes."
+msgstr "Jau turite aktyvią prenumeratą. Pakeitimus atlikite per mokėjimų valdymą."
+
+msgid "Missing Stripe checkout session."
+msgstr "Trūksta Stripe apmokėjimo sesijos."
+
+msgid "Could not confirm the Stripe payment yet. Please try again later."
+msgstr "Kol kas nepavyko patvirtinti Stripe mokėjimo. Bandykite dar kartą vėliau."
+
+msgid "This Stripe checkout session does not belong to your account."
+msgstr "Ši Stripe apmokėjimo sesija nepriklauso jūsų paskyrai."
+
+msgid "Stripe checkout is not complete yet."
+msgstr "Stripe apmokėjimas dar nebaigtas."
+
+msgid "This Stripe checkout session is not a subscription."
+msgstr "Ši Stripe apmokėjimo sesija nėra prenumerata."
+
+msgid "No Stripe subscription was found for this payment."
+msgstr "Šiam mokėjimui Stripe prenumerata nerasta."
+
+msgid "This Stripe subscription does not match a MoneyCompass plan."
+msgstr "Ši Stripe prenumerata neatitinka MoneyCompass plano."
+
+msgid "Subscription activated."
+msgstr "Prenumerata aktyvuota."
+
+msgid "Stripe payment was found, but the subscription is not active yet."
+msgstr "Stripe mokėjimas rastas, bet prenumerata dar nėra aktyvi."
+
+msgid "Payment was cancelled. You can choose a plan whenever you're ready."
+msgstr "Mokėjimas atšauktas. Planą galite pasirinkti bet kada."
+
+msgid "Choose plan"
+msgstr "Pasirinkti planą"
+
+msgid "Your free access has ended. Choose a plan in Profile to upload bank statements again."
+msgstr "Nemokama prieiga baigėsi. Pasirinkite planą profilyje, kad vėl galėtumėte įkelti banko išrašus."
+
+msgid "Your free access has ended. Choose a monthly or yearly plan to continue using this feature."
+msgstr "Nemokama prieiga baigėsi. Pasirinkite mėnesinį arba metinį planą, kad galėtumėte toliau naudoti šią funkciją."
+
+msgid "Unknown plan selected."
+msgstr "Pasirinktas nežinomas planas."
+
+msgid "Could not open Stripe Checkout. Please try again later."
+msgstr "Nepavyko atidaryti Stripe apmokėjimo lango. Bandykite dar kartą vėliau."
+
+msgid "No paid subscription found yet. Choose a plan first."
+msgstr "Mokamos prenumeratos dar nėra. Pirmiausia pasirinkite planą."
+
+msgid "Could not open the billing portal. Please try again later."
+msgstr "Nepavyko atidaryti mokėjimų valdymo portalo. Bandykite dar kartą vėliau."
+
+msgid "Trial"
+msgstr "Bandomasis laikotarpis"
+
+msgid "Trialing"
+msgstr "Bandomasis laikotarpis"
+
+msgid "Past due"
+msgstr "Vėluojantis mokėjimas"
+
+msgid "Canceled"
+msgstr "Atšaukta"
+
+msgid "Expired"
+msgstr "Baigėsi"
+
+msgid "Manual access"
+msgstr "Rankinė prieiga"

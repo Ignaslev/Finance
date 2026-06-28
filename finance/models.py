@@ -388,11 +388,59 @@ class UserProfile(models.Model):
     """
     Stores app-specific user settings (e.g. API keys and display preferences).
     """
+    SUBSCRIPTION_TRIAL = "trial"
+    SUBSCRIPTION_BETA = "beta"
+    SUBSCRIPTION_ACTIVE = "active"
+    SUBSCRIPTION_TRIALING = "trialing"
+    SUBSCRIPTION_PAST_DUE = "past_due"
+    SUBSCRIPTION_CANCELED = "canceled"
+    SUBSCRIPTION_EXPIRED = "expired"
+    SUBSCRIPTION_MANUAL = "manual"
+
+    SUBSCRIPTION_STATUS_CHOICES = [
+        (SUBSCRIPTION_TRIAL, _("Trial")),
+        (SUBSCRIPTION_BETA, _("Beta access")),
+        (SUBSCRIPTION_ACTIVE, _("Active")),
+        (SUBSCRIPTION_TRIALING, _("Trialing")),
+        (SUBSCRIPTION_PAST_DUE, _("Past due")),
+        (SUBSCRIPTION_CANCELED, _("Canceled")),
+        (SUBSCRIPTION_EXPIRED, _("Expired")),
+        (SUBSCRIPTION_MANUAL, _("Manual access")),
+    ]
+
+    PLAN_MONTHLY = "monthly"
+    PLAN_YEARLY = "yearly"
+    PLAN_CHOICES = [
+        (PLAN_MONTHLY, _("Monthly")),
+        (PLAN_YEARLY, _("Yearly")),
+    ]
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     android_webhook_secret = models.CharField(max_length=64, unique=True, blank=True)
 
     is_beta_tester = models.BooleanField(default=False)
     beta_joined_at = models.DateTimeField(null=True, blank=True)
+    beta_access_until = models.DateTimeField(null=True, blank=True)
+
+    subscription_status = models.CharField(
+        max_length=20,
+        choices=SUBSCRIPTION_STATUS_CHOICES,
+        default=SUBSCRIPTION_TRIAL,
+        db_index=True,
+    )
+    plan_interval = models.CharField(max_length=10, choices=PLAN_CHOICES, blank=True, default="")
+    trial_started_at = models.DateTimeField(null=True, blank=True)
+    trial_ends_at = models.DateTimeField(null=True, blank=True)
+    manual_access_until = models.DateTimeField(null=True, blank=True)
+    manual_access_note = models.CharField(max_length=255, blank=True, default="")
+
+    stripe_customer_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    stripe_price_id = models.CharField(max_length=255, blank=True, default="")
+    stripe_current_period_end = models.DateTimeField(null=True, blank=True)
+    stripe_cancel_at_period_end = models.BooleanField(default=False)
+    stripe_last_event_id = models.CharField(max_length=255, blank=True, default="")
+    subscription_updated_at = models.DateTimeField(null=True, blank=True)
 
     account_delete_requested_at = models.DateTimeField(null=True, blank=True)
     account_delete_scheduled_for = models.DateTimeField(null=True, blank=True)
@@ -424,6 +472,55 @@ class UserProfile(models.Model):
         on_delete=models.SET_NULL,
         related_name="+",
     )
+
+    @property
+    def access_until(self):
+        dates = [
+            self.beta_access_until if self.is_beta_tester else None,
+            self.trial_ends_at,
+            self.manual_access_until,
+        ]
+
+        if self.subscription_status in {self.SUBSCRIPTION_ACTIVE, self.SUBSCRIPTION_TRIALING}:
+            dates.append(self.stripe_current_period_end)
+
+        valid_dates = [value for value in dates if value]
+        return max(valid_dates) if valid_dates else None
+
+    def has_active_access(self, now=None):
+        now = now or timezone.now()
+
+        if self.user_id and (self.user.is_staff or self.user.is_superuser):
+            return True
+
+        if self.manual_access_until and self.manual_access_until > now:
+            return True
+
+        if self.is_beta_tester and self.beta_access_until and self.beta_access_until > now:
+            return True
+
+        if self.subscription_status == self.SUBSCRIPTION_TRIAL and self.trial_ends_at and self.trial_ends_at > now:
+            return True
+
+        if self.subscription_status in {self.SUBSCRIPTION_ACTIVE, self.SUBSCRIPTION_TRIALING}:
+            return self.stripe_current_period_end is None or self.stripe_current_period_end > now
+
+        return False
+
+    @property
+    def access_source(self):
+        now = timezone.now()
+        if self.user_id and (self.user.is_staff or self.user.is_superuser):
+            return "admin"
+        if self.manual_access_until and self.manual_access_until > now:
+            return "manual"
+        if self.is_beta_tester and self.beta_access_until and self.beta_access_until > now:
+            return "beta"
+        if self.subscription_status == self.SUBSCRIPTION_TRIAL and self.trial_ends_at and self.trial_ends_at > now:
+            return "trial"
+        if self.subscription_status in {self.SUBSCRIPTION_ACTIVE, self.SUBSCRIPTION_TRIALING} and self.has_active_access(now):
+            return "stripe"
+        return "expired"
 
     def save(self, *args, **kwargs):
         if not self.android_webhook_secret:

@@ -18,6 +18,7 @@ from finance.utils import (
     _normalize_merchant,
     looks_like_self_transfer,
 )
+from finance.subscriptions import require_paid_access
 from finance.services import _pick_examples, _call_openai_rows
 
 BATCH_SIZE = 50
@@ -70,6 +71,10 @@ def ai_full_categorize(request):
       2) Prefill IN rows with empty category -> 'Income' (category_source='rule')
       3) Never assign 'Income' to OUT rows
     """
+    blocked = require_paid_access(request, redirect_name="upload")
+    if blocked:
+        return blocked
+
     # Seed defaults (now includes "Internal transfer" in your DEFAULT_CATEGORIES)
     ensure_default_categories(request.user)
 
@@ -308,6 +313,10 @@ def ai_full_categorize(request):
 @login_required
 @require_POST
 def ai_run_uncategorized(request):
+    blocked = require_paid_access(request, redirect_name="upload")
+    if blocked:
+        return blocked
+
     base = Transaction.objects.filter(user=request.user, is_deleted=False)
     eligible_qs = (
         base
@@ -341,6 +350,10 @@ def ai_recheck_all(request):
       - default    -> ai
     Stamps a session timestamp so Review (AI) can show only rows from the latest run.
     """
+    blocked = require_paid_access(request, redirect_name="upload")
+    if blocked:
+        return blocked
+
     from django.utils import timezone
 
     scope = (request.GET.get("scope") or "ai").lower()

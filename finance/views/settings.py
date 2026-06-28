@@ -28,6 +28,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail, mail_admins
 from django.conf import settings
 from finance.models import UserProfile
+from finance.subscriptions import access_context, require_paid_access
 from django.utils import translation
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -48,6 +49,9 @@ def category_list(request):
     ensure_default_categories(request.user)
 
     if request.method == "POST":
+        blocked = require_paid_access(request)
+        if blocked:
+            return blocked
         name = (request.POST.get("name") or "").strip()
         color = (request.POST.get("color") or "").strip()
         if name:
@@ -61,6 +65,9 @@ def category_list(request):
 def category_edit(request, pk):
     cat = get_object_or_404(Category, pk=pk, user=request.user)
     if request.method == "POST":
+        blocked = require_paid_access(request)
+        if blocked:
+            return blocked
         name = (request.POST.get("name") or "").strip()
         color = (request.POST.get("color") or "").strip()
         if name:
@@ -76,6 +83,9 @@ def category_edit(request, pk):
 def category_delete(request, pk):
     cat = get_object_or_404(Category, pk=pk, user=request.user)
     if request.method == "POST":
+        blocked = require_paid_access(request)
+        if blocked:
+            return blocked
         other, _ = Category.objects.get_or_create(
             user=request.user,
             name=default_category_name("other", request.user),
@@ -97,6 +107,10 @@ def profile(request):
         # Categories (inside Profile)
         # ----------------------------
         if action == "cat_add":
+            blocked = require_paid_access(request)
+            if blocked:
+                return blocked
+
             # --- QUOTA: max categories per user ---
             MAX_CATEGORIES_PER_USER = getattr(settings, "MAX_CATEGORIES_PER_USER", 200)
             if Category.objects.filter(user=request.user).count() >= MAX_CATEGORIES_PER_USER:
@@ -121,6 +135,10 @@ def profile(request):
             return redirect("profile")
 
         if action == "cat_delete":
+            blocked = require_paid_access(request)
+            if blocked:
+                return blocked
+
             cat_id = request.POST.get("cat_id")
             cat = get_object_or_404(Category, id=cat_id, user=request.user)
 
@@ -356,6 +374,20 @@ def profile(request):
     # ---------- GET ----------
     prof, _created = UserProfile.objects.get_or_create(user=request.user)
 
+    if request.GET.get("billing") == "success" and request.GET.get("session_id"):
+        from finance.views.billing import sync_checkout_session_for_user
+
+        ok, message = sync_checkout_session_for_user(request.user, request.GET.get("session_id"))
+        if ok:
+            messages.success(request, message)
+        else:
+            messages.warning(request, message)
+        return redirect("profile")
+
+    if request.GET.get("billing") == "cancelled":
+        messages.info(request, _("Payment was cancelled. You can choose a plan whenever you're ready."))
+        return redirect("profile")
+
     accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
 
     tx_sums = (
@@ -450,6 +482,7 @@ def profile(request):
             "end": f"{m3[-1][0]:04d}-{m3[-1][1]:02d}",
         },
         "goals": goals,
+        "subscription_access": access_context(request.user),
 
         # Categories for the Profile categories card
         "categories": cats,

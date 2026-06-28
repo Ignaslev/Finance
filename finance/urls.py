@@ -2,6 +2,7 @@ from django.urls import path
 from . import views as f
 from .views import transactions
 from .views import settings as settings_views
+from .views import billing
 
 urlpatterns = [
     path("app/", f.upload, name="upload"),
@@ -51,6 +52,9 @@ urlpatterns = [
     path("refunds/ignore-pair/", transactions.refund_pair_ignore, name="refund_pair_ignore"),
 
     path("profile/", f.profile, name="profile"),
+    path("billing/checkout/<str:interval>/", billing.checkout, name="billing_checkout"),
+    path("billing/portal/", billing.portal, name="billing_portal"),
+    path("stripe/webhook/", billing.webhook, name="stripe_webhook"),
     path("language/set/", settings_views.set_preferred_language, name="set_preferred_language"),
     path("feedback/", settings_views.feedback, name="feedback"),
     path("guide/", f.guide, name="guide"),

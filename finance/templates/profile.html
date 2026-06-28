@@ -12,6 +12,78 @@
 </div>
 
 
+<div class="card profile-billing-card">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Subscription" %}</span>
+  </div>
+
+  <div style="display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+    <div style="flex:1 1 280px; min-width:0;">
+      {% if subscription_access.has_access %}
+        {% if subscription_access.access_source == "beta" %}
+          <div class="text-dark" style="font-weight:700;">{% trans "Beta access is active." %}</div>
+          <p class="text-medium" style="margin:.35rem 0 0;">
+            {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your free beta year is active until {{ until }}.{% endblocktrans %}
+          </p>
+        {% elif subscription_access.access_source == "trial" %}
+          <div class="text-dark" style="font-weight:700;">{% trans "Free trial is active." %}</div>
+          <p class="text-medium" style="margin:.35rem 0 0;">
+            {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your trial is active until {{ until }}.{% endblocktrans %}
+          </p>
+        {% elif subscription_access.access_source == "manual" %}
+          <div class="text-dark" style="font-weight:700;">{% trans "Manual access is active." %}</div>
+          <p class="text-medium" style="margin:.35rem 0 0;">
+            {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Access is active until {{ until }}.{% endblocktrans %}
+          </p>
+        {% elif subscription_access.access_source == "stripe" %}
+          <div class="text-dark" style="font-weight:700;">{% trans "Subscription is active." %}</div>
+          <p class="text-medium" style="margin:.35rem 0 0;">
+            {% if subscription_access.profile.stripe_cancel_at_period_end %}
+              {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your plan is set to cancel at the end of the current period on {{ until }}.{% endblocktrans %}
+            {% else %}
+              {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your paid plan renews on {{ until }}.{% endblocktrans %}
+            {% endif %}
+          </p>
+        {% else %}
+          <div class="text-dark" style="font-weight:700;">{% trans "Access is active." %}</div>
+        {% endif %}
+      {% else %}
+        <div class="text-dark" style="font-weight:700;">{% trans "Access has ended." %}</div>
+        <p class="text-medium" style="margin:.35rem 0 0;">
+          {% trans "Choose a monthly or yearly plan to continue importing transactions, creating categories and using AI categorisation." %}
+        </p>
+      {% endif %}
+    </div>
+
+    <div style="display:flex; gap:.6rem; flex-wrap:wrap; justify-content:flex-end; flex:1 1 280px;">
+        {% if subscription_access.stripe_configured %}
+          {% if subscription_access.profile.stripe_subscription_id %}
+          <a href="{% url 'billing_portal' %}"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="btn"
+             style="background:#fff; border:1px solid #e2e8f0;">
+            {% trans "Manage billing" %}
+          </a>
+        {% elif subscription_access.access_source == "beta" or subscription_access.access_source == "manual" or subscription_access.access_source == "admin" %}
+          <span class="text-medium" style="font-size:.9rem;">{% trans "No payment is needed right now." %}</span>
+        {% else %}
+          <form method="post" action="{% url 'billing_checkout' 'monthly' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">{% trans "Monthly" %} · 4.99 EUR</button>
+          </form>
+          <form method="post" action="{% url 'billing_checkout' 'yearly' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="background:#f8fafc; border:1px solid #e2e8f0;">{% trans "Yearly" %} · 49.99 EUR</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <span class="text-medium" style="font-size:.9rem;">{% trans "Payments are not configured yet." %}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 
 <div class="card profile-accounts-card">
   <div class="card-title title-with-guide">

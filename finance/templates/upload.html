@@ -7,7 +7,11 @@
 
 <div class="page-title-row transactions-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
     <h2 class="text-dark" style="margin:0;">{% trans "Transactions" %}</h2>
-    <a href="{% url 'tx_add' %}" class="btn btn-primary">{% trans "Add Manual" %}</a>
+    {% if subscription_access.has_access %}
+      <a href="{% url 'tx_add' %}" class="btn btn-primary">{% trans "Add Manual" %}</a>
+    {% else %}
+      <a href="{% url 'profile' %}" class="btn btn-primary">{% trans "Choose plan" %}</a>
+    {% endif %}
 </div>
 
 <div class="transaction-tabs flex gap-4 mb-4" style="font-size: 0.95rem;">
@@ -41,12 +45,17 @@
       <span>{% trans "Upload Statement" %}</span>
       {% guide_icon "upload" %}
     </div>
+        {% if not subscription_access.has_access %}
+          <div style="margin-bottom:1rem; padding:0.85rem 1rem; border-radius:12px; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;">
+            {% trans "Your free access has ended. Choose a plan in Profile to upload bank statements again." %}
+          </div>
+        {% endif %}
         <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}" class="upload-form">
   {% csrf_token %}
 
   <div class="upload-field">
     <label>{% trans "Target Account" %}</label>
-    <select name="import_src" required class="upload-control">
+    <select name="import_src" required class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %}>
       {% for s in sources %}
         <option value="{{ s.id }}">{{ s.name }} ({{ s.get_type_display }})</option>
       {% endfor %}
@@ -55,7 +64,7 @@
 
   <div class="upload-field">
     <label>{% trans "Bank format" %}</label>
-    <select name="bank" class="upload-control">
+    <select name="bank" class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %}>
       {% for value,label in bank_choices %}
         <option value="{{ value }}">{{ label }}</option>
       {% endfor %}
@@ -69,12 +78,14 @@
       <span class="upload-dropzone-icon"><i class="ph ph-file-arrow-up"></i></span>
       <strong>{% trans "File (CSV/Excel)" %}</strong>
       <span>Revolut · SEB · Swedbank</span>
-      <input type="file" name="file" required class="upload-control" />
+      <input type="file" name="file" required class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %} />
     </label>
   </div>
 
   <div class="upload-actions">
-    <button class="btn btn-primary">{% trans "Upload" %}</button>
+    <button class="btn btn-primary" {% if not subscription_access.has_access %}disabled{% endif %}>
+      {% if subscription_access.has_access %}{% trans "Upload" %}{% else %}{% trans "Choose plan" %}{% endif %}
+    </button>
   </div>
 </form>
 
