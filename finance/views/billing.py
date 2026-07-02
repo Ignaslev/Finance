@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timezone as dt_timezone
 
 from django.conf import settings
@@ -290,12 +289,9 @@ def webhook(request):
     stripe = _stripe()
 
     try:
-        if webhook_secret:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        elif settings.DEBUG:
-            event = json.loads(payload.decode("utf-8"))
-        else:
+        if not webhook_secret:
             return HttpResponse(status=400)
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception:
         return HttpResponse(status=400)
 

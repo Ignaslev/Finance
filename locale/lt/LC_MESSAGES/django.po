@@ -2901,3 +2901,9 @@ msgstr "Baigėsi"
 
 msgid "Manual access"
 msgstr "Rankinė prieiga"
+
+msgid "Too many login attempts. Please try again later."
+msgstr "Per daug prisijungimo bandymų. Bandykite vėliau."
+
+msgid "Too many password reset requests. Please try again later."
+msgstr "Per daug slaptažodžio atkūrimo užklausų. Bandykite vėliau."

@@ -34,6 +34,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dev-key-change-me", requi
 
 # Default to False in production
 DEBUG = env("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes", "on")
+IS_PROD = not DEBUG
 
 # Allow all hosts in production (Railway handles routing), or restrict if preferred
 # Default: safe for local dev; in prod set DJANGO_ALLOWED_HOSTS and DJANGO_CSRF_TRUSTED_ORIGINS
@@ -100,6 +101,24 @@ DATABASES = {
         conn_max_age=600
     )
 }
+
+CACHE_BACKEND = env("DJANGO_CACHE_BACKEND", "database" if IS_PROD else "locmem").lower()
+if CACHE_BACKEND == "database":
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": env("DJANGO_CACHE_TABLE", "moneycompass_cache"),
+            "TIMEOUT": int(env("DJANGO_CACHE_TIMEOUT", "900")),
+            "OPTIONS": {"MAX_ENTRIES": int(env("DJANGO_CACHE_MAX_ENTRIES", "10000"))},
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "moneycompass-dev-cache",
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -172,7 +191,7 @@ AUTHENTICATION_BACKENDS = [
 # Allow running DEBUG=False on staging while still using console email.
 EMAIL_MODE = env("EMAIL_MODE", "console").lower()  # console | smtp
 
-ADMINS = [("MoneyCompass Admin", env("ADMIN_ALERT_EMAIL", "yourgmail@gmail.com"))]
+ADMINS = [("MoneyCompass Admin", env("ADMIN_ALERT_EMAIL", "admin@moneycompass.lt"))]
 
 if EMAIL_MODE == "smtp":
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -201,7 +220,7 @@ SERVER_EMAIL = env("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 # ---------------------------------------------------------
 # Production security hardening
 # ---------------------------------------------------------
-IS_PROD = not DEBUG
+TRUSTED_PROXY_IPS = env_list("DJANGO_TRUSTED_PROXY_IPS", "127.0.0.1,::1")
 
 # If you're behind a proxy/load balancer (nginx, Railway, etc.)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -216,7 +235,7 @@ CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", IS_PROD)
 
 # Sensible defaults
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False  # Django needs JS access sometimes; keep default behavior
+CSRF_COOKIE_HTTPONLY = env_bool("DJANGO_CSRF_COOKIE_HTTPONLY", True)
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
@@ -226,7 +245,7 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "same-origin"
 
 if IS_PROD:
-    SECURE_HSTS_SECONDS = int(env("DJANGO_HSTS_SECONDS", "60"))  # start with 60s
+    SECURE_HSTS_SECONDS = int(env("DJANGO_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env("DJANGO_HSTS_INCLUDE_SUBDOMAINS", "False").lower() in ("1","true","yes","on")
     SECURE_HSTS_PRELOAD = env("DJANGO_HSTS_PRELOAD", "False").lower() in ("1","true","yes","on")
 else:

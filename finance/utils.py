@@ -105,7 +105,7 @@ def build_fingerprint_v2(*, date_iso: str, time_str: str | None, merchant: str,
 
     norm_desc = _normalize_text_basic(description or "")
     desc_prefix = norm_desc[:80]
-    desc8 = hashlib.sha1(desc_prefix.encode("utf-8")).hexdigest()[:8] if desc_prefix else ""
+    desc8 = hashlib.sha1(desc_prefix.encode("utf-8"), usedforsecurity=False).hexdigest()[:8] if desc_prefix else ""
     tpart = (time_str or "").strip()
     return f"{date_iso}|{tpart}|{norm_merchant}|{amount}|{currency}|{in_out}|{money_source_id}|{desc8}"
 

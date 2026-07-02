@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import HttpResponseBadRequest
@@ -18,6 +19,32 @@ from .forms import RegisterForm
 from .throttling import client_ip, is_limited, record_attempt
 
 User = get_user_model()
+
+
+class ThrottledPasswordResetView(PasswordResetView):
+    def post(self, request, *args, **kwargs):
+        ip = client_ip(request)
+        email = (request.POST.get("email") or "").strip().lower()
+
+        if is_limited("password-reset-ip", ip, limit=10, window_seconds=60 * 60):
+            form = self.get_form()
+            form.add_error(None, _("Too many password reset requests. Please try again later."))
+            response = self.form_invalid(form)
+            response.status_code = 429
+            return response
+
+        if email and is_limited("password-reset-email", email, limit=5, window_seconds=60 * 60):
+            form = self.get_form()
+            form.add_error(None, _("Too many password reset requests. Please try again later."))
+            response = self.form_invalid(form)
+            response.status_code = 429
+            return response
+
+        record_attempt("password-reset-ip", ip, window_seconds=60 * 60)
+        if email:
+            record_attempt("password-reset-email", email, window_seconds=60 * 60)
+
+        return super().post(request, *args, **kwargs)
 
 
 def register(request):

@@ -7,7 +7,7 @@ cffi==2.0.0
 charset-normalizer==3.4.4
 curl_cffi==0.13.0
 distro==1.9.0
-Django==5.2.7
+Django==5.2.15
 et_xmlfile==2.0.0
 frozendict==2.4.7
 h11==0.16.0
@@ -44,6 +44,6 @@ websockets==15.0.1
 whitenoise==6.11.0
 xlrd==2.0.2
 yfinance==0.2.66
-gunicorn==21.2.0
+gunicorn==23.0.0
 psycopg2-binary==2.9.10
 dj-database-url==2.1.0

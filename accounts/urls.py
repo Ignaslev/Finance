@@ -1,7 +1,7 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
-from .views import register, activate
+from .views import register, activate, ThrottledPasswordResetView
 from .forms import EmailAuthenticationForm
 
 urlpatterns = [
@@ -18,7 +18,7 @@ urlpatterns = [
     # Password reset flow (emails will work once EMAIL_BACKEND is configured)
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
+        ThrottledPasswordResetView.as_view(
             template_name="accounts/password_reset_form.html",
             success_url=reverse_lazy("password_reset_done"),
         ),
