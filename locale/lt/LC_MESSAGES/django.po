@@ -81,7 +81,7 @@ msgstr "Patvirtinimas"
 
 #: finance/templates/account_delete_confirm.html:13
 msgid "Your account deletion is already scheduled."
-msgstr "Jusu paskyros istrynimas jau suplanuotas."
+msgstr "Jūsų paskyros ištrynimas jau suplanuotas."
 
 #: finance/templates/account_delete_confirm.html:16
 #: finance/templates/data_delete_confirm.html:18
@@ -90,11 +90,11 @@ msgstr "Suplanuota"
 
 #: finance/templates/account_delete_confirm.html:19
 msgid "If you want to cancel, go back to your Profile page and click “Cancel deletion”."
-msgstr "Jei norite atsaukti, grizkite i Profilio puslapi ir spustelekite \"Atsaukti istrynima\"."
+msgstr "Jei norite atšaukti, grįžkite į Profilio puslapį ir spustelėkite „Atšaukti ištrynimą“."
 
 #: finance/templates/account_delete_confirm.html:23
 msgid "Your account will be deleted after 24 hours. You can cancel during this period from your Profile page."
-msgstr "Jusu paskyra bus istrinta po 24 valandu. Per si laika galite atsaukti Profilio puslapyje."
+msgstr "Jūsų paskyra bus ištrinta po 24 valandų. Per šį laiką galite tai atšaukti Profilio puslapyje."
 
 #: finance/templates/account_delete_confirm.html:30
 #: finance/templates/data_delete_confirm.html:60
@@ -448,7 +448,7 @@ msgstr "Jūsų operacijų ištrynimas jau suplanuotas."
 
 #: finance/templates/data_delete_confirm.html:23
 msgid "This will permanently delete all uploaded and manually created transactions."
-msgstr "Tai negriztamai istrins visas ikeltas ir rankiniu budu sukurtas operacijas."
+msgstr "Bus negrįžtamai ištrintos visos įkeltos ir rankiniu būdu sukurtos operacijos."
 
 #: finance/templates/data_delete_confirm.html:31
 #: finance/templates/includes/pending_delete_banner.html:8
@@ -460,7 +460,7 @@ msgstr "Atšaukti ištrynimą"
 
 #: finance/templates/data_delete_confirm.html:41
 msgid "Your transactions will be permanently deleted after 24 hours. You can cancel during this period."
-msgstr "Jusu operacijos bus negriztamai istrintos po 24 valandu. Per si laika galite atsaukti."
+msgstr "Jūsų operacijos bus negrįžtamai ištrintos po 24 valandų. Per šį laiką galite tai atšaukti."
 
 #: finance/templates/data_delete_confirm.html:45
 #| msgid "Transactions"
@@ -469,11 +469,11 @@ msgstr "Ištrinamos operacijos"
 
 #: finance/templates/data_delete_confirm.html:49
 msgid "This deletes uploaded and manually created transactions, including transactions currently in the deleted list."
-msgstr "Tai istrina ikeltas ir rankiniu budu sukurtas operacijas, iskaitant tas, kurios dabar yra istrintu sarase."
+msgstr "Bus ištrintos įkeltos ir rankiniu būdu sukurtos operacijos, įskaitant operacijas, kurios šiuo metu yra ištrintų sąraše."
 
 #: finance/templates/data_delete_confirm.html:53
 msgid "This does not delete accounts, categories, balances, assets, or your profile."
-msgstr "Tai neistrina saskaitu, kategoriju, likuciu, turto ar jusu profilio."
+msgstr "Sąskaitos, kategorijos, likučiai, turtas ir jūsų profilis nebus ištrinti."
 
 #: finance/templates/data_delete_confirm.html:76
 #: finance/views/transactions.py:413
@@ -713,7 +713,7 @@ msgstr "Įtraukti lėšas iš sąskaitų:"
 
 #: finance/templates/profile.html:281
 msgid "Tip: Combine multiple accounts (e.g. Savings + Cash) to track a single goal."
-msgstr "Patarimas: vienam tikslui galite priskirti kelias saskaitas (pvz., taupomaja ir grynuosius)."
+msgstr "Patarimas: vienam tikslui galite priskirti kelias sąskaitas (pvz., taupomąją sąskaitą ir grynuosius)."
 
 #: finance/templates/profile.html:285
 msgid "Create Goal"
@@ -721,7 +721,7 @@ msgstr "Sukurti tikslą"
 
 #: finance/templates/profile.html:295
 msgid "Accounts Linked"
-msgstr "Prisietos sąskaitos"
+msgstr "Susietos sąskaitos"
 
 #: finance/templates/profile.html:296
 msgid "Progress"
@@ -785,7 +785,7 @@ msgstr "Jūsų paskyros ištrynimas suplanuotas. Galite jį atšaukti per 24 val
 
 #: finance/templates/profile.html:409
 msgid "Your account will be permanently deleted after 24 hours. You can cancel it during this period."
-msgstr "Jusu paskyra bus negriztamai istrinta po 24 valandu. Per si laika galite tai atsaukti."
+msgstr "Jūsų paskyra bus negrįžtamai ištrinta po 24 valandų. Per šį laiką galite tai atšaukti."
 
 #: finance/templates/profile.html:415
 #| msgid "Create account"
@@ -1897,11 +1897,11 @@ msgstr "Duomenų ištrynimas"
 
 #: finance/templates/upload.html:377
 msgid "Your transactions deletion is scheduled. You can cancel it within 24 hours."
-msgstr "Operaciju istrynimas suplanuotas. Galite ji atsaukti per 24 valandas."
+msgstr "Operacijų ištrynimas suplanuotas. Galite jį atšaukti per 24 valandas."
 
 #: finance/templates/upload.html:381
 msgid "After that, all uploaded and manually created transactions will be permanently deleted."
-msgstr "Po to visos ikeltos ir rankiniu budu sukurtos operacijos bus negriztamai istrintos."
+msgstr "Po to visos įkeltos ir rankiniu būdu sukurtos operacijos bus negrįžtamai ištrintos."
 
 #: finance/templates/upload.html:386
 #| msgid "Save Selection"
@@ -1910,11 +1910,11 @@ msgstr "Tvarkyti ištrynimą"
 
 #: finance/templates/upload.html:390
 msgid "Your transactions will be permanently deleted after 24 hours. You can cancel it during this period."
-msgstr "Jusu operacijos bus negriztamai istrintos po 24 valandu. Per si laika galite tai atsaukti."
+msgstr "Jūsų operacijos bus negrįžtamai ištrintos po 24 valandų. Per šį laiką galite tai atšaukti."
 
 #: finance/templates/upload.html:394
 msgid "This deletes all uploaded and manually created transactions."
-msgstr "Tai ištrina visas įkeltas ir ranka sukurtas operacijas."
+msgstr "Bus ištrintos visos įkeltos ir rankiniu būdu sukurtos operacijos."
 
 #: finance/templates/upload.html:399
 #| msgid "Deleted"
@@ -2120,7 +2120,7 @@ msgstr "Slaptažodis atnaujintas"
 
 #: moneycoach/templates/accounts/password_reset_complete.html:12
 msgid "Your password has been changed successfully. You can now log in with your new password."
-msgstr "Slaptazodis sekmingai pakeistas. Dabar galite prisijungti su nauju slaptazodziu."
+msgstr "Slaptažodis sėkmingai pakeistas. Dabar galite prisijungti su nauju slaptažodžiu."
 
 #: moneycoach/templates/accounts/password_reset_confirm.html:4
 #: moneycoach/templates/accounts/password_reset_confirm.html:9
@@ -2160,7 +2160,7 @@ msgstr "Patikrinkite el. paštą"
 
 #: moneycoach/templates/accounts/password_reset_done.html:12
 msgid "If an account exists for that email, we sent a password reset link. Please check your inbox (and spam folder)."
-msgstr "Jei paskyra su siuo el. pastu yra, issiunteme slaptazodzio atkurimo nuoroda. Patikrinkite pasto dezute ir slamsto aplanka."
+msgstr "Jei paskyra su šiuo el. paštu yra, išsiuntėme slaptažodžio atkūrimo nuorodą. Patikrinkite pašto dėžutę ir šlamšto aplanką."
 
 #: moneycoach/templates/accounts/password_reset_form.html:4
 #: moneycoach/templates/accounts/password_reset_form.html:9
@@ -2443,15 +2443,15 @@ msgstr "Ačiū! Jūsų pranešimas išsiųstas."
 
 # Added by Codex i18n sweep
 msgid "Account deletion has been scheduled. You can cancel it within 24 hours."
-msgstr "Paskyros istrynimas suplanuotas. Galite ji atsaukti per 24 valandas."
+msgstr "Paskyros ištrynimas suplanuotas. Galite jį atšaukti per 24 valandas."
 
 # Added by Codex i18n sweep
 msgid "No account deletion is currently scheduled."
-msgstr "Siuo metu paskyros istrynimas nesuplanuotas."
+msgstr "Šiuo metu paskyros ištrynimas nesuplanuotas."
 
 # Added by Codex i18n sweep
 msgid "Account deletion has been canceled."
-msgstr "Paskyros istrynimas atsauktas."
+msgstr "Paskyros ištrynimas atšauktas."
 
 # Added by Codex i18n sweep
 msgid "Account not found or inactive."
@@ -2471,7 +2471,7 @@ msgstr "Galite tureti daugiausia %(count)s tikslu."
 
 # Added by Codex i18n sweep
 msgid "\"Other\" cannot be deleted."
-msgstr "Kategorijos \"Kita\" istrinti negalima."
+msgstr "Kategorijos „Kita“ ištrinti negalima."
 
 # Added by Codex i18n sweep
 msgid "Another account named \"%(name)s\" already exists."
@@ -2483,7 +2483,7 @@ msgstr "%(status)s \"%(name)s\"."
 
 # Added by Codex i18n sweep
 msgid "\"%(name)s\" set as default import account."
-msgstr "\"%(name)s\" nustatyta kaip numatytoji importo saskaita."
+msgstr "„%(name)s“ nustatyta kaip numatytoji importo sąskaita."
 
 # Added by Codex i18n sweep
 msgid "Removed cap for \"%(name)s\"."
@@ -2907,3 +2907,45 @@ msgstr "Per daug prisijungimo bandymų. Bandykite vėliau."
 
 msgid "Too many password reset requests. Please try again later."
 msgstr "Per daug slaptažodžio atkūrimo užklausų. Bandykite vėliau."
+
+msgid "Choose a valid date from the calendar."
+msgstr "Pasirinkite galiojančią datą iš kalendoriaus."
+
+msgid "Choose a date between %(min)s and %(max)s."
+msgstr "Pasirinkite datą nuo %(min)s iki %(max)s."
+
+msgid "Choose a valid From date from the calendar."
+msgstr "Pasirinkite galiojančią pradžios datą iš kalendoriaus."
+
+msgid "Choose a valid To date from the calendar."
+msgstr "Pasirinkite galiojančią pabaigos datą iš kalendoriaus."
+
+msgid "From date cannot be later than To date."
+msgstr "Pradžios data negali būti vėlesnė už pabaigos datą."
+
+msgid "To date cannot be earlier than From date."
+msgstr "Pabaigos data negali būti ankstesnė už pradžios datą."
+
+msgid "Minimum amount cannot be negative."
+msgstr "Minimali suma negali būti neigiama."
+
+msgid "Maximum amount cannot be negative."
+msgstr "Maksimali suma negali būti neigiama."
+
+msgid "Maximum amount cannot be lower than minimum amount."
+msgstr "Maksimali suma negali būti mažesnė už minimalią sumą."
+
+msgid "Category name can be at most %(count)s characters."
+msgstr "Kategorijos pavadinimas gali būti ne ilgesnis nei %(count)s simbolių."
+
+msgid "Account name can be at most %(count)s characters."
+msgstr "Sąskaitos pavadinimas gali būti ne ilgesnis nei %(count)s simbolių."
+
+msgid "Goal name can be at most %(count)s characters."
+msgstr "Tikslo pavadinimas gali būti ne ilgesnis nei %(count)s simbolių."
+
+msgid "Enter a valid positive target amount."
+msgstr "Įveskite galiojančią teigiamą tikslo sumą."
+
+msgid "Color value is too long."
+msgstr "Spalvos reikšmė per ilga."

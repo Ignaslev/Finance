@@ -31,7 +31,7 @@
           <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
               {% trans "Date" %}
           </label>
-          <input type="date" name="date" value="{{ today }}" required
+          <input type="date" name="date" value="{{ today }}" min="{{ date_min }}" max="{{ today }}" required class="js-date-picker-only"
                  style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
         </div>
         <div>
@@ -59,7 +59,7 @@
           <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
               {% trans "Amount" %}
           </label>
-          <input type="number" step="0.01" name="amount" required
+          <input type="number" step="0.01" min="0.01" name="amount" required
                  placeholder="{% trans 'e.g., 23.45' %}"
                  style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;">
         </div>
@@ -98,7 +98,7 @@
           <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
               {% trans "Notes (bank description etc.)" %}
           </label>
-          <textarea name="notes" rows="2"
+          <textarea name="notes" rows="2" maxlength="2000"
                     style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
                     placeholder="{% trans 'Optional' %}"></textarea>
         </div>
@@ -107,7 +107,7 @@
           <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
               {% trans "Your note" %}
           </label>
-          <textarea name="user_note" rows="2"
+          <textarea name="user_note" rows="2" maxlength="2000"
                     style="width:100%; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
                     placeholder="{% trans 'Optional' %}"></textarea>
         </div>
@@ -123,4 +123,14 @@
       </div>
     </form>
 </div>
+<script>
+  document.querySelectorAll('.js-date-picker-only').forEach((input) => {
+    input.addEventListener('keydown', (event) => {
+      if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+      }
+    });
+    input.addEventListener('paste', (event) => event.preventDefault());
+  });
+</script>
 {% endblock %}

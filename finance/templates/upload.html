@@ -121,7 +121,7 @@
         </form>
     </div>
 
-    <form method="get">
+    <form method="get" id="transactionFilterForm">
       {% if active_src %}
         <input type="hidden" name="src" value="{{ active_src.id }}">
       {% elif src_param == 'all' %}
@@ -131,27 +131,27 @@
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:1rem; align-items:end;">
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Search" %}</label>
-          <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Merchant...' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="text" name="q" value="{{ q }}" maxlength="255" placeholder="{% trans 'Merchant...' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
 
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "From" %}</label>
-          <input type="date" name="from" value="{{ from }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="date" name="from" id="filterFrom" value="{{ from }}" min="{{ date_min }}" max="{{ date_max }}" class="js-date-picker-only" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
 
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "To" %}</label>
-          <input type="date" name="to" value="{{ to }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="date" name="to" id="filterTo" value="{{ to }}" min="{{ date_min }}" max="{{ date_max }}" class="js-date-picker-only" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
 
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Min Amount" %}</label>
-          <input type="number" step="0.01" name="amin" value="{{ amin }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="number" step="0.01" min="0" name="amin" id="filterMinAmount" value="{{ amin }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
 
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Max Amount" %}</label>
-          <input type="number" step="0.01" name="amax" value="{{ amax }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="number" step="0.01" min="0" name="amax" id="filterMaxAmount" value="{{ amax }}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
 
         <div>
@@ -442,6 +442,59 @@
 {% endif %}
 
 <script>
+  document.querySelectorAll('.js-date-picker-only').forEach((input) => {
+    input.addEventListener('keydown', (event) => {
+      if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+      }
+    });
+    input.addEventListener('paste', (event) => event.preventDefault());
+  });
+
+  const filterForm = document.getElementById('transactionFilterForm');
+  const filterFrom = document.getElementById('filterFrom');
+  const filterTo = document.getElementById('filterTo');
+  const filterMinAmount = document.getElementById('filterMinAmount');
+  const filterMaxAmount = document.getElementById('filterMaxAmount');
+
+  function syncFilterRanges() {
+    if (filterFrom && filterTo) {
+      filterTo.min = filterFrom.value || '{{ date_min }}';
+      filterFrom.max = filterTo.value || '{{ date_max }}';
+    }
+    if (filterMinAmount && filterMaxAmount) {
+      filterMaxAmount.min = filterMinAmount.value || '0';
+      filterMinAmount.max = filterMaxAmount.value || '';
+    }
+  }
+
+  function validateFilterRanges() {
+    if (filterFrom && filterTo) {
+      filterTo.setCustomValidity('');
+      if (filterFrom.value && filterTo.value && filterFrom.value > filterTo.value) {
+        filterTo.setCustomValidity('{% trans "To date cannot be earlier than From date." %}');
+      }
+    }
+    if (filterMinAmount && filterMaxAmount) {
+      filterMaxAmount.setCustomValidity('');
+      const minValue = filterMinAmount.value === '' ? null : Number(filterMinAmount.value);
+      const maxValue = filterMaxAmount.value === '' ? null : Number(filterMaxAmount.value);
+      if (minValue !== null && maxValue !== null && maxValue < minValue) {
+        filterMaxAmount.setCustomValidity('{% trans "Maximum amount cannot be lower than minimum amount." %}');
+      }
+    }
+  }
+
+  [filterFrom, filterTo, filterMinAmount, filterMaxAmount].forEach((input) => {
+    input?.addEventListener('change', () => {
+      syncFilterRanges();
+      validateFilterRanges();
+    });
+    input?.addEventListener('input', validateFilterRanges);
+  });
+  filterForm?.addEventListener('submit', validateFilterRanges);
+  syncFilterRanges();
+  validateFilterRanges();
 
   const notesToggle = document.getElementById('toggleUserNotes');
     const notesKey = 'mc_show_user_notes_u{{ request.user.id }}';

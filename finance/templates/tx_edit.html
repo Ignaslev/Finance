@@ -43,7 +43,7 @@
         <div class="row" style="margin:.75rem 0;">
             <label style="display:block; width:100%; font-size:0.9rem;">
                 {% trans "User note" %}
-                <textarea name="user_note" rows="4"
+                <textarea name="user_note" rows="4" maxlength="500"
                           style="width:100%; margin-top:0.25rem; padding:0.4rem 0.6rem; border-radius:6px; border:1px solid #e2e8f0; box-sizing:border-box;"
                           placeholder="{% trans 'Add context…' %}">{{ tx.user_note }}</textarea>
             </label>

@@ -44,6 +44,16 @@ def _safe_next_url(request, raw_url, fallback):
     return fallback
 
 
+CATEGORY_NAME_MAX = 40
+ACCOUNT_NAME_MAX = 100
+GOAL_NAME_MAX = 100
+COLOR_MAX = 7
+
+
+def _too_long(value, max_length):
+    return len(value or "") > max_length
+
+
 @login_required
 def category_list(request):
     ensure_default_categories(request.user)
@@ -54,6 +64,12 @@ def category_list(request):
             return blocked
         name = (request.POST.get("name") or "").strip()
         color = (request.POST.get("color") or "").strip()
+        if _too_long(name, CATEGORY_NAME_MAX):
+            messages.error(request, _("Category name can be at most %(count)s characters.") % {"count": CATEGORY_NAME_MAX})
+            return redirect("category_list")
+        if _too_long(color, COLOR_MAX):
+            messages.error(request, _("Color value is too long."))
+            return redirect("category_list")
         if name:
             Category.objects.get_or_create(user=request.user, name=name, defaults={"color": color})
         return redirect("category_list")
@@ -70,6 +86,12 @@ def category_edit(request, pk):
             return blocked
         name = (request.POST.get("name") or "").strip()
         color = (request.POST.get("color") or "").strip()
+        if _too_long(name, CATEGORY_NAME_MAX):
+            messages.error(request, _("Category name can be at most %(count)s characters.") % {"count": CATEGORY_NAME_MAX})
+            return redirect("category_list")
+        if _too_long(color, COLOR_MAX):
+            messages.error(request, _("Color value is too long."))
+            return redirect("category_list")
         if name:
             exists = Category.objects.filter(user=request.user, name=name).exclude(pk=cat.pk).exists()
             if not exists:
@@ -123,6 +145,9 @@ def profile(request):
             name = (request.POST.get("name") or "").strip()
             if not name:
                 messages.error(request, _("Name cannot be empty."))
+                return redirect("profile")
+            if _too_long(name, CATEGORY_NAME_MAX):
+                messages.error(request, _("Category name can be at most %(count)s characters.") % {"count": CATEGORY_NAME_MAX})
                 return redirect("profile")
 
             # Prevent duplicates
@@ -199,6 +224,9 @@ def profile(request):
             if not name or typ not in dict(MoneySource.TYPE_CHOICES):
                 messages.error(request, _("Provide a valid name and type."))
                 return redirect("profile")
+            if _too_long(name, ACCOUNT_NAME_MAX):
+                messages.error(request, _("Account name can be at most %(count)s characters.") % {"count": ACCOUNT_NAME_MAX})
+                return redirect("profile")
             if MoneySource.objects.filter(user=request.user, name=name).exists():
                 messages.error(request, _("Account with this name already exists."))
                 return redirect("profile")
@@ -211,6 +239,9 @@ def profile(request):
             new_name = (request.POST.get("name") or "").strip()
             acc = get_object_or_404(MoneySource, id=acc_id, user=request.user)
             if new_name:
+                if _too_long(new_name, ACCOUNT_NAME_MAX):
+                    messages.error(request, _("Account name can be at most %(count)s characters.") % {"count": ACCOUNT_NAME_MAX})
+                    return redirect("profile")
                 exists = MoneySource.objects.filter(user=request.user, name=new_name).exclude(id=acc.id).exists()
                 if exists:
                     messages.error(request, _('Another account named "%(name)s" already exists.') % {"name": new_name})
@@ -342,10 +373,19 @@ def profile(request):
 
             name = (request.POST.get("goal_name") or "").strip()
             target_raw = (request.POST.get("goal_target") or "").strip().replace(",", ".")
+            if not name:
+                messages.error(request, _("Name cannot be empty."))
+                return redirect("profile")
+            if _too_long(name, GOAL_NAME_MAX):
+                messages.error(request, _("Goal name can be at most %(count)s characters.") % {"count": GOAL_NAME_MAX})
+                return redirect("profile")
             try:
                 target = Decimal(target_raw)
             except Exception:
                 target = Decimal("0")
+            if target <= 0:
+                messages.error(request, _("Enter a valid positive target amount."))
+                return redirect("profile")
             g = SavingsGoal.objects.create(user=request.user, name=name, target_amount=target, is_active=True)
             for aid in request.POST.getlist("goal_accounts"):
                 try:

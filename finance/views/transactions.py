@@ -9,6 +9,7 @@ from django.conf import settings
 import io, csv, json
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
+from datetime import date as date_cls
 from django.utils import timezone
 from django.core.mail import send_mail, mail_admins
 from django.urls import reverse
@@ -44,6 +45,13 @@ def _safe_next_url(request, raw_url, fallback):
     ):
         return raw_url
     return fallback
+
+
+DATE_INPUT_MIN = date_cls(2000, 1, 1)
+
+
+def _date_in_user_range(value):
+    return bool(value and DATE_INPUT_MIN <= value <= timezone.localdate())
 
 @login_required
 def tx_edit(request, pk):
@@ -102,7 +110,17 @@ def tx_add(request):
         try:
             d = datetime.strptime(date_str, "%Y-%m-%d").date()
         except Exception:
-            d = timezone.localdate()
+            messages.error(request, _("Choose a valid date from the calendar."))
+            return redirect("tx_add")
+        if not _date_in_user_range(d):
+            messages.error(
+                request,
+                _("Choose a date between %(min)s and %(max)s.") % {
+                    "min": DATE_INPUT_MIN.isoformat(),
+                    "max": timezone.localdate().isoformat(),
+                },
+            )
+            return redirect("tx_add")
         try:
             amount = Decimal(amount_str)
         except (InvalidOperation, TypeError):
@@ -146,6 +164,7 @@ def tx_add(request):
 
     ctx = {
         "today": timezone.localdate().strftime("%Y-%m-%d"),
+        "date_min": DATE_INPUT_MIN.isoformat(),
         "sources": sources,
         "categories": categories,
         "next": _safe_next_url(
@@ -902,10 +921,43 @@ def upload(request):
     q = (request.GET.get("q") or "").strip()
     flow = (request.GET.get("flow") or "").strip()
     cat_id = (request.GET.get("cat") or "").strip()
-    d_from = parse_date_filter(request.GET.get("from"))
-    d_to   = parse_date_filter(request.GET.get("to"))
+    raw_from = request.GET.get("from") or ""
+    raw_to = request.GET.get("to") or ""
+    raw_amin = request.GET.get("amin") or ""
+    raw_amax = request.GET.get("amax") or ""
+    d_from = parse_date_filter(raw_from)
+    d_to   = parse_date_filter(raw_to)
     a_min  = parse_decimal_filter(request.GET.get("amin"))
     a_max  = parse_decimal_filter(request.GET.get("amax"))
+    filter_has_errors = False
+
+    if raw_from and not _date_in_user_range(d_from):
+        messages.error(request, _("Choose a valid From date from the calendar."))
+        filter_has_errors = True
+    if raw_to and not _date_in_user_range(d_to):
+        messages.error(request, _("Choose a valid To date from the calendar."))
+        filter_has_errors = True
+    if d_from and d_to and d_from > d_to:
+        messages.error(request, _("From date cannot be later than To date."))
+        filter_has_errors = True
+    if raw_amin and a_min is None:
+        messages.error(request, _("Enter a valid minimum amount."))
+        filter_has_errors = True
+    if raw_amax and a_max is None:
+        messages.error(request, _("Enter a valid maximum amount."))
+        filter_has_errors = True
+    if a_min is not None and a_min < 0:
+        messages.error(request, _("Minimum amount cannot be negative."))
+        filter_has_errors = True
+    if a_max is not None and a_max < 0:
+        messages.error(request, _("Maximum amount cannot be negative."))
+        filter_has_errors = True
+    if a_min is not None and a_max is not None and a_max < a_min:
+        messages.error(request, _("Maximum amount cannot be lower than minimum amount."))
+        filter_has_errors = True
+
+    if filter_has_errors:
+        qs = qs.none()
 
     if q:
         qs = qs.filter(Q(merchant__icontains=q) | Q(notes__icontains=q) | Q(user_note__icontains=q))
@@ -916,13 +968,13 @@ def upload(request):
             qs = qs.filter(category_fk_id=int(cat_id))
         except ValueError:
             pass
-    if d_from:
+    if d_from and not filter_has_errors:
         qs = qs.filter(date__gte=d_from)
-    if d_to:
+    if d_to and not filter_has_errors:
         qs = qs.filter(date__lte=d_to)
-    if a_min is not None:
+    if a_min is not None and not filter_has_errors:
         qs = qs.filter(amount__gte=a_min)
-    if a_max is not None:
+    if a_max is not None and not filter_has_errors:
         qs = qs.filter(amount__lte=a_max)
 
     qs = qs.order_by("-date", "-id")
@@ -998,6 +1050,8 @@ def upload(request):
         "to": request.GET.get("to") or "",
         "amin": request.GET.get("amin") or "",
         "amax": request.GET.get("amax") or "",
+        "date_min": DATE_INPUT_MIN.isoformat(),
+        "date_max": timezone.localdate().isoformat(),
         "categories": categories,
         "sources": sources,
         "active_src": active_src,

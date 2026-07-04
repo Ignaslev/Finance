@@ -97,7 +97,7 @@
     <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
       <div style="flex-grow:1; max-width:300px;">
         <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "New Account Name" %}</label>
-        <input type="text" name="name" required placeholder="{% trans 'e.g. Revolut, SEB' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+        <input type="text" name="name" required maxlength="100" placeholder="{% trans 'e.g. Revolut, SEB' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
       </div>
       <div style="flex-grow:1; max-width:200px;">
         <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Type" %}</label>
@@ -177,7 +177,7 @@
                   {% csrf_token %}
                   <input type="hidden" name="action" value="rename">
                   <input type="hidden" name="id" value="{{ a.id }}">
-                  <input type="text" name="name" value="{{ a.name }}" style="width:8rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem;">
+                  <input type="text" name="name" value="{{ a.name }}" maxlength="100" style="width:8rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem;">
                   <button type="submit" class="btn" style="padding:0.3rem 0.6rem; font-size:0.8rem; background:#edf2f7;">{% trans "Rename" %}</button>
                 </form>
 
@@ -220,6 +220,7 @@
         </label>
         <input name="name"
                required
+               maxlength="40"
                placeholder="{% trans 'New category name' %}"
                style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
       </div>
@@ -346,11 +347,11 @@
       <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap:1rem;">
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Goal Name" %}</label>
-          <input type="text" name="goal_name" required placeholder="{% trans 'e.g. Emergency fund' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="text" name="goal_name" required maxlength="100" placeholder="{% trans 'e.g. Emergency fund' %}" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
         <div>
           <label style="display:block; font-size:.85em; color:var(--text-medium); margin-bottom:0.25rem;">{% trans "Target Amount (EUR)" %}</label>
-          <input type="number" step="0.01" name="goal_target" required placeholder="10000" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
+          <input type="number" step="0.01" min="0.01" name="goal_target" required placeholder="10000" style="width:100%; padding:0.5rem; border:1px solid #e2e8f0; border-radius:8px;">
         </div>
         <div style="grid-column: 1 / -1;">
           <div style="font-size:.85em; color:var(--text-medium); margin-bottom:0.5rem;">{% trans "Include balances from accounts:" %}</div>
