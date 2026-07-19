@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Money Compass{% endblock %}</title>
+    <title>{% block title %}{% if seo_title %}{{ seo_title }}{% else %}Money Compass{% endif %}{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,12 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <link rel="stylesheet" href="{% static 'css/redesign.css' %}?v=20260628-dashboard-layout">
-    {% block extra_head %}{% endblock %}
+    {% block extra_head %}
+        {% if seo_title %}
+            <meta name="description" content="{{ seo_description }}">
+            {% include "includes/public_seo_meta.html" %}
+        {% endif %}
+    {% endblock %}
 </head>
 <body class="{% if user.is_authenticated %}is-authenticated{% else %}is-public{% endif %} {% block body_class %}{% endblock %}">
 

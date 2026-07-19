@@ -6,8 +6,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{% if LANGUAGE_CODE == 'lt' %}MoneyCompass padeda importuoti banko operacijas, analizuoti išlaidas ir matyti aiškų finansų vaizdą vienoje vietoje.{% else %}MoneyCompass helps you import bank transactions, understand spending, and see your financial picture clearly in one place.{% endif %}">
-    <title>MoneyCompass</title>
+    <meta name="description" content="{{ seo_description }}">
+    {% include "includes/public_seo_meta.html" %}
+    <title>{{ seo_title }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,12 +32,10 @@
             </nav>
 
             <div class="landing-actions">
-                <form action="{% url 'set_language' %}" method="post" class="landing-language landing-language-header">
-                    {% csrf_token %}
-                    <input name="next" type="hidden" value="{{ request.get_full_path }}">
-                    <button type="submit" name="language" value="lt" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</button>
-                    <button type="submit" name="language" value="en" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
-                </form>
+                <div class="landing-language landing-language-header" aria-label="Language">
+                    <a href="{% url 'landing' %}" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</a>
+                    <a href="{% url 'landing_en' %}" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</a>
+                </div>
                 <a href="{% url 'login' %}" class="landing-login">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
                 <a href="{% url 'register' %}" class="landing-register">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
             </div>
@@ -65,12 +64,10 @@
             <a href="{% url 'register' %}" class="primary">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
         </div>
 
-        <form action="{% url 'set_language' %}" method="post" class="landing-language">
-            {% csrf_token %}
-            <input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="lt" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</button>
-            <button type="submit" name="language" value="en" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
-        </form>
+        <div class="landing-language" aria-label="Language">
+            <a href="{% url 'landing' %}" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</a>
+            <a href="{% url 'landing_en' %}" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</a>
+        </div>
     </div>
 
     <main>
@@ -278,9 +275,9 @@
                     <span>MoneyCompass</span>
                 </a>
                 <nav class="landing-footer-links" aria-label="{% if LANGUAGE_CODE == 'lt' %}Teisinės nuorodos{% else %}Legal links{% endif %}">
-                    <a href="{% url 'privacy' %}">{% if LANGUAGE_CODE == "lt" %}Privatumas{% else %}Privacy{% endif %}</a>
-                    <a href="{% url 'terms' %}">{% if LANGUAGE_CODE == "lt" %}Sąlygos{% else %}Terms{% endif %}</a>
-                    <a href="{% url 'contact' %}">{% if LANGUAGE_CODE == "lt" %}Kontaktai{% else %}Contact{% endif %}</a>
+                    <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'privacy_en' %}{% else %}{% url 'privacy' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Privatumas{% else %}Privacy{% endif %}</a>
+                    <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'terms_en' %}{% else %}{% url 'terms' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Sąlygos{% else %}Terms{% endif %}</a>
+                    <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'contact_en' %}{% else %}{% url 'contact' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Kontaktai{% else %}Contact{% endif %}</a>
                 </nav>
             </div>
             <div class="landing-footer-copy">© 2026 MoneyCompass. {% if LANGUAGE_CODE == "lt" %}Visos teisės saugomos.{% else %}All rights reserved.{% endif %}</div>

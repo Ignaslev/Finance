@@ -225,7 +225,9 @@ input {
     background: #f8fafc;
 }
 
-.landing-language button {
+.landing-language button,
+.landing-language a {
+    display: inline-block;
     min-width: 38px;
     padding: 8px 10px;
     border: 0;
@@ -235,9 +237,11 @@ input {
     cursor: pointer;
     font-size: 13px;
     font-weight: 800;
+    text-decoration: none;
 }
 
-.landing-language button.active {
+.landing-language button.active,
+.landing-language a.active {
     color: var(--landing-white);
     background: var(--landing-teal);
 }
@@ -247,7 +251,8 @@ input {
     flex: 0 0 auto;
 }
 
-.landing-language-header button {
+.landing-language-header button,
+.landing-language-header a {
     min-width: 34px;
     padding: 7px 9px;
 }
@@ -741,7 +746,8 @@ input {
         padding: 13px 20px;
     }
 
-    .landing-language-header button {
+    .landing-language-header button,
+    .landing-language-header a {
         min-width: 30px;
         padding: 6px 8px;
     }

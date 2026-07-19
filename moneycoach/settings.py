@@ -44,6 +44,9 @@ CSRF_TRUSTED_ORIGINS = env_list(
     "http://localhost,http://127.0.0.1"
 )
 
+# Public canonical origin used for SEO URLs, Open Graph tags, robots.txt, and the sitemap.
+SITE_URL = env("SITE_URL", "https://moneycompass.lt").rstrip("/")
+
 
 # Application definition
 INSTALLED_APPS = [
