@@ -20,14 +20,10 @@
   </section>
 
   <section class="auth-form-panel">
-    <form action="{% url 'set_language' %}" method="post" class="auth-language-switch" aria-label="{% trans 'Language' %}">
-      {% csrf_token %}
-      <input name="next" type="hidden" value="{{ request.get_full_path }}">
-      <button type="submit" name="language" value="lt"
-              class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</button>
-      <button type="submit" name="language" value="en"
-              class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
-    </form>
+    <nav class="auth-language-switch" aria-label="{% trans 'Language' %}">
+      <a href="{% url 'login' %}?lang=lt" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</a>
+      <a href="{% url 'login' %}?lang=en" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</a>
+    </nav>
 
     <div class="auth-form-wrap">
       <a href="/" class="auth-brand"><span></span>MoneyCompass</a>
@@ -39,6 +35,7 @@
 
       <form method="post" novalidate class="auth-form">
         {% csrf_token %}
+        <input type="hidden" name="lang" value="{{ public_language|default:LANGUAGE_CODE }}">
 
         <div class="auth-field">
           <label>{% trans "Email" %}</label>
@@ -66,7 +63,7 @@
 
         <div class="auth-secondary">
           {% trans "New here?" %}
-          <a href="{% url 'register' %}">{% trans "Register" %}</a>
+          <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}">{% trans "Register" %}</a>
         </div>
         <div class="auth-tertiary">
           <a href="{% url 'password_reset' %}">{% trans "Forgot password?" %}</a>

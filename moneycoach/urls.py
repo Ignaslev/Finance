@@ -12,6 +12,7 @@ urlpatterns = [
     path("en/", landing, {"language": "en"}, name="landing_en"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
+    path("straipsniai/", include("blog.urls")),
     path("admin/", admin.site.urls),
     path("i18n/", include("django.conf.urls.i18n")),
     path("accounts/", include("accounts.urls")),

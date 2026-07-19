@@ -23,6 +23,11 @@
   </section>
 
   <section class="auth-form-panel">
+    <nav class="auth-language-switch" aria-label="{% trans 'Language' %}">
+      <a href="{% url 'register' %}?lang=lt" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</a>
+      <a href="{% url 'register' %}?lang=en" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</a>
+    </nav>
+
     <div class="auth-form-wrap auth-form-wrap-register">
       <a href="/" class="auth-brand"><span></span>MoneyCompass</a>
       <h1>{% trans "Create account" %}</h1>
@@ -33,6 +38,7 @@
 
       <form method="post" novalidate class="auth-form">
         {% csrf_token %}
+        <input type="hidden" name="lang" value="{{ public_language|default:LANGUAGE_CODE }}">
         <div class="auth-grid">
           <div class="auth-field">
             <label>{% trans "First name" %}</label>
@@ -93,7 +99,7 @@
 
         <div class="auth-secondary">
           {% trans "Already have an account?" %}
-          <a href="{% url 'login' %}">{% trans "Login" %}</a>
+          <a href="{% url 'login' %}?lang={{ LANGUAGE_CODE }}">{% trans "Login" %}</a>
         </div>
       </form>
     </div>

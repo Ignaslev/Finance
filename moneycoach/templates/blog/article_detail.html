@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+{% block body_class %}blog-page{% endblock %}
+{% block extra_head %}
+  <meta name="description" content="{{ seo_description }}">
+  {% include "includes/public_seo_meta.html" %}
+  <link rel="stylesheet" href="{% static 'css/articles.css' %}?v=20260719">
+{% endblock %}
+
+{% block content %}
+<section class="article-detail-page">
+  <a href="{% url 'article_list' %}" class="article-back-link"><i class="ph ph-arrow-left" aria-hidden="true"></i> Visi straipsniai</a>
+
+  <article class="article-reading-card">
+    <header class="article-reading-header">
+      <div class="article-reading-meta">
+        <span><i class="ph ph-calendar-blank" aria-hidden="true"></i> {{ article.published_at|date:"Y m. F j d." }}</span>
+        <span><i class="ph ph-user-circle" aria-hidden="true"></i> {{ article.author_name }}</span>
+      </div>
+      <h1>{{ article.title }}</h1>
+      <p class="article-reading-excerpt">{{ article.excerpt }}</p>
+    </header>
+
+    <div class="article-reading-body">{{ article.rendered_body }}</div>
+  </article>
+
+  <aside class="article-cta-card">
+    <div class="article-cta-icon"><i class="ph ph-compass-tool" aria-hidden="true"></i></div>
+    <div>
+      <h2>Norite aiškesnio savo finansų vaizdo?</h2>
+      <p>MoneyCompass padeda vienoje vietoje sekti išlaidas, turtą, investicijas ir tikslus, rankiniu būdu importuojant banko išrašus.</p>
+    </div>
+    <a href="{% url 'register' %}" class="btn btn-primary article-cta-button">Išbandyti MoneyCompass <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+  </aside>
+
+  {% if related_articles %}
+    <section class="related-articles" aria-labelledby="related-articles-title">
+      <div class="related-articles-heading">
+        <span class="articles-eyebrow">Toliau skaitykite</span>
+        <h2 id="related-articles-title">Kiti straipsniai</h2>
+      </div>
+      <div class="related-articles-grid">
+        {% for related in related_articles %}
+          <a href="{{ related.get_absolute_url }}" class="related-article-card">
+            <span class="article-meta"><i class="ph ph-calendar-blank" aria-hidden="true"></i> {{ related.published_at|date:"Y m. F j d." }}</span>
+            <strong>{{ related.title }}</strong>
+            <span class="related-article-link">Skaityti <i class="ph ph-arrow-right" aria-hidden="true"></i></span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</section>
+{% endblock %}

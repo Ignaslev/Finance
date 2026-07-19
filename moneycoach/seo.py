@@ -177,7 +177,13 @@ def sitemap_xml(_request):
         "/en/terms/",
         "/contact/",
         "/en/contact/",
+        "/straipsniai/",
     ]
+    try:
+        from blog.models import Article
+        paths.extend(article.get_absolute_url() for article in Article.objects.published().filter(language="lt"))
+    except Exception:
+        pass
     entries = "".join(f"<url><loc>{escape(_absolute_url(path))}</loc></url>" for path in paths)
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>'
     return HttpResponse(xml, content_type="application/xml; charset=utf-8")

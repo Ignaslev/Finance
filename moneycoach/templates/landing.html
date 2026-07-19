@@ -38,8 +38,8 @@
                     <a href="{% url 'landing' %}" class="{% if LANGUAGE_CODE == 'lt' %}active{% endif %}">LT</a>
                     <a href="{% url 'landing_en' %}" class="{% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</a>
                 </div>
-                <a href="{% url 'login' %}" class="landing-login">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
-                <a href="{% url 'register' %}" class="landing-register">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
+                <a href="{% url 'login' %}?lang={{ LANGUAGE_CODE }}" class="landing-login">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
+                <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="landing-register">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
             </div>
 
             <button type="button"
@@ -62,8 +62,8 @@
         <a href="{% url 'guide' %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
 
         <div class="landing-mobile-menu-actions">
-            <a href="{% url 'login' %}">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
-            <a href="{% url 'register' %}" class="primary">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
+            <a href="{% url 'login' %}?lang={{ LANGUAGE_CODE }}">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
+            <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="primary">{% if LANGUAGE_CODE == "lt" %}Registruotis{% else %}Register{% endif %}</a>
         </div>
 
         <div class="landing-language" aria-label="Language">
@@ -98,7 +98,7 @@
                     </p>
 
                     <div class="landing-hero-buttons">
-                        <a href="{% url 'register' %}" class="landing-button landing-button-light">
+                        <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="landing-button landing-button-light">
                             {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
                         </a>
                         <a href="{% url 'guide' %}" class="landing-button landing-button-outline">
@@ -258,7 +258,7 @@
                     {% endif %}
                 </p>
                 <div class="landing-final-actions">
-                    <a href="{% url 'register' %}" class="landing-button landing-button-light">
+                    <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="landing-button landing-button-light">
                         {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
                     </a>
                     <span class="landing-beta-code">

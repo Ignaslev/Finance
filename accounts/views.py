@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import HttpResponseBadRequest
@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
+from django.utils import timezone, translation
 from finance.models import UserProfile
 from finance.subscriptions import grant_beta_access
 from finance.utils import ensure_default_categories
@@ -19,6 +19,37 @@ from .forms import RegisterForm
 from .throttling import client_ip, is_limited, record_attempt
 
 User = get_user_model()
+PUBLIC_LANGUAGES = {"lt", "en"}
+
+
+def public_language(request):
+    """Return the explicit public-page language without trusting arbitrary values."""
+    language = (
+        request.GET.get("lang")
+        or request.POST.get("lang")
+        or translation.get_language()
+        or UserProfile.LANG_LT
+    ).lower()
+    return language if language in PUBLIC_LANGUAGES else UserProfile.LANG_LT
+
+
+class LocalizedLoginView(LoginView):
+    """Render the public login page in the language selected on the landing page."""
+
+    def dispatch(self, request, *args, **kwargs):
+        self.public_language = public_language(request)
+        with translation.override(self.public_language):
+            response = super().dispatch(request, *args, **kwargs)
+            # LoginView returns a lazy TemplateResponse for GET/invalid POST.
+            # Render it while this explicit language override is still active.
+            if hasattr(response, "render"):
+                response.render()
+            return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["public_language"] = self.public_language
+        return context
 
 
 class ThrottledPasswordResetView(PasswordResetView):
@@ -48,76 +79,88 @@ class ThrottledPasswordResetView(PasswordResetView):
 
 
 def register(request):
-    if request.method == "POST":
-        ip = client_ip(request)
-        email = (request.POST.get("email") or "").strip().lower()
+    language = public_language(request)
+    with translation.override(language):
+        if request.method == "POST":
+            ip = client_ip(request)
+            email = (request.POST.get("email") or "").strip().lower()
 
-        if is_limited("register-ip", ip, limit=20, window_seconds=60 * 60):
+            if is_limited("register-ip", ip, limit=20, window_seconds=60 * 60):
+                form = RegisterForm(request.POST)
+                form.add_error(None, _("Too many registration attempts. Please try again later."))
+                messages.error(request, _("Too many registration attempts. Please try again later."))
+                return render(
+                    request,
+                    "accounts/register.html",
+                    {"form": form, "public_language": language},
+                    status=429,
+                )
+
+            if email and is_limited("register-email", email, limit=5, window_seconds=60 * 60):
+                form = RegisterForm(request.POST)
+                form.add_error(None, _("Too many registration attempts for this email. Please try again later."))
+                messages.error(request, _("Too many registration attempts. Please try again later."))
+                return render(
+                    request,
+                    "accounts/register.html",
+                    {"form": form, "public_language": language},
+                    status=429,
+                )
+
             form = RegisterForm(request.POST)
-            form.add_error(None, _("Too many registration attempts. Please try again later."))
-            messages.error(request, _("Too many registration attempts. Please try again later."))
-            return render(request, "accounts/register.html", {"form": form}, status=429)
+            if form.is_valid():
+                user = form.save(commit=False)
 
-        if email and is_limited("register-email", email, limit=5, window_seconds=60 * 60):
-            form = RegisterForm(request.POST)
-            form.add_error(None, _("Too many registration attempts for this email. Please try again later."))
-            messages.error(request, _("Too many registration attempts. Please try again later."))
-            return render(request, "accounts/register.html", {"form": form}, status=429)
+                # Require email verification
+                user.is_active = False
 
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
+                # Normalize email
+                user.email = (user.email or "").strip().lower()
+                user.save()
 
-            # Require email verification
-            user.is_active = False
+                prof, _created = UserProfile.objects.get_or_create(user=user)
+                prof.preferred_language = form.cleaned_data.get("preferred_language") or UserProfile.LANG_LT
+                prof.save(update_fields=["preferred_language"])
+                grant_beta_access(prof, joined_at=timezone.now())
+                ensure_default_categories(user, language=prof.preferred_language)
 
-            # Normalize email
-            user.email = (user.email or "").strip().lower()
-            user.save()
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                activation_link = request.build_absolute_uri(
+                    reverse("accounts_activate", kwargs={"uidb64": uid, "token": token})
+                )
 
-            prof, _created = UserProfile.objects.get_or_create(user=user)
-            prof.preferred_language = form.cleaned_data.get("preferred_language") or UserProfile.LANG_LT
-            prof.save(update_fields=["preferred_language"])
-            grant_beta_access(prof, joined_at=timezone.now())
-            ensure_default_categories(user, language=prof.preferred_language)
+                subject = _("Activate your MoneyCoach account")
+                body = (
+                    _("Hi %(name)s,") % {"name": user.first_name}
+                    + "\n\n"
+                    + _("Please activate your account by clicking the link below:")
+                    + "\n"
+                    f"{activation_link}\n\n"
+                    + _("If you did not create this account, you can ignore this email.")
+                )
 
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            activation_link = request.build_absolute_uri(
-                reverse("accounts_activate", kwargs={"uidb64": uid, "token": token})
-            )
+                send_mail(
+                    subject=subject,
+                    message=body,
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
 
-            subject = _("Activate your MoneyCoach account")
-            body = (
-                _("Hi %(name)s,") % {"name": user.first_name}
-                + "\n\n"
-                + _("Please activate your account by clicking the link below:")
-                + "\n"
-                f"{activation_link}\n\n"
-                + _("If you did not create this account, you can ignore this email.")
-            )
+                messages.success(request, _("Registration successful. Check your email to activate your account."))
+                # A one-time, non-identifying GA4 event is emitted on the next page view.
+                request.session["google_analytics_pending_event"] = "sign_up"
+                return redirect(f"{reverse('login')}?lang={language}")
 
-            send_mail(
-                subject=subject,
-                message=body,
-                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-
-            messages.success(request, _("Registration successful. Check your email to activate your account."))
-            # A one-time, non-identifying GA4 event is emitted on the next page view.
-            request.session["google_analytics_pending_event"] = "sign_up"
-            return redirect("/accounts/login/")
-        else:
             record_attempt("register-ip", ip, window_seconds=60 * 60)
             if email:
                 record_attempt("register-email", email, window_seconds=60 * 60)
             messages.error(request, _("Please fix the errors below."))
-    else:
-        form = RegisterForm()
+        else:
+            form = RegisterForm(initial={"preferred_language": language})
 
-    return render(request, "accounts/register.html", {"form": form})
+        return render(request, "accounts/register.html", {"form": form, "public_language": language})
 
 
 def activate(request, uidb64, token):

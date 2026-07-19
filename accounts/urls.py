@@ -1,14 +1,14 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
-from .views import register, activate, ThrottledPasswordResetView
+from .views import LocalizedLoginView, register, activate, ThrottledPasswordResetView
 from .forms import EmailAuthenticationForm
 
 urlpatterns = [
     path("register/", register, name="register"),
     path("activate/<uidb64>/<token>/", activate, name="accounts_activate"),
 
-    path("login/", auth_views.LoginView.as_view(
+    path("login/", LocalizedLoginView.as_view(
         template_name="accounts/login.html",
         authentication_form=EmailAuthenticationForm
     ), name="login"),

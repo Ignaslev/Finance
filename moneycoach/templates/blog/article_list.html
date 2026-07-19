@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+{% block body_class %}blog-page{% endblock %}
+{% block extra_head %}
+  <meta name="description" content="{{ seo_description }}">
+  {% include "includes/public_seo_meta.html" %}
+  <link rel="stylesheet" href="{% static 'css/articles.css' %}?v=20260719">
+{% endblock %}
+
+{% block content %}
+<section class="articles-page" aria-labelledby="articles-title">
+  <header class="articles-hero">
+    <div class="articles-hero-copy">
+      <span class="articles-eyebrow"><i class="ph ph-book-open-text" aria-hidden="true"></i> MoneyCompass straipsniai</span>
+      <h1 id="articles-title">Asmeniniai finansai be sudėtingumo</h1>
+      <p>Praktiniai straipsniai apie išlaidų sekimą, biudžetą ir aiškesnį savo pinigų vaizdą.</p>
+    </div>
+    <div class="articles-hero-mark" aria-hidden="true"><i class="ph ph-chart-pie-slice"></i></div>
+  </header>
+
+  <div class="articles-list">
+    {% for article in articles %}
+      <article class="article-preview-card">
+        <div class="article-preview-topline">
+          <p class="article-meta"><i class="ph ph-calendar-blank" aria-hidden="true"></i> {{ article.published_at|date:"Y m. F j d." }}</p>
+          <p class="article-author"><i class="ph ph-user-circle" aria-hidden="true"></i> {{ article.author_name }}</p>
+        </div>
+        <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>
+        <p class="article-excerpt">{{ article.excerpt }}</p>
+        <a href="{{ article.get_absolute_url }}" class="article-read-link">Skaityti straipsnį <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </article>
+    {% empty %}
+      <div class="articles-empty-state">
+        <div class="articles-empty-icon"><i class="ph ph-article" aria-hidden="true"></i></div>
+        <h2>Netrukus čia rasite pirmą straipsnį.</h2>
+        <p>Ruošiame praktinius paaiškinimus, kurie padės aiškiau valdyti savo pinigus.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

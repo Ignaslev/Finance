@@ -1009,7 +1009,8 @@ tbody tr:hover td {
     background: var(--mc-input);
 }
 
-.auth-language-switch button {
+.auth-language-switch button,
+.auth-language-switch a {
     min-width: 38px;
     min-height: 32px;
     padding: 6px 9px;
@@ -1021,9 +1022,14 @@ tbody tr:hover td {
     font: inherit;
     font-size: 0.72rem;
     font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
-.auth-language-switch button.active {
+.auth-language-switch button.active,
+.auth-language-switch a.active {
     color: #ffffff;
     background: var(--primary-teal);
     box-shadow: 0 4px 10px rgba(0, 181, 147, 0.18);
