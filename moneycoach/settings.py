@@ -63,6 +63,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'moneycoach.middleware.CanonicalHostRedirectMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # Critical for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
