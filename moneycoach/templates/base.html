@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}{% if seo_title %}{{ seo_title }}{% else %}Money Compass{% endif %}{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +21,8 @@
         {% if seo_title %}
             <meta name="description" content="{{ seo_description }}">
             {% include "includes/public_seo_meta.html" %}
+        {% else %}
+            <meta name="robots" content="noindex,nofollow">
         {% endif %}
     {% endblock %}
 </head>

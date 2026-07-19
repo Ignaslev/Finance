@@ -105,10 +105,10 @@ def landing_seo_context(language):
         canonical_path="/",
         alternate_lt_path="/",
         alternate_en_path="/en/",
-        title="MoneyCompass | Asmeniniu finansu valdymas",
+        title="MoneyCompass – asmeninių finansų valdymo programa",
         description=(
-            "MoneyCompass padeda sekti islaidas, turta, investicijas ir tikslus vienoje privatumo "
-            "principu sukurtoje asmeniniu finansu programoje."
+            "Privati asmeninių finansų programa: importuokite banko išrašus, stebėkite išlaidas, "
+            "turtą, investicijas ir tikslus. Be banko prijungimo."
         ),
     )
 
@@ -146,7 +146,6 @@ def robots_txt(_request):
                 "User-agent: *",
                 "Allow: /",
                 "Disallow: /admin/",
-                "Disallow: /accounts/",
                 "Disallow: /app/",
                 "Disallow: /overview/",
                 "Disallow: /upload/",
