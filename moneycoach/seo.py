@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 
 SOCIAL_PROFILES = [
     "https://www.instagram.com/moneycompassapp/",
-    "https://www.facebook.com/profile.php?id=61591596006519",
+    "https://www.facebook.com/moneycompassapp",
     "https://www.tiktok.com/@moneycompassapp",
 ]
 
@@ -113,6 +113,20 @@ def landing_seo_context(language):
     )
 
 
+def beta_landing_seo_context():
+    return public_seo_context(
+        language="lt",
+        canonical_path="/beta/",
+        alternate_lt_path="/beta/",
+        alternate_en_path="/beta/",
+        title="MoneyCompass beta – asmeniniai finansai aiškiai",
+        description=(
+            "Išbandykite MoneyCompass beta nemokamai 365 dienas. Importuokite CSV ar Excel banko išrašą, "
+            "stebėkite išlaidas, turtą ir tikslus – be banko paskyros prijungimo."
+        ),
+    )
+
+
 def public_page_seo_context(page, language):
     pages = {
         "privacy": {
@@ -171,6 +185,7 @@ def sitemap_xml(_request):
     paths = [
         "/",
         "/en/",
+        "/beta/",
         "/privacy/",
         "/en/privacy/",
         "/terms/",

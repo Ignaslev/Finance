@@ -47,6 +47,7 @@ CSRF_TRUSTED_ORIGINS = env_list(
 # Public canonical origin used for SEO URLs, Open Graph tags, robots.txt, and the sitemap.
 SITE_URL = env("SITE_URL", "https://moneycompass.lt").rstrip("/")
 GOOGLE_ANALYTICS_MEASUREMENT_ID = env("GOOGLE_ANALYTICS_MEASUREMENT_ID", "G-XDF70R0EKE")
+META_PIXEL_ID = env("META_PIXEL_ID", "1060190566664958")
 
 
 # Application definition
@@ -67,6 +68,7 @@ MIDDLEWARE = [
     'moneycoach.middleware.CanonicalHostRedirectMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # Critical for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'moneycoach.attribution.AttributionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

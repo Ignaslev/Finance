@@ -422,6 +422,14 @@ class UserProfile(models.Model):
     beta_joined_at = models.DateTimeField(null=True, blank=True)
     beta_access_until = models.DateTimeField(null=True, blank=True)
 
+    acquisition_source = models.CharField(max_length=100, blank=True, default="", db_index=True)
+    acquisition_medium = models.CharField(max_length=100, blank=True, default="")
+    acquisition_campaign = models.CharField(max_length=100, blank=True, default="", db_index=True)
+    acquisition_content = models.CharField(max_length=100, blank=True, default="")
+    acquisition_term = models.CharField(max_length=100, blank=True, default="")
+    acquisition_landing_page = models.CharField(max_length=255, blank=True, default="")
+    acquisition_referrer = models.CharField(max_length=255, blank=True, default="")
+
     subscription_status = models.CharField(
         max_length=20,
         choices=SUBSCRIPTION_STATUS_CHOICES,

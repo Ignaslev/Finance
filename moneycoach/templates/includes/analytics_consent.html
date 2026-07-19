@@ -1,26 +1,27 @@
-{% if google_analytics_measurement_id %}
+{% if google_analytics_measurement_id or meta_pixel_id %}
 <div id="analytics-consent" class="analytics-consent" hidden role="dialog" aria-live="polite" aria-label="Cookie preferences">
     <p>
-        {% if LANGUAGE_CODE == "lt" %}
-            Naudojame pasirenkamus analitikos slapukus, kad suprastume, kaip lankytojai naudojasi MoneyCompass.
+        {% if landing_language == "lt" or LANGUAGE_CODE == "lt" %}
+            Pasirinkite, ar leisti analitikos slapukus, ar ir rinkodaros matavimą (Meta Pixel). Būtini slapukai veikia visada.
             <a href="{% url 'privacy' %}">Privatumo politika</a>
         {% else %}
-            We use optional analytics cookies to understand how visitors use MoneyCompass.
+            Choose whether to allow analytics cookies or analytics plus marketing measurement (Meta Pixel). Essential cookies always work.
             <a href="{% url 'privacy_en' %}">Privacy policy</a>
         {% endif %}
     </p>
     <div class="analytics-consent-actions">
-        <button type="button" id="analytics-reject">{% if LANGUAGE_CODE == "lt" %}Atmesti{% else %}Reject{% endif %}</button>
-        <button type="button" id="analytics-accept">{% if LANGUAGE_CODE == "lt" %}Leisti{% else %}Allow{% endif %}</button>
+        <button type="button" id="analytics-reject">{% if landing_language == "lt" or LANGUAGE_CODE == "lt" %}Atmesti pasirenkamus{% else %}Reject optional{% endif %}</button>
+        <button type="button" id="analytics-only">{% if landing_language == "lt" or LANGUAGE_CODE == "lt" %}Tik analitika{% else %}Analytics only{% endif %}</button>
+        <button type="button" id="analytics-marketing">{% if landing_language == "lt" or LANGUAGE_CODE == "lt" %}Leisti abu{% else %}Allow both{% endif %}</button>
     </div>
 </div>
 <style>
     .analytics-consent { position:fixed; right:20px; bottom:20px; z-index:10000; max-width:430px; padding:16px; border:1px solid #d9e3e8; border-radius:14px; background:#fff; box-shadow:0 18px 50px rgba(15, 23, 42, .18); color:#17212b; font:14px/1.5 Inter, Arial, sans-serif; }
     .analytics-consent p { margin:0; }
     .analytics-consent a { color:#087f70; font-weight:700; }
-    .analytics-consent-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+    .analytics-consent-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:12px; }
     .analytics-consent button { border:1px solid #b8c7d1; border-radius:8px; padding:8px 12px; cursor:pointer; font:inherit; font-weight:700; background:#fff; color:#334155; }
-    .analytics-consent #analytics-accept { border-color:#087f70; background:#087f70; color:#fff; }
+    .analytics-consent #analytics-marketing { border-color:#087f70; background:#087f70; color:#fff; }
     @media (max-width:560px) { .analytics-consent { right:12px; bottom:12px; left:12px; max-width:none; } }
 </style>
 <script>
@@ -35,19 +36,38 @@
             }
         }
 
+        function allowMarketing() {
+            if (typeof window.gtag === "function") {
+                window.gtag("consent", "update", {
+                    "analytics_storage": "granted",
+                    "ad_storage": "granted",
+                    "ad_user_data": "granted",
+                    "ad_personalization": "granted"
+                });
+            }
+            if (typeof window.moneyCompassLoadMetaPixel === "function") {
+                window.moneyCompassLoadMetaPixel();
+            }
+        }
+
         function save(choice) {
             document.cookie = key + "=" + choice + "; max-age=31536000; path=/; SameSite=Lax; Secure";
             banner.hidden = true;
-            if (choice === "accepted") allowAnalytics();
+            if (choice === "analytics" || choice === "accepted") allowAnalytics();
+            if (choice === "marketing") allowMarketing();
         }
 
-        if (saved && saved.split("=")[1] === "accepted") {
+        var savedChoice = saved ? saved.split("=")[1] : "";
+        if (savedChoice === "analytics" || savedChoice === "accepted") {
             allowAnalytics();
+        } else if (savedChoice === "marketing") {
+            allowMarketing();
         } else if (!saved) {
             banner.hidden = false;
         }
 
-        document.getElementById("analytics-accept").addEventListener("click", function () { save("accepted"); });
+        document.getElementById("analytics-only").addEventListener("click", function () { save("analytics"); });
+        document.getElementById("analytics-marketing").addEventListener("click", function () { save("marketing"); });
         document.getElementById("analytics-reject").addEventListener("click", function () { save("rejected"); });
     }());
 </script>

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.shortcuts import redirect, render
 from django.utils import translation
 
-from .seo import landing_seo_context, public_page_seo_context
+from .seo import beta_landing_seo_context, landing_seo_context, public_page_seo_context
 
 
 def landing(request, language="lt"):
@@ -16,6 +16,21 @@ def landing(request, language="lt"):
     context = {"landing_language": landing_language, **landing_seo_context(landing_language)}
     response = render(request, "landing.html", context)
     response["Content-Language"] = landing_language
+    return response
+
+
+def beta_landing(request):
+    if request.user.is_authenticated:
+        return redirect("/overview/")
+
+    context = {
+        "landing_language": "lt",
+        "register_url": "/accounts/register/?lang=lt&beta_code=Noriutestuoti",
+        **beta_landing_seo_context(),
+    }
+    with translation.override("lt"):
+        response = render(request, "beta_landing.html", context)
+    response["Content-Language"] = "lt"
     return response
 
 

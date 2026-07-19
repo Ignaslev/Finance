@@ -1,11 +1,14 @@
 {% if google_analytics_pending_event %}
 <script>
     (function () {
-        var consent = document.cookie.split("; ").find(function (item) {
-            return item === "moneycompass_analytics_consent=accepted";
-        });
-        if (consent && typeof window.gtag === "function") {
+        var choice = (document.cookie.split("; ").find(function (item) {
+            return item.indexOf("moneycompass_analytics_consent=") === 0;
+        }) || "=").split("=")[1];
+        if (["accepted", "analytics", "marketing"].indexOf(choice) !== -1 && typeof window.gtag === "function") {
             window.gtag("event", "{{ google_analytics_pending_event }}", {"method": "email"});
+        }
+        if (choice === "marketing" && typeof window.fbq === "function") {
+            window.fbq("track", "CompleteRegistration", {"content_name": "MoneyCompass beta"});
         }
     }());
 </script>

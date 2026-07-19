@@ -14,6 +14,7 @@ from django.utils import timezone, translation
 from finance.models import UserProfile
 from finance.subscriptions import grant_beta_access
 from finance.utils import ensure_default_categories
+from moneycoach.attribution import SESSION_KEY as ATTRIBUTION_SESSION_KEY
 from django.contrib.auth import get_user_model
 from .forms import RegisterForm
 from .throttling import client_ip, is_limited, record_attempt
@@ -120,7 +121,22 @@ def register(request):
 
                 prof, _created = UserProfile.objects.get_or_create(user=user)
                 prof.preferred_language = form.cleaned_data.get("preferred_language") or UserProfile.LANG_LT
-                prof.save(update_fields=["preferred_language"])
+                attribution = request.session.get(ATTRIBUTION_SESSION_KEY, {})
+                attribution_fields = []
+                for field in (
+                    "acquisition_source",
+                    "acquisition_medium",
+                    "acquisition_campaign",
+                    "acquisition_content",
+                    "acquisition_term",
+                    "acquisition_landing_page",
+                    "acquisition_referrer",
+                ):
+                    value = attribution.get(field, "")
+                    if value and not getattr(prof, field):
+                        setattr(prof, field, value)
+                        attribution_fields.append(field)
+                prof.save(update_fields=["preferred_language", *attribution_fields])
                 grant_beta_access(prof, joined_at=timezone.now())
                 ensure_default_categories(user, language=prof.preferred_language)
 
@@ -158,7 +174,12 @@ def register(request):
                 record_attempt("register-email", email, window_seconds=60 * 60)
             messages.error(request, _("Please fix the errors below."))
         else:
-            form = RegisterForm(initial={"preferred_language": language})
+            form = RegisterForm(
+                initial={
+                    "preferred_language": language,
+                    "beta_access_code": (request.GET.get("beta_code") or "")[:100],
+                }
+            )
 
         return render(request, "accounts/register.html", {"form": form, "public_language": language})
 

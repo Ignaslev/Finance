@@ -22,6 +22,8 @@ class UserProfileAdmin(admin.ModelAdmin):
         "access_source",
         "access_until",
         "is_beta_tester",
+        "acquisition_source",
+        "acquisition_campaign",
         "manual_access_until",
         "stripe_customer_id",
     )
@@ -31,12 +33,17 @@ class UserProfileAdmin(admin.ModelAdmin):
         "is_beta_tester",
         "stripe_cancel_at_period_end",
         "preferred_language",
+        "acquisition_source",
+        "acquisition_campaign",
     )
     search_fields = (
         "user__email",
         "user__username",
         "stripe_customer_id",
         "stripe_subscription_id",
+        "acquisition_source",
+        "acquisition_campaign",
+        "acquisition_content",
     )
     readonly_fields = (
         "android_webhook_secret",
@@ -49,6 +56,13 @@ class UserProfileAdmin(admin.ModelAdmin):
         "subscription_updated_at",
         "access_source",
         "access_until",
+        "acquisition_source",
+        "acquisition_medium",
+        "acquisition_campaign",
+        "acquisition_content",
+        "acquisition_term",
+        "acquisition_landing_page",
+        "acquisition_referrer",
     )
     fieldsets = (
         (None, {"fields": ("user", "preferred_language", "default_import_source")}),
@@ -79,6 +93,17 @@ class UserProfileAdmin(admin.ModelAdmin):
             )
         }),
         ("Preferences", {"fields": ("exclude_investment_tax", "android_webhook_secret")}),
+        ("First-touch acquisition", {
+            "fields": (
+                "acquisition_source",
+                "acquisition_medium",
+                "acquisition_campaign",
+                "acquisition_content",
+                "acquisition_term",
+                "acquisition_landing_page",
+                "acquisition_referrer",
+            )
+        }),
         ("Deletion", {
             "fields": (
                 "account_delete_requested_at",
