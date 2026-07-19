@@ -1,0 +1,12 @@
+{% if google_analytics_pending_event %}
+<script>
+    (function () {
+        var consent = document.cookie.split("; ").find(function (item) {
+            return item === "moneycompass_analytics_consent=accepted";
+        });
+        if (consent && typeof window.gtag === "function") {
+            window.gtag("event", "{{ google_analytics_pending_event }}", {"method": "email"});
+        }
+    }());
+</script>
+{% endif %}

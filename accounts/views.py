@@ -106,6 +106,8 @@ def register(request):
             )
 
             messages.success(request, _("Registration successful. Check your email to activate your account."))
+            # A one-time, non-identifying GA4 event is emitted on the next page view.
+            request.session["google_analytics_pending_event"] = "sign_up"
             return redirect("/accounts/login/")
         else:
             record_attempt("register-ip", ip, window_seconds=60 * 60)
