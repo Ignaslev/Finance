@@ -46,6 +46,7 @@ CSRF_TRUSTED_ORIGINS = env_list(
 
 # Public canonical origin used for SEO URLs, Open Graph tags, robots.txt, and the sitemap.
 SITE_URL = env("SITE_URL", "https://moneycompass.lt").rstrip("/")
+GOOGLE_ANALYTICS_MEASUREMENT_ID = env("GOOGLE_ANALYTICS_MEASUREMENT_ID", "G-XDF70R0EKE")
 
 
 # Application definition
@@ -89,6 +90,7 @@ TEMPLATES = [
                 "finance.context_processors.ai_notifications",
                 "finance.context_processors.pending_delete_banner",
                 "finance.context_processors.subscription_access",
+                "moneycoach.context_processors.analytics",
             ],
         },
     },
