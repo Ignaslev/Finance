@@ -26,33 +26,23 @@
 <script>
     (function () {
         var key = "moneycompass_analytics_consent";
-        var measurementId = "{{ google_analytics_measurement_id }}";
         var banner = document.getElementById("analytics-consent");
         var saved = document.cookie.split("; ").find(function (item) { return item.indexOf(key + "=") === 0; });
 
-        function loadAnalytics() {
-            if (window.moneyCompassAnalyticsLoaded) return;
-            window.moneyCompassAnalyticsLoaded = true;
-            window.dataLayer = window.dataLayer || [];
-            window.gtag = function () { window.dataLayer.push(arguments); };
-            var script = document.createElement("script");
-            script.async = true;
-            script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(measurementId);
-            script.onload = function () {
-                window.gtag("js", new Date());
-                window.gtag("config", measurementId, { "anonymize_ip": true });
-            };
-            document.head.appendChild(script);
+        function allowAnalytics() {
+            if (typeof window.gtag === "function") {
+                window.gtag("consent", "update", {"analytics_storage": "granted"});
+            }
         }
 
         function save(choice) {
             document.cookie = key + "=" + choice + "; max-age=31536000; path=/; SameSite=Lax; Secure";
             banner.hidden = true;
-            if (choice === "accepted") loadAnalytics();
+            if (choice === "accepted") allowAnalytics();
         }
 
         if (saved && saved.split("=")[1] === "accepted") {
-            loadAnalytics();
+            allowAnalytics();
         } else if (!saved) {
             banner.hidden = false;
         }

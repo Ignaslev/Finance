@@ -1,0 +1,17 @@
+{% if google_analytics_measurement_id %}
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("consent", "default", {
+        "analytics_storage": "denied",
+        "ad_storage": "denied",
+        "ad_user_data": "denied",
+        "ad_personalization": "denied"
+    });
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_measurement_id }}"></script>
+<script>
+    gtag("js", new Date());
+    gtag("config", "{{ google_analytics_measurement_id }}", {"anonymize_ip": true});
+</script>
+{% endif %}

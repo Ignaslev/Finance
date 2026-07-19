@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <link rel="stylesheet" href="{% static 'css/redesign.css' %}?v=20260628-dashboard-layout">
+    {% include "includes/google_analytics.html" %}
     {% block extra_head %}
         {% if seo_title %}
             <meta name="description" content="{{ seo_description }}">
