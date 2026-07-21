@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Sum
@@ -563,7 +564,7 @@ def set_preferred_language(request):
 def onboarding_mark_done(request):
     step = (request.POST.get("step") or "").strip()
 
-    state, _ = OnboardingState.objects.get_or_create(user=request.user)
+    state, _created = OnboardingState.objects.get_or_create(user=request.user)
 
     updated_fields = []
 
@@ -657,8 +658,9 @@ def feedback(request):
     return render(request, "feedback.html", ctx)
 
 @login_required
+@sensitive_post_parameters("password")
 def profile_delete_account(request):
-    prof, _ = UserProfile.objects.get_or_create(user=request.user)
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
 
     # If already scheduled and not canceled, show state
     scheduled = bool(prof.account_delete_scheduled_for and not prof.account_delete_canceled_at)
@@ -725,7 +727,7 @@ def profile_cancel_delete_account(request):
     if request.method != "POST":
         return redirect("profile")
 
-    prof, _ = UserProfile.objects.get_or_create(user=request.user)
+    prof, _created = UserProfile.objects.get_or_create(user=request.user)
 
     if not prof.account_delete_scheduled_for or prof.account_delete_canceled_at:
         messages.info(request, _("No account deletion is currently scheduled."))
