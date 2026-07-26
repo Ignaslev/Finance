@@ -55,6 +55,9 @@
             banner.hidden = true;
             if (choice === "analytics" || choice === "accepted") allowAnalytics();
             if (choice === "marketing") allowMarketing();
+            if (choice !== "rejected" && window.moneyCompassHasPendingConsentEvent) {
+                window.location.reload();
+            }
         }
 
         var savedChoice = saved ? saved.split("=")[1] : "";
