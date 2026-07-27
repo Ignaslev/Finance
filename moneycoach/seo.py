@@ -298,6 +298,163 @@ def public_guide_seo_context():
         "seo_schema": _json_ld(schema),
     }
 
+def finance_apps_comparison_seo_context():
+    path = "/geriausios-finansu-valdymo-programeles-lietuvoje/"
+    url = _absolute_url(path)
+    title = "Finansų valdymo programėlės Lietuvoje: palyginimas"
+    description = (
+        "Palyginkite finansų valdymo programėles Lietuvoje pagal duomenų įvedimą, "
+        "banko ryšį, kalbą, biudžetą ir tinkamiausią naudojimo būdą."
+    )
+    faqs = [
+        {
+            "question": "Kuri finansų valdymo programėlė yra geriausia?",
+            "answer": (
+                "Vienos geriausios programėlės visiems nėra. Pasirinkimas priklauso nuo to, "
+                "ar norite automatinio banko ryšio, rankinio operacijų įvedimo, CSV ar Excel "
+                "importo, lietuviškos sąsajos ir turto bei tikslų stebėjimo."
+            ),
+        },
+        {
+            "question": "Ar galima sekti išlaidas neprijungiant banko sąskaitos?",
+            "answer": (
+                "Taip. Galite operacijas įvesti rankiniu būdu, tvarkyti jas skaičiuoklėje "
+                "arba importuoti patys atsisiųstą banko išrašą. MoneyCompass naudoja pastarąjį "
+                "būdą ir neprašo banko prisijungimo duomenų."
+            ),
+        },
+        {
+            "question": "Kuo interneto programa skiriasi nuo mobiliosios programėlės?",
+            "answer": (
+                "Interneto programa veikia naršyklėje ir jos nereikia diegti iš programėlių "
+                "parduotuvės. Mobilioji programėlė diegiama telefone ir gali turėti įrenginiui "
+                "būdingų funkcijų. Prieš pasirinkdami patikrinkite, kokiuose įrenginiuose "
+                "veikia jums reikalingos funkcijos."
+            ),
+        },
+        {
+            "question": "Ar finansų programėlė gali pakeisti finansų konsultantą?",
+            "answer": (
+                "Ne. Finansų programėlė gali padėti surinkti, suskirstyti ir parodyti jūsų "
+                "duomenis, tačiau ji nepakeičia individualios profesionalo konsultacijos ir "
+                "neturėtų priimti finansinių sprendimų už jus."
+            ),
+        },
+    ]
+    products = [
+        ("MoneyCompass", f"{_site_url()}/#software"),
+        (
+            "Mano Piniginė: Išlaidų sekimas",
+            "https://play.google.com/store/apps/details?id=lt.algimka.manopiniginelt",
+        ),
+        ("Ekonomikas.lt", "https://ekonomikas.lt/"),
+        (
+            "Wallet by BudgetBakers",
+            "https://budgetbakers.com/en/products/wallet/features/",
+        ),
+        ("Spendee", "https://www.spendee.com/pricing"),
+        ("Skaičiuoklė", None),
+    ]
+    schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+            organization_schema(),
+            website_schema(),
+            {
+                "@type": "Article",
+                "@id": f"{url}#article",
+                "url": url,
+                "mainEntityOfPage": {"@id": f"{url}#webpage"},
+                "headline": "Finansų valdymo programėlės Lietuvoje: kaip pasirinkti?",
+                "description": description,
+                "datePublished": "2026-07-27",
+                "dateModified": "2026-07-27",
+                "inLanguage": "lt",
+                "author": {"@id": f"{_site_url()}/#organization"},
+                "publisher": {"@id": f"{_site_url()}/#organization"},
+                "image": _absolute_url("/static/img/guide/lt/statistics-summary.png"),
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
+            },
+            {
+                "@type": "WebPage",
+                "@id": f"{url}#webpage",
+                "url": url,
+                "name": title,
+                "description": description,
+                "inLanguage": "lt",
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
+                "about": {"@id": f"{url}#list"},
+                "publisher": {"@id": f"{_site_url()}/#organization"},
+            },
+            {
+                "@type": "ItemList",
+                "@id": f"{url}#list",
+                "name": "Asmeninių finansų valdymo priemonių palyginimas",
+                "itemListOrder": "https://schema.org/ItemListUnordered",
+                "numberOfItems": len(products),
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": position,
+                        "item": {
+                            "@type": "SoftwareApplication" if name != "Skaičiuoklė" else "Thing",
+                            "name": name,
+                            **({"url": product_url} if product_url else {}),
+                        },
+                    }
+                    for position, (name, product_url) in enumerate(products, start=1)
+                ],
+            },
+            {
+                "@type": "FAQPage",
+                "@id": f"{url}#faq",
+                "url": f"{url}#duk",
+                "inLanguage": "lt",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": item["question"],
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": item["answer"],
+                        },
+                    }
+                    for item in faqs
+                ],
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "MoneyCompass",
+                        "item": _site_url(),
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Finansų valdymo programėlių palyginimas",
+                        "item": url,
+                    },
+                ],
+            },
+        ],
+    }
+    return {
+        "seo_title": title,
+        "seo_description": description,
+        "seo_canonical_url": url,
+        "seo_alternate_lt_url": url,
+        "seo_alternate_en_url": url,
+        "seo_image_url": _absolute_url("/static/img/guide/lt/statistics-summary.png"),
+        "seo_locale": "lt_LT",
+        "seo_schema": _json_ld(schema),
+        "seo_faqs": faqs,
+        "comparison_last_reviewed": "2026-07-27",
+    }
+
+
 def landing_seo_context(language):
     if language == "en":
         return public_seo_context(
@@ -391,9 +548,8 @@ def robots_txt(_request):
     )
 
 
-def sitemap_xml(_request):
-    # Only stable, public canonical URLs belong here. Private app pages and
-    # cookie-dependent guide pages are intentionally excluded.
+def public_sitemap_paths():
+    """Return every stable public canonical path used by sitemap and IndexNow."""
     paths = [
         "/",
         "/en/",
@@ -405,6 +561,7 @@ def sitemap_xml(_request):
         "/contact/",
         "/en/contact/",
         "/finansu-valdymo-programele/",
+        "/geriausios-finansu-valdymo-programeles-lietuvoje/",
         "/gidas/",
         "/straipsniai/",
     ]
@@ -413,6 +570,13 @@ def sitemap_xml(_request):
         paths.extend(article.get_absolute_url() for article in Article.objects.published().filter(language="lt"))
     except Exception:
         pass
+    return list(dict.fromkeys(paths))
+
+
+def sitemap_xml(_request):
+    # Only stable, public canonical URLs belong here. Private app pages and
+    # authenticated guide pages are intentionally excluded.
+    paths = public_sitemap_paths()
     entries = "".join(f"<url><loc>{escape(_absolute_url(path))}</loc></url>" for path in paths)
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>'
     return HttpResponse(xml, content_type="application/xml; charset=utf-8")

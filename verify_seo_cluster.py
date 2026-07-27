@@ -30,6 +30,7 @@ EXPECTED_ARTICLES = {
 
 EXPECTED_SITEMAP_PATHS = {
     "/finansu-valdymo-programele/",
+    "/geriausios-finansu-valdymo-programeles-lietuvoje/",
     "/gidas/",
     "/straipsniai/banko-israso-analize/",
     "/straipsniai/biudzeto-planavimo-metodai/",
@@ -98,6 +99,7 @@ def main():
 
     urls = [
         "/finansu-valdymo-programele/",
+        "/geriausios-finansu-valdymo-programeles-lietuvoje/",
         "/gidas/",
         "/straipsniai/",
         *[f"/straipsniai/{slug}/" for slug in sorted(EXPECTED_ARTICLES)],

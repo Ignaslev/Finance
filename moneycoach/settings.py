@@ -48,6 +48,9 @@ CSRF_TRUSTED_ORIGINS = env_list(
 SITE_URL = env("SITE_URL", "https://moneycompass.lt").rstrip("/")
 GOOGLE_ANALYTICS_MEASUREMENT_ID = env("GOOGLE_ANALYTICS_MEASUREMENT_ID", "G-XDF70R0EKE")
 META_PIXEL_ID = env("META_PIXEL_ID", "1060190566664958")
+# This key is intentionally public. IndexNow fetches the matching root-level
+# text file to verify that MoneyCompass may submit URLs for its own host.
+INDEXNOW_KEY = env("INDEXNOW_KEY", "3e96b80f6f7c42ad9fe6e49b0c49631a")
 
 
 # Application definition

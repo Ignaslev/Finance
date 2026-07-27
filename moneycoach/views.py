@@ -6,6 +6,7 @@ from finance.guide_content import GUIDE_CONTENT
 
 from .seo import (
     beta_landing_seo_context,
+    finance_apps_comparison_seo_context,
     financial_app_seo_context,
     landing_seo_context,
     public_guide_seo_context,
@@ -45,6 +46,17 @@ def beta_landing(request):
 def financial_app(request):
     with translation.override("lt"):
         response = render(request, "financial_app.html", financial_app_seo_context())
+    response["Content-Language"] = "lt"
+    return response
+
+
+def finance_apps_comparison(request):
+    with translation.override("lt"):
+        response = render(
+            request,
+            "finance_apps_comparison.html",
+            finance_apps_comparison_seo_context(),
+        )
     response["Content-Language"] = "lt"
     return response
 

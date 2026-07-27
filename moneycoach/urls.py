@@ -7,12 +7,14 @@ from django.views.generic import RedirectView
 from .views import (
     beta_landing,
     contact,
+    finance_apps_comparison,
     financial_app,
     landing,
     privacy,
     public_guide,
     terms,
 )
+from .indexnow import indexnow_key_txt
 from .seo import robots_txt, sitemap_xml
 
 urlpatterns = [
@@ -28,9 +30,15 @@ urlpatterns = [
         name="favicon",
     ),
     path("finansu-valdymo-programele/", financial_app, name="financial_app"),
+    path(
+        "geriausios-finansu-valdymo-programeles-lietuvoje/",
+        finance_apps_comparison,
+        name="finance_apps_comparison",
+    ),
     path("gidas/", public_guide, name="public_guide"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
+    path("<str:key>.txt", indexnow_key_txt, name="indexnow_key"),
     path("straipsniai/", include("blog.urls")),
     path("admin/", admin.site.urls),
     path("i18n/", include("django.conf.urls.i18n")),

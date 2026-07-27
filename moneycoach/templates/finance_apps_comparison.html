@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+{% block body_class %}seo-public-page comparison-page{% endblock %}
+{% block extra_head %}
+  <meta name="description" content="{{ seo_description }}">
+  {% include "includes/public_seo_meta.html" %}
+  <link rel="stylesheet" href="{% static 'css/seo_pages.css' %}?v=20260727">
+  <link rel="stylesheet" href="{% static 'css/finance-apps-comparison.css' %}?v=20260727">
+{% endblock %}
+
+{% block content %}
+<main class="comparison-shell">
+  <nav class="seo-breadcrumbs" aria-label="Kelio nuorodos">
+    <a href="/">MoneyCompass</a>
+    <span aria-hidden="true">/</span>
+    <span>Finansų programėlių palyginimas</span>
+  </nav>
+
+  <article>
+    <header class="comparison-hero">
+      <div class="comparison-hero-copy">
+        <span class="seo-kicker">2026 m. pasirinkimo gidas</span>
+        <h1>Finansų valdymo programėlės Lietuvoje: kaip pasirinkti?</h1>
+        <p class="comparison-lead">
+          Palyginome lietuviškas ir Lietuvoje pasiekiamas asmeninių finansų priemones pagal tai,
+          kaip jos gauna duomenis, kam labiausiai tinka ir ką verta patikrinti prieš registruojantis.
+          Tai nėra universalus reitingas – geriausias pasirinkimas priklauso nuo jūsų darbo būdo.
+        </p>
+        <div class="comparison-meta" aria-label="Straipsnio informacija">
+          <span><i class="ph ph-calendar-check" aria-hidden="true"></i> Patikrinta 2026 m. liepos 27 d.</span>
+          <span><i class="ph ph-user-circle" aria-hidden="true"></i> MoneyCompass komanda</span>
+          <span><i class="ph ph-clock" aria-hidden="true"></i> 12 min. skaitymo</span>
+        </div>
+      </div>
+      <aside class="comparison-disclosure">
+        <i class="ph ph-shield-check" aria-hidden="true"></i>
+        <div>
+          <strong>Kaip išlaikome palyginimą sąžiningą?</strong>
+          <p>
+            MoneyCompass yra šio puslapio leidėjas ir viena iš lyginamų priemonių.
+            Nenaudojame partnerių nuorodų, neskiriame vietų ir aiškiai nurodome savo produkto ribas.
+          </p>
+        </div>
+      </aside>
+    </header>
+
+    <section class="comparison-answer" aria-labelledby="trumpas-atsakymas">
+      <span class="seo-section-number">Trumpas atsakymas</span>
+      <h2 id="trumpas-atsakymas">Kokią finansų valdymo programėlę rinktis Lietuvoje?</h2>
+      <p>
+        Jei nenorite jungti banko paskyros, bet norite analizuoti daugiau nei pavienes ranka
+        suvestas išlaidas, rinkitės priemonę, kuri importuoja jūsų pačių atsisiųstą banko išrašą.
+        MoneyCompass būtent taip sujungia CSV arba Excel operacijas su kategorijomis, statistika,
+        turto, investicijų ir tikslų vaizdu. Jeigu kiekvieną pirkinį norite registruoti telefonu,
+        paprastesnis pasirinkimas gali būti „Mano Piniginė“. Automatinio bankų sinchronizavimo
+        ieškantys žmonės dažniau rinksis „Wallet“ ar „Spendee“, prieš tai patikrinę konkretaus
+        Lietuvos banko palaikymą ir kainą. Nemokamai naršyklėje pajamas bei išlaidas stebėti
+        siūlo „Ekonomikas.lt“, o visišką formulės ir duomenų struktūros kontrolę palieka
+        skaičiuoklė. Prieš pasirinkdami įvertinkite ne funkcijų skaičių, o tai, kokį duomenų
+        atnaujinimo įprotį realiai išlaikysite kiekvieną mėnesį.
+      </p>
+    </section>
+
+    <section class="comparison-section" aria-labelledby="greitas-pasirinkimas">
+      <div class="comparison-heading">
+        <span class="seo-kicker">Pradėkite nuo savo įpročio</span>
+        <h2 id="greitas-pasirinkimas">Greitas pasirinkimas pagal situaciją</h2>
+      </div>
+      <div class="fit-grid">
+        <article>
+          <i class="ph ph-file-arrow-up" aria-hidden="true"></i>
+          <h3>Noriu importuoti išrašą pats</h3>
+          <p><strong>MoneyCompass</strong> – kai svarbi lietuviška sąsaja, kelių sąskaitų vaizdas ir jokio tiesioginio banko prijungimo.</p>
+        </article>
+        <article>
+          <i class="ph ph-device-mobile" aria-hidden="true"></i>
+          <h3>Noriu išlaidas suvesti telefone</h3>
+          <p><strong>„Mano Piniginė“</strong> – kai tinka Android programėlė ir norite pajamas bei išlaidas registruoti rankiniu būdu.</p>
+        </article>
+        <article>
+          <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+          <h3>Noriu automatinio banko ryšio</h3>
+          <p><strong>„Wallet“ arba „Spendee“</strong> – kai sinchronizavimas svarbesnis už lietuvišką produkto kilmę.</p>
+        </article>
+        <article>
+          <i class="ph ph-browser" aria-hidden="true"></i>
+          <h3>Noriu paprasto interneto įrankio</h3>
+          <p><strong>Ekonomikas.lt</strong> – kai pradžiai užtenka pajamų, išlaidų, kategorijų, grafikų ir tikslų.</p>
+        </article>
+        <article>
+          <i class="ph ph-table" aria-hidden="true"></i>
+          <h3>Noriu viską susikurti pats</h3>
+          <p><strong>Skaičiuoklė</strong> – kai nebijote formulių, norite visiškos kontrolės ir galite skirti laiko priežiūrai.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="comparison-section" aria-labelledby="palyginimo-lentele">
+      <div class="comparison-heading">
+        <span class="seo-kicker">Vienoje vietoje</span>
+        <h2 id="palyginimo-lentele">Finansų programėlių ir alternatyvų palyginimas</h2>
+        <p>Duomenys paremti viešais produktų puslapiais. Funkcijos ir kainos gali keistis, todėl svarbiausius kriterijus patikrinkite prieš mokėdami.</p>
+      </div>
+      <div class="comparison-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Priemonė</th>
+              <th>Duomenų įvedimas</th>
+              <th>Platforma ir kalba</th>
+              <th>Stipriausia paskirtis</th>
+              <th>Ką būtina įvertinti</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="comparison-row-highlight">
+              <th><a href="{% url 'financial_app' %}">MoneyCompass</a></th>
+              <td>Rankinis CSV arba Excel banko išrašo importas; kategorijas galima peržiūrėti ir taisyti.</td>
+              <td>Interneto programa, pritaikyta telefonui ir kompiuteriui; LT ir EN.</td>
+              <td>Išlaidos, sąskaitos, turtas, investicijos ir tikslai viename vaizde be banko ryšio.</td>
+              <td>Duomenys neatsinaujina automatiškai – naują išrašą reikia eksportuoti ir importuoti pačiam.</td>
+            </tr>
+            <tr>
+              <th><a href="https://play.google.com/store/apps/details?id=lt.algimka.manopiniginelt" target="_blank" rel="noopener">Mano Piniginė</a></th>
+              <td>Viešame apraše akcentuojamas rankinis pajamų, išlaidų ir pervedimų registravimas.</td>
+              <td>Android; lietuvių ir anglų kalbos.</td>
+              <td>Paprastas kasdienių ir šeimos finansų įvedimas, kategorijos, sąskaitos ir ataskaitos.</td>
+              <td>Google Play įrašas paskutinį atnaujinimą nurodo 2024-06-11; yra reklamos ir pirkimai programoje.</td>
+            </tr>
+            <tr>
+              <th><a href="https://ekonomikas.lt/" target="_blank" rel="noopener">Ekonomikas.lt</a></th>
+              <td>Viešame puslapyje aprašomas pajamų ir išlaidų fiksavimas; importo ar banko sinchronizavimo būdas nepaaiškintas.</td>
+              <td>Lietuviška interneto programa.</td>
+              <td>Kategorijos, grafikai, laikotarpių palyginimas, tikslai ir biudžeto prognozė.</td>
+              <td>Prieš registruojantis verta patikrinti duomenų įvedimo būdą, eksporto galimybes ir privatumo sąlygas.</td>
+            </tr>
+            <tr>
+              <th><a href="https://budgetbakers.com/en/products/wallet/features/" target="_blank" rel="noopener">Wallet by BudgetBakers</a></th>
+              <td>Bankų sinchronizavimas arba rankinis įvedimas.</td>
+              <td>Mobiliosios programėlės ir interneto versija; kalbos bei funkcijos gali skirtis pagal platformą.</td>
+              <td>Automatinės operacijos, biudžetai, išlaidų analizė ir bendras finansų valdymas.</td>
+              <td>Patikrinkite savo banko palaikymą, pasirinkto plano kainą ir ar reikalinga funkcija veikia jūsų įrenginyje.</td>
+            </tr>
+            <tr>
+              <th><a href="https://www.spendee.com/pricing" target="_blank" rel="noopener">Spendee</a></th>
+              <td>Bankų sinchronizavimas, rankinės piniginės ir operacijų importas ar eksportas pagal planą.</td>
+              <td>iOS, Android ir interneto funkcijos; dalis funkcijų priklauso nuo plano.</td>
+              <td>Automatinis pinigų srautų sujungimas, biudžetai ir bendrinamos piniginės.</td>
+              <td>Kainos gali skirtis pagal šalį; prieš prenumeruojant patikrinkite Lietuvos bankų sąrašą ir funkcijų ribas.</td>
+            </tr>
+            <tr>
+              <th>Excel arba Google Sheets</th>
+              <td>Rankinis įvedimas, failų kopijavimas arba pačių sukurtas importo procesas.</td>
+              <td>Kompiuteris ir telefonas, priklausomai nuo pasirinktos skaičiuoklės.</td>
+              <td>Visiška lentelių, formulių, kategorijų ir saugojimo struktūros kontrolė.</td>
+              <td>Reikia pačiam kurti sistemą, tikrinti formules, saugoti kopijas ir nuolat prižiūrėti duomenis.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="comparison-section comparison-proof" aria-labelledby="moneycompass-praktikoje">
+      <div class="comparison-heading">
+        <span class="seo-kicker">Produkto įrodymai</span>
+        <h2 id="moneycompass-praktikoje">Kaip MoneyCompass atrodo praktiškai?</h2>
+        <p>
+          Pirmiausia pasirenkate sąskaitą ir įkeliate palaikomo formato išrašą. Po peržiūros
+          statistikoje matote bendras pajamas, išlaidas, likutį, operacijų skaičių ir kategorijų būklę.
+        </p>
+      </div>
+      <div class="product-evidence-grid">
+        <figure>
+          <img
+            src="{% static 'img/guide/lt/upload-statement.png' %}"
+            alt="MoneyCompass CSV ir Excel banko išrašo įkėlimo langas"
+            width="1330"
+            height="470"
+            loading="lazy"
+          >
+          <figcaption>Banko išrašas įkeliamas vartotojo pasirinktu metu; tiesioginis banko prisijungimas nereikalingas.</figcaption>
+        </figure>
+        <figure>
+          <img
+            src="{% static 'img/guide/lt/statistics-summary.png' %}"
+            alt="MoneyCompass pajamų, išlaidų ir likučio statistikos suvestinė"
+            width="1336"
+            height="294"
+            loading="lazy"
+          >
+          <figcaption>Demonstracinė suvestinė. Pavaizduotos sumos yra pavyzdinės, ne kliento duomenys.</figcaption>
+        </figure>
+      </div>
+      <p class="comparison-inline-link">
+        Visą procesą nuo registracijos iki mėnesio peržiūros rasite
+        <a href="{% url 'public_guide' %}">MoneyCompass naudojimo gide</a>.
+      </p>
+    </section>
+
+    <section class="comparison-section" aria-labelledby="vertinimo-kriterijai">
+      <div class="comparison-heading">
+        <span class="seo-kicker">Pasirinkimo metodika</span>
+        <h2 id="vertinimo-kriterijai">Šeši kriterijai, svarbesni už funkcijų skaičių</h2>
+      </div>
+      <ol class="criteria-list">
+        <li><span>01</span><div><h3>Duomenų atnaujinimo būdas</h3><p>Automatinis ryšys taupo veiksmus, rankinis įvedimas tinka mažam operacijų skaičiui, o failo importas palieka atnaujinimo kontrolę jums.</p></div></li>
+        <li><span>02</span><div><h3>Reikalingas detalumas</h3><p>Vieniems pakanka mėnesio išlaidų kategorijų, kitiems reikia kelių sąskaitų, turto, investicijų ir tikslų vaizdo.</p></div></li>
+        <li><span>03</span><div><h3>Lietuvių kalba</h3><p>Patikrinkite ne tik programėlės aprašą, bet ir realią sąsają, pagalbą bei kategorijų pavadinimus.</p></div></li>
+        <li><span>04</span><div><h3>Duomenų eksportas ir ištrynimas</h3><p>Prieš sukaupdami kelių metų istoriją sužinokite, ar galėsite duomenis atsisiųsti, pataisyti ir ištrinti.</p></div></li>
+        <li><span>05</span><div><h3>Kaina po bandomojo laikotarpio</h3><p>Nemokamas planas gali riboti sąskaitas, biudžetus, banko ryšius arba duomenų istoriją. Vertinkite jums reikalingą, o ne pigiausią planą.</p></div></li>
+        <li><span>06</span><div><h3>Įprotis, kurį išlaikysite</h3><p>Net išsamiausia sistema nepadės, jei jos neatnaujinsite. Išbandykite vieną pilną mėnesį ir įvertinkite, ar procesas realistiškas.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="comparison-section comparison-methodology" aria-labelledby="metodika">
+      <div class="comparison-heading">
+        <span class="seo-kicker">Skaidrumas</span>
+        <h2 id="metodika">Kaip parengtas šis palyginimas?</h2>
+      </div>
+      <p>
+        2026 m. liepos 27 d. peržiūrėjome viešus kūrėjų produktų puslapius ir programėlių
+        parduotuvės įrašą. Vertinome tik aiškiai aprašytas funkcijas. Jei viešame puslapyje
+        funkcija nepaaiškinta, jos nepriskyrėme. MoneyCompass galimybes papildomai patikrinome
+        veikiančioje programoje ir viešame naudojimo gide.
+      </p>
+      <ul class="source-list">
+        <li><a href="https://play.google.com/store/apps/details?id=lt.algimka.manopiniginelt" target="_blank" rel="noopener">„Mano Piniginė“ – Google Play produkto įrašas</a></li>
+        <li><a href="https://ekonomikas.lt/" target="_blank" rel="noopener">Ekonomikas.lt – oficialus produkto puslapis</a></li>
+        <li><a href="https://budgetbakers.com/en/products/wallet/features/" target="_blank" rel="noopener">BudgetBakers – oficialus „Wallet“ funkcijų puslapis</a></li>
+        <li><a href="https://support.budgetbakers.com/hc/en-us/articles/12212428113810-What-is-the-Wallet-app" target="_blank" rel="noopener">BudgetBakers pagalba – banko ryšys ir rankinis įvedimas</a></li>
+        <li><a href="https://www.spendee.com/pricing" target="_blank" rel="noopener">Spendee – oficialus planų ir funkcijų puslapis</a></li>
+        <li><a href="{% url 'public_guide' %}">MoneyCompass – viešas lietuviškas naudojimo gidas</a></li>
+      </ul>
+      <p class="comparison-update-note">
+        Pastebėjote pasikeitusią funkciją? Parašykite
+        <a href="mailto:support@moneycompass.lt">support@moneycompass.lt</a> – patikrinsime šaltinį ir atnaujinsime lentelę.
+      </p>
+    </section>
+
+    <section class="comparison-section comparison-faq" id="duk" aria-labelledby="duk-title">
+      <div class="comparison-heading">
+        <span class="seo-kicker">D.U.K.</span>
+        <h2 id="duk-title">Dažniausi klausimai apie finansų programėles</h2>
+      </div>
+      <div class="seo-faq-list">
+        {% for item in seo_faqs %}
+          <details>
+            <summary>{{ item.question }}</summary>
+            <p>{{ item.answer }}</p>
+          </details>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="comparison-cta" aria-labelledby="comparison-cta-title">
+      <div>
+        <span class="seo-kicker">Jei svarbi duomenų kontrolė</span>
+        <h2 id="comparison-cta-title">Išbandykite MoneyCompass su vieno mėnesio išrašu</h2>
+        <p>
+          Importuokite savo CSV ar Excel failą, peržiūrėkite kategorijas ir nuspręskite,
+          ar bendras išlaidų, turto bei tikslų vaizdas atsako į jūsų klausimus.
+        </p>
+      </div>
+      <div class="seo-hero-actions">
+        <a href="{% url 'beta_landing' %}" class="seo-button seo-button-primary">Peržiūrėti beta pasiūlymą</a>
+        <a href="{% url 'financial_app' %}" class="seo-button seo-button-secondary">Kaip veikia MoneyCompass</a>
+      </div>
+    </section>
+  </article>
+</main>
+{% endblock %}

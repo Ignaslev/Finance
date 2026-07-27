@@ -7,6 +7,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    {# Keep this tag in the shared head so Bing Webmaster Tools verification remains valid. #}
+    <meta name="msvalidate.01" content="AEFFA2C5CC4EB8A6A13FF11F067AB6C8">
     <title>{% block title %}{% if seo_title %}{{ seo_title }}{% else %}Money Compass{% endif %}{% endblock %}</title>
     {# Google may use this icon in Search results; keep the crawlable vector as the canonical source. #}
     <link rel="icon" href="{% static 'img/favicon-192.png' %}" type="image/png" sizes="192x192">
