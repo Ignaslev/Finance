@@ -31,7 +31,11 @@
                 <a href="#features">{% if LANGUAGE_CODE == "lt" %}Funkcijos{% else %}Features{% endif %}</a>
                 <a href="#how-it-works">{% if LANGUAGE_CODE == "lt" %}Kaip veikia{% else %}How it works{% endif %}</a>
                 <a href="#community">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
-                <a href="{% url 'guide' %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+                <a href="{% if LANGUAGE_CODE == 'lt' %}{% url 'public_guide' %}{% else %}{% url 'guide' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+                {% if LANGUAGE_CODE == "lt" %}
+                    <a href="{% url 'financial_app' %}">Finansų programėlė</a>
+                    <a href="{% url 'article_list' %}">Straipsniai</a>
+                {% endif %}
             </nav>
 
             <div class="landing-actions">
@@ -60,7 +64,11 @@
         <a href="#features">{% if LANGUAGE_CODE == "lt" %}Funkcijos{% else %}Features{% endif %}</a>
         <a href="#how-it-works">{% if LANGUAGE_CODE == "lt" %}Kaip veikia{% else %}How it works{% endif %}</a>
         <a href="#community">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
-        <a href="{% url 'guide' %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+        <a href="{% if LANGUAGE_CODE == 'lt' %}{% url 'public_guide' %}{% else %}{% url 'guide' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Gidas{% else %}Guide{% endif %}</a>
+        {% if LANGUAGE_CODE == "lt" %}
+            <a href="{% url 'financial_app' %}">Finansų programėlė</a>
+            <a href="{% url 'article_list' %}">Straipsniai</a>
+        {% endif %}
 
         <div class="landing-mobile-menu-actions">
             <a href="{% url 'login' %}?lang={{ LANGUAGE_CODE }}">{% if LANGUAGE_CODE == "lt" %}Prisijungti{% else %}Login{% endif %}</a>
@@ -102,7 +110,7 @@
                         <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="landing-button landing-button-light">
                             {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
                         </a>
-                        <a href="{% url 'guide' %}" class="landing-button landing-button-outline">
+                        <a href="{% if LANGUAGE_CODE == 'lt' %}{% url 'public_guide' %}{% else %}{% url 'guide' %}{% endif %}" class="landing-button landing-button-outline">
                             {% if LANGUAGE_CODE == "lt" %}Žiūrėti gidą{% else %}View guide{% endif %}
                         </a>
                     </div>
@@ -278,6 +286,11 @@
                     <span>MoneyCompass</span>
                 </a>
                 <nav class="landing-footer-links" aria-label="{% if LANGUAGE_CODE == 'lt' %}Teisinės nuorodos{% else %}Legal links{% endif %}">
+                    {% if LANGUAGE_CODE == "lt" %}
+                        <a href="{% url 'financial_app' %}">Finansų programėlė</a>
+                        <a href="{% url 'article_list' %}">Straipsniai</a>
+                        <a href="{% url 'public_guide' %}">Gidas</a>
+                    {% endif %}
                     <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'privacy_en' %}{% else %}{% url 'privacy' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Privatumas{% else %}Privacy{% endif %}</a>
                     <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'terms_en' %}{% else %}{% url 'terms' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Sąlygos{% else %}Terms{% endif %}</a>
                     <a href="{% if LANGUAGE_CODE == 'en' %}{% url 'contact_en' %}{% else %}{% url 'contact' %}{% endif %}">{% if LANGUAGE_CODE == "lt" %}Kontaktai{% else %}Contact{% endif %}</a>

@@ -8,7 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}{% if seo_title %}{{ seo_title }}{% else %}Money Compass{% endif %}{% endblock %}</title>
-    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    {# Google may use this icon in Search results; keep the crawlable vector as the canonical source. #}
+    <link rel="icon" href="{% static 'img/favicon-192.png' %}" type="image/png" sizes="192x192">
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml" sizes="any">
+    <link rel="shortcut icon" href="{% static 'img/favicon-192.png' %}" type="image/png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+{% block body_class %}seo-public-page{% endblock %}
+{% block extra_head %}
+  <meta name="description" content="{{ seo_description }}">
+  {% include "includes/public_seo_meta.html" %}
+  <link rel="stylesheet" href="{% static 'css/seo_pages.css' %}?v=20260727">
+{% endblock %}
+
+{% block content %}
+<main class="public-guide-page">
+  <nav class="seo-breadcrumbs" aria-label="Kelio nuorodos">
+    <a href="/">MoneyCompass</a>
+    <span aria-hidden="true">/</span>
+    <span>Gidas</span>
+  </nav>
+
+  <header class="public-guide-hero">
+    <span class="seo-kicker">MoneyCompass Lietuva</span>
+    <h1>MoneyCompass gidas: nuo banko išrašo iki aiškaus finansų vaizdo</h1>
+    <p>
+      Išsamus lietuviškos asmeninių finansų programėlės vadovas. Čia rasite, kaip
+      importuoti operacijas, tvarkyti išlaidų kategorijas, peržiūrėti statistiką,
+      stebėti turtą, investicijas ir finansinius tikslus.
+    </p>
+    <div class="seo-hero-actions">
+      <a href="{% url 'financial_app' %}" class="seo-button seo-button-primary">
+        Apie finansų programėlę
+      </a>
+      <a href="{% url 'register' %}?lang=lt" class="seo-button seo-button-secondary">
+        Registruotis
+      </a>
+    </div>
+  </header>
+
+  <div class="public-guide-layout">
+    <aside class="public-guide-toc">
+      <strong>Gido skyriai</strong>
+      <nav aria-label="MoneyCompass gido turinys">
+        {% for section in sections %}
+          <a href="#{{ section.id }}">{{ section.title }}</a>
+        {% endfor %}
+      </nav>
+    </aside>
+
+    <div class="public-guide-content">
+      {% for section in sections %}
+        <section class="public-guide-section" id="{{ section.id }}">
+          <header>
+            <span class="public-guide-index">{{ forloop.counter|stringformat:"02d" }}</span>
+            <div>
+              <h2>{{ section.title }}</h2>
+              {% if section.subtitle %}<p>{{ section.subtitle }}</p>{% endif %}
+            </div>
+          </header>
+
+          <div class="guide-body">
+            {% for block in section.body %}
+              {% if block.type == "paragraph" %}
+                <p>{{ block.text }}</p>
+              {% endif %}
+
+              {% if block.type == "heading" %}
+                <h3{% if block.anchor %} id="{{ block.anchor }}"{% endif %}>{{ block.text }}</h3>
+              {% endif %}
+
+              {% if block.type == "note" %}
+                <div class="guide-note">{{ block.text }}</div>
+              {% endif %}
+
+              {% if block.type == "list" %}
+                <ul>
+                  {% for item in block.items %}<li>{{ item }}</li>{% endfor %}
+                </ul>
+              {% endif %}
+
+              {% if block.type == "image" %}
+                <figure class="guide-image-wrap {% if block.variant %}guide-image-wrap-{{ block.variant }}{% endif %}">
+                  <img
+                    src="{% static block.src %}"
+                    alt="{{ block.alt }}"
+                    class="guide-image {% if block.variant %}guide-image-{{ block.variant }}{% endif %}"
+                    loading="lazy"
+                  >
+                  {% if block.caption %}<figcaption>{{ block.caption }}</figcaption>{% endif %}
+                </figure>
+              {% endif %}
+
+              {% if block.type == "table" %}
+                <div class="guide-table-wrap">
+                  <table class="guide-table">
+                    <thead>
+                      <tr>{% for header in block.headers %}<th>{{ header }}</th>{% endfor %}</tr>
+                    </thead>
+                    <tbody>
+                      {% for row in block.rows %}
+                        <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  </div>
+
+  <section class="seo-resource-card public-guide-resources" aria-labelledby="guide-resources-title">
+    <div>
+      <span class="seo-kicker">Susiję paaiškinimai</span>
+      <h2 id="guide-resources-title">Toliau gilinkite asmeninių finansų sistemą</h2>
+      <p>
+        Produkto gidas paaiškina mygtukus ir procesus, o straipsniuose rasite praktinius
+        išlaidų sekimo, biudžeto ir mėnesio peržiūros principus.
+      </p>
+    </div>
+    <div class="public-guide-resource-links">
+      <a href="{% url 'article_detail' slug='islaidu-sekimas' %}">Išlaidų sekimas</a>
+      <a href="{% url 'article_detail' slug='asmeninis-biudzetas' %}">Asmeninis biudžetas</a>
+      <a href="{% url 'article_detail' slug='asmeniniu-finansu-valdymas' %}">Finansų valdymas</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

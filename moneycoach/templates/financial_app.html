@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+{% block body_class %}seo-public-page{% endblock %}
+{% block extra_head %}
+  <meta name="description" content="{{ seo_description }}">
+  {% include "includes/public_seo_meta.html" %}
+  <link rel="stylesheet" href="{% static 'css/seo_pages.css' %}?v=20260727">
+{% endblock %}
+
+{% block content %}
+<main class="seo-product-page">
+  <nav class="seo-breadcrumbs" aria-label="Kelio nuorodos">
+    <a href="/">MoneyCompass</a>
+    <span aria-hidden="true">/</span>
+    <span>Finansų valdymo programėlė</span>
+  </nav>
+
+  <section class="seo-product-hero">
+    <div class="seo-product-hero-copy">
+      <span class="seo-kicker">MoneyCompass Lietuva</span>
+      <h1>Finansų valdymo programėlė asmeniniams finansams</h1>
+      <p class="seo-hero-lead">
+        MoneyCompass yra lietuviška interneto finansų programėlė, padedanti vienoje vietoje
+        matyti pajamas, išlaidas, biudžetą, turtą, investicijas ir tikslus. Banko išrašą
+        importuojate patys iš CSV arba Excel failo – be tiesioginio banko paskyros prijungimo.
+      </p>
+      <div class="seo-hero-actions">
+        <a href="{% url 'register' %}?lang=lt" class="seo-button seo-button-primary">
+          Išbandyti MoneyCompass
+        </a>
+        <a href="{% url 'public_guide' %}" class="seo-button seo-button-secondary">
+          Peržiūrėti išsamų gidą
+        </a>
+      </div>
+      <ul class="seo-trust-list" aria-label="Svarbiausi MoneyCompass principai">
+        <li><i class="ph ph-check-circle" aria-hidden="true"></i> Be banko slaptažodžio</li>
+        <li><i class="ph ph-check-circle" aria-hidden="true"></i> CSV ir Excel importas</li>
+        <li><i class="ph ph-check-circle" aria-hidden="true"></i> Lietuviška sąsaja</li>
+      </ul>
+    </div>
+    <div class="seo-product-hero-visual">
+      <img
+        src="{% static 'img/landing-phone-dashboard.png' %}"
+        alt="MoneyCompass asmeninių finansų programėlės apžvalga telefone"
+        width="420"
+        height="720"
+      >
+    </div>
+  </section>
+
+  <section class="seo-direct-answer" aria-labelledby="kas-yra-finansu-programele">
+    <span class="seo-section-number">Trumpas atsakymas</span>
+    <h2 id="kas-yra-finansu-programele">Kas yra finansų valdymo programėlė?</h2>
+    <p>
+      Finansų valdymo programėlė surenka asmeninių finansų duomenis į vieną sistemą ir padeda
+      juos peržiūrėti pagal laikotarpį, sąskaitą ar kategoriją. MoneyCompass tam naudoja jūsų
+      pačių eksportuotą banko išrašą: operacijas galima suskirstyti, pataisyti ir palyginti,
+      o greta stebėti turto bei finansinių tikslų pokytį.
+    </p>
+  </section>
+
+  <section class="seo-section" aria-labelledby="kaip-veikia">
+    <div class="seo-section-heading">
+      <span class="seo-kicker">Paprastas procesas</span>
+      <h2 id="kaip-veikia">Kaip veikia MoneyCompass?</h2>
+      <p>Duomenų kelią valdote jūs – nuo banko failo iki peržiūrėtos suvestinės.</p>
+    </div>
+    <ol class="seo-step-grid">
+      <li>
+        <span class="seo-step-number">1</span>
+        <h3>Eksportuojate išrašą</h3>
+        <p>Iš savo banko atsisiunčiate operacijas CSV arba Excel formatu.</p>
+      </li>
+      <li>
+        <span class="seo-step-number">2</span>
+        <h3>Importuojate operacijas</h3>
+        <p>Pasirenkate sąskaitą ir įkeliate failą į MoneyCompass.</p>
+      </li>
+      <li>
+        <span class="seo-step-number">3</span>
+        <h3>Peržiūrite rezultatą</h3>
+        <p>Patikrinate kategorijas, suvestines, pokyčius ir savo tikslų progresą.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="seo-section" aria-labelledby="funkcijos">
+    <div class="seo-section-heading">
+      <span class="seo-kicker">Vienas finansinis vaizdas</span>
+      <h2 id="funkcijos">Ką galima valdyti programėlėje?</h2>
+    </div>
+    <div class="seo-feature-grid">
+      <article>
+        <i class="ph ph-receipt" aria-hidden="true"></i>
+        <h3>Išlaidų sekimas</h3>
+        <p>Operacijų sąrašas, jūsų kategorijos, laikotarpių filtrai ir išlaidų suvestinės.</p>
+        <a href="{% url 'article_detail' slug='islaidu-sekimas' %}">Išlaidų sekimo vadovas</a>
+      </article>
+      <article>
+        <i class="ph ph-chart-pie-slice" aria-hidden="true"></i>
+        <h3>Asmeninis biudžetas</h3>
+        <p>Faktinių pajamų ir išlaidų vaizdas, padedantis tikslinti kito mėnesio planą.</p>
+        <a href="{% url 'article_detail' slug='asmeninis-biudzetas' %}">Biudžeto sudarymo vadovas</a>
+      </article>
+      <article>
+        <i class="ph ph-wallet" aria-hidden="true"></i>
+        <h3>Turtas ir sąskaitos</h3>
+        <p>Sąskaitų, santaupų ir kito įvesto turto vaizdas vienoje apžvalgoje.</p>
+      </article>
+      <article>
+        <i class="ph ph-trend-up" aria-hidden="true"></i>
+        <h3>Investicijų portfelis</h3>
+        <p>Akcijų, ETF ir kriptoturto pozicijų bei bendros įvestos vertės stebėjimas.</p>
+      </article>
+      <article>
+        <i class="ph ph-target" aria-hidden="true"></i>
+        <h3>Finansiniai tikslai</h3>
+        <p>Pasirinktos sumos, termino ir progreso stebėjimas pagal jūsų pačių planą.</p>
+      </article>
+      <article>
+        <i class="ph ph-brain" aria-hidden="true"></i>
+        <h3>Peržiūrimos DI kategorijos</h3>
+        <p>Programa gali siūlyti kategorijas, tačiau pasiūlymus galite patikrinti ir pataisyti.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="seo-section seo-comparison-section" aria-labelledby="palyginimas">
+    <div class="seo-section-heading">
+      <span class="seo-kicker">Pasirinkite pagal darbo būdą</span>
+      <h2 id="palyginimas">MoneyCompass, banko įrankis ar skaičiuoklė?</h2>
+      <p>
+        Nėra vieno geriausio būdo visiems. Svarbu, kiek sąskaitų naudojate, kokio detalumo
+        reikia ir kaip norite pateikti duomenis.
+      </p>
+    </div>
+    <div class="seo-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Vertinimo kriterijus</th>
+            <th>MoneyCompass</th>
+            <th>Banko įrankis</th>
+            <th>Skaičiuoklė</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Duomenų įvedimas</th>
+            <td>Rankinis CSV / Excel importas</td>
+            <td>Dažniausiai automatiškai to banko viduje</td>
+            <td>Rankinis įvedimas arba failų tvarkymas</td>
+          </tr>
+          <tr>
+            <th>Kelių sąskaitų vaizdas</th>
+            <td>Galima sujungti importuotus duomenis</td>
+            <td>Paprastai apsiriboja konkretaus banko duomenimis</td>
+            <td>Galima, jei patys sukuriate struktūrą</td>
+          </tr>
+          <tr>
+            <th>Kategorijų koregavimas</th>
+            <td>Galima kurti ir taisyti</td>
+            <td>Priklauso nuo banko</td>
+            <td>Visiškai valdote patys</td>
+          </tr>
+          <tr>
+            <th>Turto ir tikslų stebėjimas</th>
+            <td>Toje pačioje programoje</td>
+            <td>Priklauso nuo banko funkcijų</td>
+            <td>Reikia susikurti atskiras lenteles</td>
+          </tr>
+          <tr>
+            <th>Tiesioginis banko ryšys</th>
+            <td>Nereikalingas</td>
+            <td>Įrankis yra banko aplinkoje</td>
+            <td>Nereikalingas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="seo-split-section" aria-labelledby="kam-tinka">
+    <div>
+      <span class="seo-kicker">Kam tinka</span>
+      <h2 id="kam-tinka">MoneyCompass verta rinktis, jei...</h2>
+      <ul class="seo-check-list">
+        <li>naudojate kelias sąskaitas ir norite bendros peržiūros;</li>
+        <li>norite patys kontroliuoti, kada importuojami banko duomenys;</li>
+        <li>svarbios ne tik išlaidos, bet ir turtas, portfelis bei tikslai;</li>
+        <li>norite lietuviškos, naršyklėje veikiančios sistemos.</li>
+      </ul>
+    </div>
+    <div class="seo-caveat-card">
+      <span class="seo-kicker">Svarbu žinoti</span>
+      <h2>Ko MoneyCompass nedaro?</h2>
+      <ul class="seo-check-list">
+        <li>automatiškai nesinchronizuoja banko sąskaitos;</li>
+        <li>neprašo ir nesaugo banko prisijungimo slaptažodžio;</li>
+        <li>nepriima finansinių sprendimų už jus;</li>
+        <li>neteikia individualių finansinių ar investavimo rekomendacijų.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="seo-section seo-faq-section" id="duk" aria-labelledby="duk-title">
+    <div class="seo-section-heading">
+      <span class="seo-kicker">D.U.K.</span>
+      <h2 id="duk-title">Dažniausi klausimai apie finansų programėlę</h2>
+    </div>
+    <div class="seo-faq-list">
+      {% for item in seo_faqs %}
+        <details>
+          <summary>{{ item.question }}</summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="seo-resource-card" aria-labelledby="toliau">
+    <div>
+      <span class="seo-kicker">Pradėkite nuo realių duomenų</span>
+      <h2 id="toliau">Pamatykite savo finansų vaizdą vienoje vietoje</h2>
+      <p>
+        Pirmam bandymui pakanka vieno pilno mėnesio banko išrašo. Importuokite jį,
+        patikrinkite kategorijas ir įvertinkite, ar suvestinė atsako į jums svarbius klausimus.
+      </p>
+    </div>
+    <div class="seo-hero-actions">
+      <a href="{% url 'register' %}?lang=lt" class="seo-button seo-button-primary">
+        Registruotis
+      </a>
+      <a href="{% url 'article_list' %}" class="seo-button seo-button-secondary">
+        Skaityti straipsnius
+      </a>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -2,7 +2,15 @@ from django.conf import settings
 from django.shortcuts import redirect, render
 from django.utils import translation
 
-from .seo import beta_landing_seo_context, landing_seo_context, public_page_seo_context
+from finance.guide_content import GUIDE_CONTENT
+
+from .seo import (
+    beta_landing_seo_context,
+    financial_app_seo_context,
+    landing_seo_context,
+    public_guide_seo_context,
+    public_page_seo_context,
+)
 
 
 def landing(request, language="lt"):
@@ -30,6 +38,24 @@ def beta_landing(request):
     }
     with translation.override("lt"):
         response = render(request, "beta_landing.html", context)
+    response["Content-Language"] = "lt"
+    return response
+
+
+def financial_app(request):
+    with translation.override("lt"):
+        response = render(request, "financial_app.html", financial_app_seo_context())
+    response["Content-Language"] = "lt"
+    return response
+
+
+def public_guide(request):
+    context = {
+        "sections": GUIDE_CONTENT["lt"],
+        **public_guide_seo_context(),
+    }
+    with translation.override("lt"):
+        response = render(request, "public_guide.html", context)
     response["Content-Language"] = "lt"
     return response
 

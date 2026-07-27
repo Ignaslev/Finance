@@ -1,6 +1,12 @@
 from django.test import SimpleTestCase
 
-from moneycoach.seo import SOCIAL_PROFILES, beta_landing_seo_context, landing_seo_context
+from moneycoach.seo import (
+    SOCIAL_PROFILES,
+    beta_landing_seo_context,
+    financial_app_seo_context,
+    landing_seo_context,
+    public_guide_seo_context,
+)
 
 
 class SearchAppearanceTests(SimpleTestCase):
@@ -24,3 +30,24 @@ class SearchAppearanceTests(SimpleTestCase):
     def test_facebook_structured_data_uses_the_public_username(self):
         self.assertIn("https://www.facebook.com/moneycompassapp", SOCIAL_PROFILES)
         self.assertNotIn("profile.php", " ".join(SOCIAL_PROFILES))
+
+    def test_financial_app_page_targets_the_commercial_query(self):
+        context = financial_app_seo_context()
+
+        self.assertEqual(
+            context["seo_canonical_url"],
+            "https://moneycompass.lt/finansu-valdymo-programele/",
+        )
+        self.assertIn("Finansų valdymo programėlė", context["seo_title"])
+        self.assertEqual(len(context["seo_faqs"]), 4)
+        self.assertIn('"@type":"WebSite"', context["seo_schema"])
+        self.assertIn('"@type":"SoftwareApplication"', context["seo_schema"])
+
+    def test_public_guide_has_one_stable_lithuanian_canonical(self):
+        context = public_guide_seo_context()
+
+        self.assertEqual(
+            context["seo_canonical_url"],
+            "https://moneycompass.lt/gidas/",
+        )
+        self.assertIn("MoneyCompass gidas", context["seo_title"])

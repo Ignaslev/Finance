@@ -17,10 +17,18 @@
     <header class="article-reading-header">
       <div class="article-reading-meta">
         <span><i class="ph ph-calendar-blank" aria-hidden="true"></i> {{ article.published_at|date:"Y m. F j d." }}</span>
+        <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i> Atnaujinta {{ article.updated_at|date:"Y m. F j d." }}</span>
         <span><i class="ph ph-user-circle" aria-hidden="true"></i> {{ article.author_name }}</span>
       </div>
       <h1>{{ article.title }}</h1>
       <p class="article-reading-excerpt">{{ article.excerpt }}</p>
+      <div class="article-editorial-note">
+        <i class="ph ph-shield-check" aria-hidden="true"></i>
+        <p>
+          Parengta MoneyCompass komandos, remiantis straipsnyje nurodytais šaltiniais.
+          Turinys yra bendro edukacinio pobūdžio ir nėra individuali finansinė konsultacija.
+        </p>
+      </div>
     </header>
 
     <div class="article-reading-body">{{ article.rendered_body }}</div>

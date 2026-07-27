@@ -4,13 +4,31 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
-from .views import beta_landing, landing, privacy, terms, contact
+from .views import (
+    beta_landing,
+    contact,
+    financial_app,
+    landing,
+    privacy,
+    public_guide,
+    terms,
+)
 from .seo import robots_txt, sitemap_xml
 
 urlpatterns = [
     path("", landing, {"language": "lt"}, name="landing"),
     path("en/", landing, {"language": "en"}, name="landing_en"),
     path("beta/", beta_landing, name="beta_landing"),
+    path(
+        "favicon.ico",
+        RedirectView.as_view(
+            url=f"{settings.STATIC_URL}img/favicon-192.png",
+            permanent=True,
+        ),
+        name="favicon",
+    ),
+    path("finansu-valdymo-programele/", financial_app, name="financial_app"),
+    path("gidas/", public_guide, name="public_guide"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path("straipsniai/", include("blog.urls")),

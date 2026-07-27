@@ -14,6 +14,45 @@ SOCIAL_PROFILES = [
     "https://www.tiktok.com/@moneycompassapp",
 ]
 
+BRAND_LOGO_PATH = "/static/img/favicon.svg"
+
+
+def organization_schema():
+    """The single public MoneyCompass entity shared by public pages and articles."""
+    return {
+        "@type": "Organization",
+        "@id": f"{_site_url()}/#organization",
+        "name": "MoneyCompass",
+        "alternateName": "MoneyCompass Lietuva",
+        "url": _site_url(),
+        "description": (
+            "MoneyCompass Lietuva yra asmeninių finansų stebėjimo programa, "
+            "skirta išlaidoms, turtui ir finansiniams tikslams matyti vienoje vietoje."
+        ),
+        "email": "support@moneycompass.lt",
+        "areaServed": {"@type": "Country", "name": "Lithuania"},
+        "logo": {
+            "@type": "ImageObject",
+            "url": _absolute_url(BRAND_LOGO_PATH),
+            "width": 192,
+            "height": 192,
+        },
+        "sameAs": SOCIAL_PROFILES,
+    }
+
+
+def website_schema():
+    """The canonical website entity used to connect every public page."""
+    return {
+        "@type": "WebSite",
+        "@id": f"{_site_url()}/#website",
+        "url": _site_url(),
+        "name": "MoneyCompass",
+        "alternateName": "MoneyCompass Lietuva",
+        "inLanguage": ["lt", "en"],
+        "publisher": {"@id": f"{_site_url()}/#organization"},
+    }
+
 
 def _site_url():
     return settings.SITE_URL.rstrip("/")
@@ -38,14 +77,8 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
     schema = {
         "@context": "https://schema.org",
         "@graph": [
-            {
-                "@type": "Organization",
-                "@id": f"{_site_url()}/#organization",
-                "name": "MoneyCompass",
-                "url": _site_url(),
-                "email": "support@moneycompass.lt",
-                "sameAs": SOCIAL_PROFILES,
-            },
+            organization_schema(),
+            website_schema(),
             {
                 "@type": "SoftwareApplication",
                 "@id": f"{_site_url()}/#software",
@@ -55,6 +88,7 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
                 "url": _site_url(),
                 "description": description,
                 "publisher": {"@id": f"{_site_url()}/#organization"},
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
                 "featureList": [
                     "Manual CSV and Excel statement import",
                     "Expense categorization and spending analysis",
@@ -69,11 +103,12 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
                 "name": title,
                 "description": description,
                 "inLanguage": language,
-                "isPartOf": {"@id": f"{_site_url()}/#software"},
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
+                "about": {"@id": f"{_site_url()}/#software"},
+                "publisher": {"@id": f"{_site_url()}/#organization"},
             },
         ],
     }
-
     return {
         "seo_title": title,
         "seo_description": description,
@@ -85,6 +120,183 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
         "seo_schema": _json_ld(schema),
     }
 
+
+def financial_app_seo_context():
+    path = "/finansu-valdymo-programele/"
+    url = _absolute_url(path)
+    title = "Finansų valdymo programėlė | MoneyCompass"
+    description = (
+        "Lietuviška finansų valdymo programėlė išlaidoms, biudžetui, turtui ir tikslams. "
+        "Importuokite CSV ar Excel išrašą – be banko paskyros prijungimo."
+    )
+    faqs = [
+        {
+            "question": "Ar MoneyCompass jungiasi prie banko sąskaitos?",
+            "answer": (
+                "Ne. Banko išrašą CSV arba Excel formatu eksportuojate patys ir rankiniu būdu "
+                "įkeliate į MoneyCompass. Programa neprašo banko prisijungimo duomenų."
+            ),
+        },
+        {
+            "question": "Ar MoneyCompass yra mobilioji programėlė?",
+            "answer": (
+                "MoneyCompass yra mobiliesiems įrenginiams pritaikyta interneto programa. "
+                "Ją galima naudoti telefono ir kompiuterio naršyklėje, tačiau šiuo metu nėra "
+                "atskiros iOS ar Android programėlės."
+            ),
+        },
+        {
+            "question": "Ką galima stebėti su MoneyCompass?",
+            "answer": (
+                "Galite stebėti pajamas, išlaidas ir jų kategorijas, sąskaitų vaizdą, turtą, "
+                "investicijas ir pasirinktų finansinių tikslų progresą."
+            ),
+        },
+        {
+            "question": "Ar MoneyCompass teikia finansines konsultacijas?",
+            "answer": (
+                "Ne. MoneyCompass padeda sutvarkyti ir parodyti jūsų pateiktus duomenis, bet "
+                "neteikia individualių investavimo ar kitų finansinių rekomendacijų."
+            ),
+        },
+    ]
+    schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+            organization_schema(),
+            website_schema(),
+            {
+                "@type": "SoftwareApplication",
+                "@id": f"{_site_url()}/#software",
+                "name": "MoneyCompass",
+                "alternateName": "MoneyCompass Lietuva",
+                "applicationCategory": "FinanceApplication",
+                "applicationSubCategory": "Personal finance management",
+                "operatingSystem": "Web",
+                "url": url,
+                "description": description,
+                "inLanguage": "lt",
+                "publisher": {"@id": f"{_site_url()}/#organization"},
+                "featureList": [
+                    "Rankinis CSV ir Excel banko išrašų importas",
+                    "Išlaidų kategorijos ir analizė",
+                    "Asmeninio biudžeto peržiūra",
+                    "Turto, investicijų ir finansinių tikslų stebėjimas",
+                ],
+            },
+            {
+                "@type": "WebPage",
+                "@id": f"{url}#webpage",
+                "url": url,
+                "name": title,
+                "description": description,
+                "inLanguage": "lt",
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
+                "about": {"@id": f"{_site_url()}/#software"},
+                "publisher": {"@id": f"{_site_url()}/#organization"},
+            },
+            {
+                "@type": "FAQPage",
+                "@id": f"{url}#faq",
+                "url": f"{url}#duk",
+                "inLanguage": "lt",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": item["question"],
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": item["answer"],
+                        },
+                    }
+                    for item in faqs
+                ],
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "MoneyCompass",
+                        "item": _site_url(),
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Finansų valdymo programėlė",
+                        "item": url,
+                    },
+                ],
+            },
+        ],
+    }
+    return {
+        "seo_title": title,
+        "seo_description": description,
+        "seo_canonical_url": url,
+        "seo_alternate_lt_url": url,
+        "seo_alternate_en_url": url,
+        "seo_image_url": _absolute_url("/static/img/landing-dashboard-lt.png"),
+        "seo_locale": "lt_LT",
+        "seo_schema": _json_ld(schema),
+        "seo_faqs": faqs,
+    }
+
+
+def public_guide_seo_context():
+    path = "/gidas/"
+    url = _absolute_url(path)
+    title = "MoneyCompass gidas: finansų programėlės naudojimas"
+    description = (
+        "Išsamus lietuviškas MoneyCompass gidas: banko išrašo importas, išlaidų kategorijos, "
+        "biudžetas, statistika, turtas, investicijos ir finansiniai tikslai."
+    )
+    schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+            organization_schema(),
+            website_schema(),
+            {
+                "@type": "WebPage",
+                "@id": f"{url}#webpage",
+                "url": url,
+                "name": title,
+                "description": description,
+                "inLanguage": "lt",
+                "isPartOf": {"@id": f"{_site_url()}/#website"},
+                "about": {"@id": f"{_site_url()}/#software"},
+                "publisher": {"@id": f"{_site_url()}/#organization"},
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "MoneyCompass",
+                        "item": _site_url(),
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Gidas",
+                        "item": url,
+                    },
+                ],
+            },
+        ],
+    }
+    return {
+        "seo_title": title,
+        "seo_description": description,
+        "seo_canonical_url": url,
+        "seo_alternate_lt_url": url,
+        "seo_alternate_en_url": url,
+        "seo_image_url": _absolute_url("/static/img/landing-dashboard-lt.png"),
+        "seo_locale": "lt_LT",
+        "seo_schema": _json_ld(schema),
+    }
 
 def landing_seo_context(language):
     if language == "en":
@@ -192,6 +404,8 @@ def sitemap_xml(_request):
         "/en/terms/",
         "/contact/",
         "/en/contact/",
+        "/finansu-valdymo-programele/",
+        "/gidas/",
         "/straipsniai/",
     ]
     try:
