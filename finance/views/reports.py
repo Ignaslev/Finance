@@ -197,12 +197,18 @@ def _build_tracked_subscriptions(user, base_qs, today):
             or _subscription_display_name(norm, _latest_nonempty_merchant(items))
         )
         row = _build_subscription_row(norm, items, display_name=display_name)
+        row["manually_ended"] = bool(
+            decision and decision.decision == SubscriptionDecision.DECISION_ENDED
+        )
 
         if decision:
             if decision.decision == SubscriptionDecision.DECISION_IGNORE:
                 continue
             if decision.decision == SubscriptionDecision.DECISION_UNTRACK:
                 untracked_rows.append(row)
+                continue
+            if decision.decision == SubscriptionDecision.DECISION_ENDED:
+                past_rows.append(row)
                 continue
             if decision.decision == SubscriptionDecision.DECISION_TRACK:
                 if _subscription_is_active(row["last_paid"], today):
@@ -835,6 +841,52 @@ def subscription_untrack(request):
     )
 
     messages.success(request, _("Subscription removed from tracking."))
+    return redirect("statistics")
+
+
+@login_required
+@require_POST
+def subscription_mark_ended(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, _("Missing subscription."))
+        return redirect("statistics")
+
+    SubscriptionDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": SubscriptionDecision.DECISION_ENDED,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, _("Canceled"))
+    return redirect("statistics")
+
+
+@login_required
+@require_POST
+def subscription_mark_active(request):
+    norm = (request.POST.get("normalized_merchant") or "").strip().lower()
+    display_name = (request.POST.get("display_name") or "").strip()[:255]
+
+    if not norm:
+        messages.error(request, _("Missing subscription."))
+        return redirect("statistics")
+
+    SubscriptionDecision.objects.update_or_create(
+        user=request.user,
+        normalized_merchant=norm,
+        defaults={
+            "decision": SubscriptionDecision.DECISION_TRACK,
+            "display_name": display_name,
+        },
+    )
+
+    messages.success(request, _("Subscription tracked again."))
     return redirect("statistics")
 
 

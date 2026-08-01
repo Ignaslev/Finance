@@ -542,7 +542,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass detects recurring outgoing payments as possible subscriptions. You can review candidates, confirm them, dismiss them, or retrack previously untracked subscriptions.",
+                    "text": "Money Compass detects recurring outgoing payments as possible subscriptions. Mark an active subscription as Canceled to move it to Past subscriptions immediately. Remove stops tracking it completely, while Restore returns a past subscription to active tracking.",
                 },
                 image(
                     "en",
@@ -1330,7 +1330,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass aptinka pasikartojančius išeinančius mokėjimus kaip galimas prenumeratas. Kandidatus galite patvirtinti, atmesti arba vėl pradėti sekti anksčiau nebesektas prenumeratas.",
+                    "text": "Money Compass aptinka pasikartojančius išeinančius mokėjimus kaip galimas prenumeratas. Aktyvią prenumeratą pažymėję „Atšaukta“ iš karto perkelsite ją į buvusias prenumeratas. „Pašalinti“ visiškai sustabdo jos sekimą, o „Atkurti“ grąžina buvusią prenumeratą į aktyvų sekimą.",
                 },
                 image(
                     "lt",

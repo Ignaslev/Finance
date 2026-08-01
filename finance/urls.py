@@ -32,6 +32,8 @@ urlpatterns = [
     path("review/subscriptions/untracked/", f.untracked_subscriptions, name="untracked_subscriptions"),
     path("review/subscriptions/untrack/", f.subscription_untrack, name="subscription_untrack"),
     path("review/subscriptions/retrack/", f.subscription_retrack, name="subscription_retrack"),
+    path("review/subscriptions/mark-ended/", f.subscription_mark_ended, name="subscription_mark_ended"),
+    path("review/subscriptions/mark-active/", f.subscription_mark_active, name="subscription_mark_active"),
 
     path("review/income-sources/", f.review_income_sources, name="review_income_sources"),
     path("review/income-sources/apply/", f.review_income_sources_apply, name="review_income_sources_apply"),

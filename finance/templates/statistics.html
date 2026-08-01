@@ -287,6 +287,17 @@
                       {% trans "View" %}
                     </a>
 
+                    <form method="post" action="{% url 'subscription_mark_ended' %}" style="margin:0;">
+                      {% csrf_token %}
+                      <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                      <input type="hidden" name="display_name" value="{{ row.name }}">
+                      <button type="submit"
+                              class="btn"
+                              style="padding:0.25rem 0.6rem; font-size:0.8rem; background:#fffaf0; color:#b7791f; border:1px solid #f6ad55;">
+                        {% trans "Canceled" %}
+                      </button>
+                    </form>
+
                     <form method="post" action="{% url 'subscription_untrack' %}" style="margin:0;">
                       {% csrf_token %}
                       <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
@@ -346,6 +357,19 @@
                       {% trans "View" %}
                     </a>
 
+                    {% if row.manually_ended %}
+                      <form method="post" action="{% url 'subscription_mark_active' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
+                        <input type="hidden" name="display_name" value="{{ row.name }}">
+                        <button type="submit"
+                                class="btn"
+                                style="padding:0.25rem 0.6rem; font-size:0.8rem; background:#edf7f5; color:var(--primary-teal-dark); border:1px solid var(--primary-teal);">
+                          {% trans "Restore" %}
+                        </button>
+                      </form>
+                    {% endif %}
+
                     <form method="post" action="{% url 'subscription_untrack' %}" style="margin:0;">
                       {% csrf_token %}
                       <input type="hidden" name="normalized_merchant" value="{{ row.normalized_merchant }}">
@@ -377,8 +401,9 @@
 
 
 
+<div class="statistics-insight-grid">
 <div class="card statistics-runway-card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
-    <div class="flex justify-between items-start">
+    <div class="flex justify-between items-start statistics-runway-content">
         <div>
             <div class="flex items-center gap-2">
                 <div class="text-medium title-with-guide" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">
@@ -524,6 +549,7 @@
     </details>
   {% endif %}
 </div>
+</div>
 
 {% comment %}
 <div class="card statistics-weekday-card">
@@ -632,6 +658,26 @@
 </div>
 
 <style>
+    .statistics-insight-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+        align-items: start;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .statistics-insight-grid > .card {
+        min-width: 0;
+        margin-bottom: 0;
+    }
+    .statistics-runway-content {
+        flex-wrap: wrap;
+        gap: 1.25rem;
+    }
+    @media (max-width: 960px) {
+        .statistics-insight-grid {
+            grid-template-columns: 1fr;
+        }
+    }
     .statistics-disclosure {
         margin-top: 1rem;
         border: 1px solid #e2e8f0;

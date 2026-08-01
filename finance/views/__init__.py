@@ -15,6 +15,8 @@ from .reports import (
     untracked_subscriptions,
     subscription_untrack,
     subscription_retrack,
+    subscription_mark_ended,
+    subscription_mark_active,
     review_income_sources,
     review_income_sources_apply,
     untracked_income_sources,

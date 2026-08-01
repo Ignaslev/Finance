@@ -603,10 +603,12 @@ class SubscriptionDecision(models.Model):
     DECISION_TRACK = "track"
     DECISION_IGNORE = "ignore"
     DECISION_UNTRACK = "untrack"
+    DECISION_ENDED = "ended"
     DECISION_CHOICES = [
         (DECISION_TRACK, "Track"),
         (DECISION_IGNORE, "Ignore"),
         (DECISION_UNTRACK, "Untrack"),
+        (DECISION_ENDED, "Ended"),
     ]
 
     user = models.ForeignKey(
