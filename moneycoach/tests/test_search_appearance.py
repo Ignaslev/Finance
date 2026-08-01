@@ -25,8 +25,9 @@ class SearchAppearanceTests(SimpleTestCase):
 
         self.assertEqual(
             context["seo_title"],
-            "MoneyCompass – asmeninių finansų valdymo programa",
+            "MoneyCompass – asmeninių finansų valdymo programėlė",
         )
+        self.assertIn("naršyklėje veikian", context["seo_description"])
         self.assertIn("banko išrašus", context["seo_description"])
         self.assertIn("Be banko prijungimo", context["seo_description"])
 
@@ -34,7 +35,7 @@ class SearchAppearanceTests(SimpleTestCase):
         context = beta_landing_seo_context()
 
         self.assertEqual(context["seo_canonical_url"], "https://moneycompass.lt/beta/")
-        self.assertIn("asmeniniai finansai", context["seo_title"])
+        self.assertIn("Finansų valdymo programėlė", context["seo_title"])
         self.assertIn("365 dienas", context["seo_description"])
 
     def test_facebook_structured_data_uses_the_public_username(self):
@@ -52,6 +53,8 @@ class SearchAppearanceTests(SimpleTestCase):
         self.assertEqual(len(context["seo_faqs"]), 4)
         self.assertIn('"@type":"WebSite"', context["seo_schema"])
         self.assertIn('"@type":"SoftwareApplication"', context["seo_schema"])
+        self.assertIn('"operatingSystem":"Web"', context["seo_schema"])
+        self.assertIn('"browserRequirements":"Modern web browser"', context["seo_schema"])
 
     def test_public_guide_has_one_stable_lithuanian_canonical(self):
         context = public_guide_seo_context()

@@ -812,7 +812,7 @@ GUIDE_CONTENT = {
                 ),
                 {
                     "type": "paragraph",
-                    "text": "Money Compass yra internetinė programa asmeniniams finansams sekti. Banko išrašus eksportuojate iš savo banko ir importuojate į Money Compass — tiesioginis ryšys su banku nereikalingas.",
+                    "text": "MoneyCompass yra lietuviška, naršyklėje veikianti asmeninių finansų valdymo programėlė. Banko išrašus eksportuojate iš savo banko ir importuojate į MoneyCompass — tiesioginis ryšys su banku nereikalingas.",
                 },
                 {
                     "type": "paragraph",

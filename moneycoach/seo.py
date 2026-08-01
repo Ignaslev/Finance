@@ -26,8 +26,8 @@ def organization_schema():
         "alternateName": "MoneyCompass Lietuva",
         "url": _site_url(),
         "description": (
-            "MoneyCompass Lietuva yra asmeninių finansų stebėjimo programa, "
-            "skirta išlaidoms, turtui ir finansiniams tikslams matyti vienoje vietoje."
+            "MoneyCompass Lietuva yra lietuviška, naršyklėje veikianti asmeninių finansų "
+            "valdymo programėlė išlaidoms, turtui ir finansiniams tikslams stebėti."
         ),
         "email": "support@moneycompass.lt",
         "areaServed": {"@type": "Country", "name": "Lithuania"},
@@ -83,10 +83,14 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
                 "@type": "SoftwareApplication",
                 "@id": f"{_site_url()}/#software",
                 "name": "MoneyCompass",
+                "alternateName": "MoneyCompass Lietuva",
                 "applicationCategory": "FinanceApplication",
+                "applicationSubCategory": "Personal finance management",
                 "operatingSystem": "Web",
+                "browserRequirements": "Modern web browser",
                 "url": _site_url(),
                 "description": description,
+                "inLanguage": ["lt", "en"],
                 "publisher": {"@id": f"{_site_url()}/#organization"},
                 "isPartOf": {"@id": f"{_site_url()}/#website"},
                 "featureList": [
@@ -126,8 +130,8 @@ def financial_app_seo_context():
     url = _absolute_url(path)
     title = "Finansų valdymo programėlė | MoneyCompass"
     description = (
-        "Lietuviška finansų valdymo programėlė išlaidoms, biudžetui, turtui ir tikslams. "
-        "Importuokite CSV ar Excel išrašą – be banko paskyros prijungimo."
+        "Lietuviška, naršyklėje veikianti finansų valdymo programėlė išlaidoms, biudžetui, "
+        "turtui ir tikslams. Importuokite CSV ar Excel išrašą – be banko prijungimo."
     )
     faqs = [
         {
@@ -138,11 +142,11 @@ def financial_app_seo_context():
             ),
         },
         {
-            "question": "Ar MoneyCompass yra mobilioji programėlė?",
+            "question": "Ar MoneyCompass yra mobilioji programėlė ar interneto aplikacija?",
             "answer": (
-                "MoneyCompass yra mobiliesiems įrenginiams pritaikyta interneto programa. "
-                "Ją galima naudoti telefono ir kompiuterio naršyklėje, tačiau šiuo metu nėra "
-                "atskiros iOS ar Android programėlės."
+                "MoneyCompass yra naršyklėje veikianti finansų valdymo programėlė, kitaip – "
+                "interneto aplikacija. Ją galima naudoti telefono ir kompiuterio naršyklėje, "
+                "tačiau šiuo metu nėra atskiros iOS ar Android programėlės."
             ),
         },
         {
@@ -173,6 +177,7 @@ def financial_app_seo_context():
                 "applicationCategory": "FinanceApplication",
                 "applicationSubCategory": "Personal finance management",
                 "operatingSystem": "Web",
+                "browserRequirements": "Modern web browser",
                 "url": url,
                 "description": description,
                 "inLanguage": "lt",
@@ -474,10 +479,10 @@ def landing_seo_context(language):
         canonical_path="/",
         alternate_lt_path="/",
         alternate_en_path="/en/",
-        title="MoneyCompass – asmeninių finansų valdymo programa",
+        title="MoneyCompass – asmeninių finansų valdymo programėlė",
         description=(
-            "Privati asmeninių finansų programa: importuokite banko išrašus, stebėkite išlaidas, "
-            "turtą, investicijas ir tikslus. Be banko prijungimo."
+            "Lietuviška naršyklėje veikianti finansų valdymo programėlė: importuokite CSV ar "
+            "Excel banko išrašus, stebėkite išlaidas, turtą ir tikslus. Be banko prijungimo."
         ),
     )
 
@@ -488,10 +493,10 @@ def beta_landing_seo_context():
         canonical_path="/beta/",
         alternate_lt_path="/beta/",
         alternate_en_path="/beta/",
-        title="MoneyCompass beta – asmeniniai finansai aiškiai",
+        title="MoneyCompass beta | Finansų valdymo programėlė",
         description=(
-            "Išbandykite MoneyCompass beta nemokamai 365 dienas. Importuokite CSV ar Excel banko išrašą, "
-            "stebėkite išlaidas, turtą ir tikslus – be banko paskyros prijungimo."
+            "Išbandykite naršyklėje veikiančią MoneyCompass finansų valdymo programėlę 365 dienas "
+            "nemokamai. Importuokite CSV ar Excel išrašą – be banko prijungimo."
         ),
     )
 
