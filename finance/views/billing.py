@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 
 from finance.models import UserProfile
+from finance.owner_notifications import notify_paid_subscription
 from finance.subscriptions import (
     billing_return_url,
     interval_for_price_id,
@@ -131,6 +132,20 @@ def _sync_subscription(subscription, event_id=""):
         "stripe_last_event_id",
         "subscription_updated_at",
     ])
+
+    if (
+        profile.subscription_status == UserProfile.SUBSCRIPTION_ACTIVE
+        and subscription_id
+    ):
+        claimed = (
+            UserProfile.objects.filter(pk=profile.pk)
+            .exclude(stripe_owner_notified_subscription_id=subscription_id)
+            .update(stripe_owner_notified_subscription_id=subscription_id)
+        )
+        if claimed:
+            profile.stripe_owner_notified_subscription_id = subscription_id
+            notify_paid_subscription(profile)
+
     return profile
 
 

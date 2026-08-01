@@ -12,6 +12,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone, translation
 from finance.models import UserProfile
+from finance.owner_notifications import notify_activation, notify_registration
 from finance.subscriptions import grant_beta_access
 from finance.utils import ensure_default_categories
 from moneycoach.attribution import SESSION_KEY as ATTRIBUTION_SESSION_KEY
@@ -163,6 +164,7 @@ def register(request):
                     recipient_list=[user.email],
                     fail_silently=False,
                 )
+                notify_registration(user, prof)
 
                 messages.success(request, _("Registration successful. Check your email to activate your account."))
                 # One-time, non-identifying analytics events are emitted after
@@ -194,8 +196,11 @@ def activate(request, uidb64, token):
         return HttpResponseBadRequest(_("Invalid activation link."))
 
     if default_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save(update_fields=["is_active"])
+        was_inactive = not user.is_active
+        if was_inactive:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+            notify_activation(user)
         messages.success(request, _("Account activated. You can now log in."))
         return redirect("login")
 

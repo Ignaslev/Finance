@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -45,6 +46,8 @@ def subscription(
     STRIPE_PRICE_MONTHLY=MONTHLY,
     STRIPE_PRICE_YEARLY=YEARLY,
     ALLOWED_HOSTS=["testserver"],
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    ADMINS=[("Owner", "owner@example.test")],
 )
 class PaymentSecurityTests(TestCase):
     def setUp(self):
@@ -116,6 +119,61 @@ class PaymentSecurityTests(TestCase):
         self.assertEqual(self.profile.subscription_status, UserProfile.SUBSCRIPTION_ACTIVE)
         self.assertEqual(self.profile.plan_interval, UserProfile.PLAN_MONTHLY)
         self.assertTrue(self.profile.has_active_access())
+
+    def test_paid_subscription_alert_is_sent_once_per_subscription_id(self):
+        first_event = self._event(
+            "customer.subscription.updated",
+            subscription(user_id=self.user.id),
+            "evt_paid_first",
+        )
+        with patch("finance.views.billing._stripe", return_value=self._stripe(first_event)):
+            first_response = self.client.post(
+                reverse("stripe_webhook"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="signed",
+            )
+
+        retry_event = self._event(
+            "customer.subscription.updated",
+            subscription(user_id=self.user.id),
+            "evt_paid_retry",
+        )
+        with patch("finance.views.billing._stripe", return_value=self._stripe(retry_event)):
+            retry_response = self.client.post(
+                reverse("stripe_webhook"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="signed",
+            )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(retry_response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("MoneyCompass: paid subscription activated", mail.outbox[0].subject)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.stripe_owner_notified_subscription_id, "sub_test")
+
+    def test_owner_alert_failure_does_not_fail_verified_webhook(self):
+        event = self._event(
+            "customer.subscription.updated",
+            subscription(user_id=self.user.id),
+            "evt_paid_email_failure",
+        )
+        with (
+            patch("finance.views.billing._stripe", return_value=self._stripe(event)),
+            patch("finance.owner_notifications.mail_admins", side_effect=RuntimeError("smtp unavailable")),
+        ):
+            response = self.client.post(
+                reverse("stripe_webhook"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="signed",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.subscription_status, UserProfile.SUBSCRIPTION_ACTIVE)
 
     def test_unknown_price_cannot_grant_access(self):
         event = self._event(

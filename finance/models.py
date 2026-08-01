@@ -448,6 +448,7 @@ class UserProfile(models.Model):
     stripe_current_period_end = models.DateTimeField(null=True, blank=True)
     stripe_cancel_at_period_end = models.BooleanField(default=False)
     stripe_last_event_id = models.CharField(max_length=255, blank=True, default="")
+    stripe_owner_notified_subscription_id = models.CharField(max_length=255, blank=True, default="")
     subscription_updated_at = models.DateTimeField(null=True, blank=True)
 
     account_delete_requested_at = models.DateTimeField(null=True, blank=True)

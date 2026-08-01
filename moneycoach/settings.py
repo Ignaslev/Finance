@@ -204,6 +204,7 @@ AUTHENTICATION_BACKENDS = [
 EMAIL_MODE = env("EMAIL_MODE", "console").lower()  # console | smtp
 
 ADMINS = [("MoneyCompass Admin", env("ADMIN_ALERT_EMAIL", "admin@moneycompass.lt"))]
+EMAIL_TIMEOUT = int(env("EMAIL_TIMEOUT", "10"))
 
 if EMAIL_MODE == "smtp":
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
