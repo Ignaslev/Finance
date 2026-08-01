@@ -9,7 +9,7 @@ from datetime import timedelta, datetime, date as _date, timezone as dt_timezone
 from decimal import Decimal
 from calendar import monthrange
 import json, os, re
-from finance.utils import _normalize_merchant
+from finance.utils import _normalize_merchant, category_names_for
 from django.contrib.admin.views.decorators import staff_member_required
 from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal, UserProfile
 
@@ -231,7 +231,11 @@ def overview(request):
         graph_values = [float(total_net_worth)]
 
     # 3. INCOME VS SPENDING
-    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    internal_transfer_names = category_names_for("internal_transfer")
+    tx_base = Transaction.objects.filter(user=request.user, is_deleted=False).exclude(
+        Q(category_fk__name__in=internal_transfer_names)
+        | Q(category__in=internal_transfer_names)
+    )
     qs_month = tx_base.annotate(month=TruncMonth("date"))
     by_month = qs_month.values("month", "in_out").annotate(total=Sum("amount"))
 
