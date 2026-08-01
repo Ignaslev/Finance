@@ -17,6 +17,7 @@ from finance.models import (
     UserProfile, SubscriptionDecision, IncomeSourceDecision
 )
 from finance.services import _advisor_build_payload, _advisor_call_model
+from finance.category_analytics import build_spending_category_analytics
 # Move _reconcile_global to utils or keep here if private
 from finance.utils import _reconcile_global, _normalize_merchant, category_names_for, looks_like_self_transfer
 from django.core.paginator import Paginator
@@ -544,6 +545,7 @@ def statistics(request):
     found_subscription_candidates = _build_found_subscription_candidates(user, base)
     income_sources, found_income_sources, untracked_income_sources, income_sources_summary = _build_income_source_buckets(
         user, base)
+    spending_category_analytics = build_spending_category_analytics(user, base)
 
     # Category share range picker (YOUR ORIGINAL LOGIC)
     all_months = sorted({_mk(x) for x in base.values_list("date", flat=True) if _mk(x) is not None})
@@ -714,6 +716,12 @@ def statistics(request):
         "all_categories": all_categories,
         "selected_cat_ids": list(selected_cat_ids),
         "include_uncat": include_uncat,
+
+        "spending_cat_names": spending_category_analytics["category_names"],
+        "spending_cat_month_labels_json": json.dumps(spending_category_analytics["month_labels"]),
+        "spending_series_by_cat_json": json.dumps(spending_category_analytics["series_by_category"]),
+        "spending_breakdown_by_cat_month_json": json.dumps(spending_category_analytics["breakdown"]),
+        "spending_cap_by_cat_json": json.dumps(spending_category_analytics["caps"]),
     }
     return render(request, "statistics.html", ctx)
 

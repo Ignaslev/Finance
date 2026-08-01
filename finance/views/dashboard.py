@@ -1,18 +1,18 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
 from django.utils import timezone
 from collections import defaultdict
-from datetime import timedelta, datetime, date as _date, timezone as dt_timezone
+from datetime import timedelta, datetime, timezone as dt_timezone
 from decimal import Decimal
-from calendar import monthrange
-import json, os, re
-from finance.utils import _normalize_merchant, category_names_for
+import json, os
+from finance.category_analytics import build_spending_category_analytics
+from finance.utils import category_names_for
 from django.contrib.admin.views.decorators import staff_member_required
-from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, Category, SavingsGoal, UserProfile
+from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, SavingsGoal, UserProfile
 
 
 @staff_member_required
@@ -23,79 +23,6 @@ def env_check(request):
 @staff_member_required
 def home(request):
     return HttpResponse("It works")
-
-CHAIN_CANONICALS = [
-    ("Maxima", ["MAXIMA"]),
-    ("IKI", ["IKI"]),
-    ("Norfa", ["NORFA"]),
-    ("Lidl", ["LIDL"]),
-    ("Rimi", ["RIMI"]),
-    ("Barbora", ["BARBORA"]),
-    ("Aibė", ["AIBE", "AIBĖ"]),
-    ("Moki Veži", ["MOKI VEZI", "MOKI VEŽI"]),
-    ("Senukai", ["SENUKAI"]),
-    ("Depo", ["DEPO"]),
-    ("Circle K", ["CIRCLE K"]),
-    ("Viada", ["VIADA"]),
-    ("Neste", ["NESTE"]),
-    ("Bolt", ["BOLT"]),
-    ("Wolt", ["WOLT"]),
-    ("McDonald's", ["MCDONALD", "MCDONALDS"]),
-    ("Hesburger", ["HESBURGER"]),
-    ("CanCan Pizza", ["CANCAN", "CAN CAN"]),
-]
-
-
-def _canonical_overview_merchant(raw: str) -> str:
-    raw = (raw or "").strip()
-    if not raw:
-        return "—"
-
-    upper_raw = raw.upper().strip()
-
-    # 1) Strong chain-family recognition
-    for display, patterns in CHAIN_CANONICALS:
-        for p in patterns:
-            if upper_raw.startswith(p):
-                return display
-
-    # 2) Generic normalization for uncommon merchants
-    norm = _normalize_merchant(raw or "")
-    norm = (norm or "").upper().strip()
-    if not norm:
-        return (raw[:80] or "—")
-
-    # Remove common legal/entity noise
-    norm = re.sub(r"\b(UAB|AB|MB|VSI|VŠĮ|IĮ|II|LTD|LIMITED|OOO|AS)\b", " ", norm)
-
-    # Remove branch/store codes like X-925, X583, A-1234
-    norm = re.sub(r"\b[A-Z]-?\d{2,}\b", " ", norm)
-
-    # Remove long trailing numeric IDs
-    norm = re.sub(r"\b\d{2,}\b", " ", norm)
-
-    # Trim punctuation noise
-    norm = re.sub(r"[,;/|]+", " ", norm)
-    norm = re.sub(r"\s+", " ", norm).strip()
-
-    # Remove very generic trailing location/store suffix if present after the first word
-    parts = norm.split()
-    if len(parts) >= 2:
-        # If merchant has a clean base and noisy branch tail, keep the first 1-2 tokens
-        # for safer grouping instead of merging too aggressively.
-        if len(parts[0]) >= 3 and len(parts[1]) >= 2:
-            # conservative fallback stem for uncommon merchants
-            stem = " ".join(parts[:2])
-        else:
-            stem = parts[0]
-    else:
-        stem = norm
-
-    stem = re.sub(r"\s+", " ", stem).strip()
-    if not stem:
-        stem = norm or raw
-
-    return stem.title()
 
 @login_required
 def overview(request):
@@ -274,101 +201,7 @@ def overview(request):
     ]
     net_page = Paginator(net_rows, 8).get_page(request.GET.get("net_page"))
 
-    # 4. CATEGORIES & (caps moved into category chart)
-    qs_cat = (
-        tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .annotate(month=TruncMonth("date"))
-        .values("month", "category_fk__name")
-        .annotate(total=Sum("amount"))
-    )
-    cat_months_set, cat_names_set = set(), set()
-    for row in qs_cat:
-        if row["month"]:
-            val = row["month"]
-            if hasattr(val, 'date'):
-                val = val.date()
-            cat_months_set.add(val.replace(day=1))
-        if row["category_fk__name"]:
-            cat_names_set.add(row["category_fk__name"])
-
-    cat_months = sorted(set(months) | cat_months_set)
-    cat_labels = [m.strftime("%Y-%m") for m in cat_months]
-    cat_names = sorted(cat_names_set)
-
-    data_map = defaultdict(lambda: {m: Decimal("0") for m in cat_months})
-    for row in qs_cat:
-        if not row["month"]:
-            continue
-        val = row["month"]
-        if hasattr(val, 'date'):
-            val = val.date()
-        mk = val.replace(day=1)
-        cname = row["category_fk__name"]
-        if mk and cname:
-            data_map[cname][mk] += (row["total"] or Decimal("0"))
-
-    series_by_cat = {cname: [float(data_map[cname][m]) for m in cat_months] for cname in cat_names}
-
-    merchant_rows = (
-        tx_base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .select_related("category_fk")
-        .only("date", "merchant", "amount", "category_fk__name")
-        .order_by("date", "id")
-    )
-
-    breakdown_acc = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {
-        "merchant": "",
-        "total": Decimal("0"),
-        "count": 0,
-    })))
-
-    for t in merchant_rows:
-        if not t.date:
-            continue
-
-        month_key = t.date.replace(day=1).strftime("%Y-%m")
-        cname = t.category_fk.name if t.category_fk else "Other"
-        merchant_display = _canonical_overview_merchant(t.merchant or "")
-        merchant_key = merchant_display.lower()
-
-        bucket = breakdown_acc[cname][month_key][merchant_key]
-        bucket["merchant"] = merchant_display
-        bucket["total"] += (t.amount or Decimal("0"))
-        bucket["count"] += 1
-
-    breakdown_by_cat_month = {}
-    for cname, per_month in breakdown_acc.items():
-        breakdown_by_cat_month[cname] = {}
-
-        for month_key, merchants in per_month.items():
-            rows = []
-            for _mkey, data in merchants.items():
-                cnt = int(data["count"] or 0)
-                total = data["total"] or Decimal("0")
-                avg = (total / cnt) if cnt else Decimal("0")
-
-                rows.append({
-                    "merchant": data["merchant"][:80],
-                    "total": float(total),
-                    "count": cnt,
-                    "avg": float(avg),
-                })
-
-            breakdown_by_cat_month[cname][month_key] = sorted(
-                rows,
-                key=lambda x: (-x["total"], x["merchant"])
-            )[:12]
-
-
-    for cname, per_month in breakdown_by_cat_month.items():
-        for m in per_month:
-            per_month[m] = sorted(per_month[m], key=lambda x: (-x["total"], x["merchant"]))[:12]
-
-    # Cap map for category chart (keyed by category name to match existing frontend keys)
-    cap_by_cat = {}
-    for c in Category.objects.filter(user=request.user):
-        cap = c.monthly_cap or Decimal("0")
-        cap_by_cat[c.name] = float(cap) if cap > 0 else 0
+    category_analytics = build_spending_category_analytics(request.user, tx_base)
 
     # Savings goals
     eff_map = {acc.id: acc.effective_balance for acc in accounts}
@@ -398,12 +231,11 @@ def overview(request):
         "net_rows": net_rows,
         "net_page": net_page,
 
-        "cat_names": cat_names,
-        "cat_month_labels_json": json.dumps(cat_labels),
-        "series_by_cat_json": json.dumps(series_by_cat),
-        "breakdown_by_cat_month_json": json.dumps(breakdown_by_cat_month),
-        "month_bounds_json": "{}",  # unchanged
-        "cap_by_cat_json": json.dumps(cap_by_cat),
+        "cat_names": category_analytics["current_category_names"],
+        "cat_names_json": json.dumps(category_analytics["current_category_names"]),
+        "current_category_month": category_analytics["current_month_key"],
+        "current_category_values_json": json.dumps(category_analytics["current_category_values"]),
+        "breakdown_by_cat_month_json": json.dumps(category_analytics["breakdown"]),
 
         "goals": goals,
 

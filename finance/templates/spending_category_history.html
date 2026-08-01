@@ -1,0 +1,53 @@
+{% load i18n guide_links %}
+{% get_current_language as LANGUAGE_CODE %}
+<div class="card statistics-spending-history-card" id="spending-by-category">
+  <div class="card-title title-with-guide">
+    <span>{% trans "Spending per Category" %}</span>
+    {% guide_icon "dashboard_categories" %}
+  </div>
+
+  {% if spending_cat_names %}
+    <div class="spending-history-top-controls">
+      <label class="spending-history-select-label">
+        <span>{% trans "Category" %}</span>
+        <select id="historyCatSelect">
+          {% for category_name in spending_cat_names %}
+            <option value="{{ category_name }}">{{ category_name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="spending-history-select-label">
+        <span>{% if LANGUAGE_CODE|slice:":2" == "lt" %}Diagramos tipas{% else %}Chart type{% endif %}</span>
+        <select id="historyCatChartType">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="historyCatCapNotice" style="display:none; margin:0 0 0.9rem; font-size:0.9rem; color:#64748b;">
+      {% trans "No cap set," %}
+      <a href="{% url 'profile' %}" class="text-teal" style="text-decoration:none;">{% trans "set it up here" %}</a>.
+    </div>
+
+    <div style="max-width:1000px; margin:0 auto 1.25rem;">
+      <canvas id="historyCatChart"></canvas>
+    </div>
+
+    <div class="category-period-picker">
+      <div>
+        <div class="category-period-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}</div>
+        <div id="historyCatYearButtons" class="category-period-buttons" role="group" aria-label="{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}"></div>
+      </div>
+      <div>
+        <div class="category-period-label">{% trans "Month" %}</div>
+        <div id="historyCatMonthButtons" class="category-period-buttons category-month-buttons" role="group" aria-label="{% trans 'Month' %}"></div>
+      </div>
+    </div>
+
+    <div id="historyCatMonthTableWrap"></div>
+  {% else %}
+    <p style="opacity:0.7; padding:1rem;">{% trans "No categorized spending yet." %}</p>
+  {% endif %}
+</div>

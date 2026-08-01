@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from finance.models import Category, MoneySource, Transaction
 
@@ -28,11 +29,11 @@ class OverviewAnalyticsTests(TestCase):
         self.transfer_category = Category.objects.create(user=self.user, name="Internal transfer")
         self.client.force_login(self.user)
 
-    def _transaction(self, *, amount, in_out, category, fingerprint):
+    def _transaction(self, *, amount, in_out, category, fingerprint, transaction_date=None):
         return Transaction.objects.create(
             user=self.user,
             money_source=self.source,
-            date=date(2026, 7, 15),
+            date=transaction_date or date(2026, 7, 15),
             merchant="Test merchant",
             amount=Decimal(amount),
             currency="EUR",
@@ -144,12 +145,37 @@ class OverviewAnalyticsTests(TestCase):
             in_out=Transaction.OUT,
             category=self.groceries_category,
             fingerprint="category-dropdown",
+            transaction_date=timezone.localdate(),
         )
 
         response = self.client.get(reverse("overview"))
 
         self.assertContains(response, 'id="catSelect"')
-        self.assertContains(response, 'id="catYearButtons"')
-        self.assertContains(response, 'id="catMonthButtons"')
-        self.assertNotContains(response, 'id="catMonthSelect"')
+        self.assertContains(response, 'id="catChartType"')
+        self.assertContains(response, 'href="/statistics/#spending-by-category"')
+        self.assertNotContains(response, 'id="catYearButtons"')
+        self.assertNotContains(response, 'id="catMonthButtons"')
         self.assertNotContains(response, 'class="cat-btn"')
+
+    def test_overview_current_month_chart_contains_all_spending_categories(self):
+        transport = Category.objects.create(user=self.user, name="Transport")
+        self._transaction(
+            amount="20.00",
+            in_out=Transaction.OUT,
+            category=self.groceries_category,
+            fingerprint="current-groceries",
+            transaction_date=timezone.localdate(),
+        )
+        self._transaction(
+            amount="15.00",
+            in_out=Transaction.OUT,
+            category=transport,
+            fingerprint="current-transport",
+            transaction_date=timezone.localdate(),
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertEqual(json.loads(response.context["cat_names_json"]), ["Groceries", "Transport"])
+        self.assertEqual(json.loads(response.context["current_category_values_json"]), [20.0, 15.0])
+        self.assertEqual(response.context["current_category_month"], timezone.localdate().strftime("%Y-%m"))

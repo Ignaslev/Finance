@@ -551,6 +551,8 @@
 </div>
 </div>
 
+{% include "spending_category_history.html" %}
+
 {% comment %}
 <div class="card statistics-weekday-card">
   <div class="card-title title-with-guide">
@@ -672,6 +674,77 @@
     .statistics-runway-content {
         flex-wrap: wrap;
         gap: 1.25rem;
+    }
+    .spending-history-top-controls {
+        display: flex;
+        align-items: end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 0.75rem 0 0.6rem;
+    }
+    .spending-history-select-label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        width: min(100%, 240px);
+        color: var(--text-medium);
+        font-size: 0.85rem;
+    }
+    .spending-history-select-label select {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background: #fff;
+        color: var(--text-dark);
+    }
+    .category-period-picker {
+        display: grid;
+        gap: 0.9rem;
+        margin: 0.5rem 0 1rem;
+    }
+    .category-period-label {
+        margin-bottom: 0.35rem;
+        color: var(--text-medium);
+        font-size: 0.85rem;
+    }
+    .category-period-buttons {
+        display: flex;
+        gap: 0.4rem;
+        max-width: 100%;
+        overflow-x: auto;
+        padding: 0 0 0.25rem;
+    }
+    .category-period-button {
+        min-width: 58px;
+        height: 36px;
+        padding: 0 0.7rem;
+        border: 1px solid #dbe4ec;
+        border-radius: 6px;
+        background: #f7fafc;
+        color: var(--text-medium);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        flex: 0 0 auto;
+    }
+    .category-month-buttons .category-period-button {
+        min-width: 42px;
+        padding: 0 0.55rem;
+    }
+    .category-period-button:hover {
+        border-color: var(--primary-teal);
+        color: var(--primary-teal-dark);
+    }
+    .category-period-button[aria-pressed="true"] {
+        border-color: var(--primary-teal);
+        background: var(--primary-teal);
+        color: #fff;
+    }
+    .category-period-button:focus-visible {
+        outline: 2px solid var(--primary-teal);
+        outline-offset: 2px;
     }
     @media (max-width: 960px) {
         .statistics-insight-grid {
@@ -803,6 +876,152 @@
         layout: { padding: 0 }
       }
     });
+  {% endif %}
+
+  {% if spending_cat_names %}
+  (function(){
+    const months = JSON.parse('{{ spending_cat_month_labels_json|default:"[]"|escapejs }}');
+    const series = JSON.parse('{{ spending_series_by_cat_json|default:"{}"|escapejs }}');
+    const breakdown = JSON.parse('{{ spending_breakdown_by_cat_month_json|default:"{}"|escapejs }}');
+    const caps = JSON.parse('{{ spending_cap_by_cat_json|default:"{}"|escapejs }}');
+    if (!months.length || !Object.keys(series).length) return;
+
+    const categorySelect = document.getElementById('historyCatSelect');
+    const typeSelect = document.getElementById('historyCatChartType');
+    const yearButtons = document.getElementById('historyCatYearButtons');
+    const monthButtons = document.getElementById('historyCatMonthButtons');
+    const capNotice = document.getElementById('historyCatCapNotice');
+    const tableWrap = document.getElementById('historyCatMonthTableWrap');
+    let currentCategory = categorySelect.value;
+    let currentMonth = months[months.length - 1];
+
+    function capFor(category) {
+      const value = Number(caps[category] || 0);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function datasets(category, type) {
+      const result = [{
+        label: category,
+        data: series[category] || [],
+        backgroundColor: '#3182ce',
+        borderColor: '#3182ce',
+        type: type,
+      }];
+      const cap = capFor(category);
+      if (cap > 0) {
+        result.push({
+          label: '{% trans "Cap" %}',
+          data: Array(months.length).fill(cap),
+          type: 'line',
+          borderColor: '#d32f2f',
+          backgroundColor: '#d32f2f',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        });
+      }
+      return result;
+    }
+
+    function chartOptions() {
+      return {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: true } },
+      };
+    }
+
+    let chart = new Chart(document.getElementById('historyCatChart').getContext('2d'), {
+      type: typeSelect.value,
+      data: { labels: months, datasets: datasets(currentCategory, typeSelect.value) },
+      options: chartOptions(),
+    });
+
+    function updateCapNotice() {
+      capNotice.style.display = capFor(currentCategory) > 0 ? 'none' : 'block';
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[character]));
+    }
+
+    function renderTable(monthKey) {
+      const rows = (breakdown[currentCategory] && breakdown[currentCategory][monthKey]) || [];
+      if (!rows.length) {
+        tableWrap.innerHTML = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
+        return;
+      }
+
+      const [year, month] = monthKey.split('-').map(Number);
+      const lastDay = new Date(year, month, 0).getDate();
+      const fromDate = `${monthKey}-01`;
+      const toDate = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
+      let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
+      rows.forEach(row => {
+        html += `<tr><td>${escapeHtml(row.merchant)}</td><td>${row.total.toFixed(2)}</td><td>${row.count}</td><td>${row.avg.toFixed(2)}</td><td><a href="{% url 'upload' %}?q=${encodeURIComponent(row.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
+      });
+      tableWrap.innerHTML = html + '</tbody></table></div>';
+    }
+
+    function makePeriodButton(label, value, selected, onClick) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'category-period-button';
+      button.textContent = label;
+      button.dataset.value = value;
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    function renderPeriodButtons() {
+      const years = [...new Set(months.map(month => month.slice(0, 4)))].reverse();
+      const selectedYear = currentMonth.slice(0, 4);
+      yearButtons.innerHTML = '';
+      years.forEach(year => {
+        yearButtons.appendChild(makePeriodButton(year, year, year === selectedYear, () => {
+          const available = months.filter(month => month.startsWith(`${year}-`));
+          currentMonth = available[available.length - 1];
+          renderPeriodButtons();
+          renderTable(currentMonth);
+        }));
+      });
+
+      monthButtons.innerHTML = '';
+      months.filter(month => month.startsWith(`${selectedYear}-`)).forEach(month => {
+        monthButtons.appendChild(makePeriodButton(month.slice(5, 7), month, month === currentMonth, () => {
+          currentMonth = month;
+          renderPeriodButtons();
+          renderTable(currentMonth);
+        }));
+      });
+    }
+
+    categorySelect.addEventListener('change', () => {
+      currentCategory = categorySelect.value;
+      chart.data.datasets = datasets(currentCategory, typeSelect.value);
+      chart.update();
+      updateCapNotice();
+      renderTable(currentMonth);
+    });
+
+    typeSelect.addEventListener('change', () => {
+      chart.destroy();
+      chart = new Chart(document.getElementById('historyCatChart').getContext('2d'), {
+        type: typeSelect.value,
+        data: { labels: months, datasets: datasets(currentCategory, typeSelect.value) },
+        options: chartOptions(),
+      });
+    });
+
+    updateCapNotice();
+    renderPeriodButtons();
+    renderTable(currentMonth);
+  })();
   {% endif %}
 
   {% comment %}

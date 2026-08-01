@@ -64,3 +64,8 @@ class StatisticsDisclosureTests(TestCase):
         self.assertNotIn('<details class="statistics-disclosure" open', html)
         self.assertNotIn('id="weekdayChart"', html)
         self.assertNotIn("const wdLabels", html)
+        self.assertIn('id="spending-by-category"', html)
+        self.assertIn('id="historyCatSelect"', html)
+        self.assertIn('id="historyCatChartType"', html)
+        self.assertIn('id="historyCatYearButtons"', html)
+        self.assertIn('id="historyCatMonthButtons"', html)

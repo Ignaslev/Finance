@@ -168,10 +168,19 @@
 </div>
 
 <div class="card dashboard-category-card">
-  <div class="card-title title-with-guide">
-    <span>{% trans "Spending per Category" %}</span>
-    {% guide_icon "dashboard_categories" %}
+  <div class="flex justify-between items-center" style="gap:1rem; flex-wrap:wrap;">
+    <div>
+      <div class="card-title title-with-guide" style="margin:0;">
+        <span>{% trans "Spending per Category" %}</span>
+        {% guide_icon "dashboard_categories" %}
+      </div>
+      <div class="text-medium" style="font-size:0.85rem; margin-top:0.25rem;">{% trans "Month" %}: {{ current_category_month }}</div>
+    </div>
+    <a href="{% url 'statistics' %}#spending-by-category" class="btn" style="padding:0.45rem 0.8rem; background:#edf2f7; color:var(--text-medium); text-decoration:none;">
+      {% if LANGUAGE_CODE|slice:":2" == "lt" %}Peržiūrėti viską{% else %}View all{% endif %}
+    </a>
   </div>
+
   {% if cat_names %}
     <div style="display:flex; align-items:end; gap:0.75rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
       <label style="display:flex; flex-direction:column; gap:0.3rem; width:min(100%, 240px); font-size:0.85rem; color:var(--text-medium);">
@@ -190,80 +199,18 @@
       </label>
     </div>
 
-    <!-- Cap notice (only shown when selected category has no cap) -->
-    <div id="catCapNotice" style="display:none; margin:0 0 0.9rem; font-size:0.9rem; color:#64748b;">
-      {% trans "No cap set," %} <a href="{% url 'profile' %}" class="text-teal" style="text-decoration:none;">{% trans "set it up here" %}</a>.
+    <div style="max-width:1000px; margin:0 auto 1.25rem;">
+      <canvas id="catChart"></canvas>
     </div>
 
-    <div style="max-width:1000px; margin:0 auto 1.25rem;"><canvas id="catChart"></canvas></div>
-    <div id="catBreakdown">
-      <div class="category-period-picker">
-        <div>
-          <div class="category-period-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}</div>
-          <div id="catYearButtons" class="category-period-buttons" role="group" aria-label="{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}"></div>
-        </div>
-        <div>
-          <div class="category-period-label">{% trans "Month" %}</div>
-          <div id="catMonthButtons" class="category-period-buttons category-month-buttons" role="group" aria-label="{% trans 'Month' %}"></div>
-        </div>
-      </div>
+    <div style="margin-top:0.5rem;">
+      <div id="catDetailTitle" style="font-weight:700; color:var(--text-dark); margin-bottom:0.5rem;"></div>
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
-    <p style="opacity:0.7; padding:1rem;">{% trans "No categorized spending yet." %}</p>
+    <p style="opacity:0.7; padding:1rem 0 0;">{% trans "No spending in the selected period." %}</p>
   {% endif %}
 </div>
-
-<style>
-  .category-period-picker {
-    display: grid;
-    gap: 0.9rem;
-    margin: 0.5rem 0 1rem;
-  }
-  .category-period-label {
-    margin-bottom: 0.35rem;
-    color: var(--text-medium);
-    font-size: 0.85rem;
-  }
-  .category-period-buttons {
-    display: flex;
-    gap: 0.4rem;
-    max-width: 100%;
-    overflow-x: auto;
-    padding: 0 0 0.25rem;
-  }
-  .category-period-button {
-    min-width: 58px;
-    height: 36px;
-    padding: 0 0.7rem;
-    border: 1px solid #dbe4ec;
-    border-radius: 6px;
-    background: #f7fafc;
-    color: var(--text-medium);
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    flex: 0 0 auto;
-  }
-  .category-month-buttons .category-period-button {
-    min-width: 42px;
-    padding: 0 0.55rem;
-  }
-  .category-period-button:hover {
-    border-color: var(--primary-teal);
-    color: var(--primary-teal-dark);
-  }
-  .category-period-button[aria-pressed="true"] {
-    border-color: var(--primary-teal);
-    background: var(--primary-teal);
-    color: #fff;
-  }
-  .category-period-button:focus-visible {
-    outline: 2px solid var(--primary-teal);
-    outline-offset: 2px;
-  }
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -321,145 +268,46 @@
         }
     })();
 
-    // 3. CATEGORY CHART (+ cap line per category if cap exists)
+    // 3. CURRENT-MONTH CATEGORY SUMMARY
     (function(){
-        const catMonths = JSON.parse('{{ cat_month_labels_json|default:"[]"|escapejs }}');
-        const seriesByCat = JSON.parse('{{ series_by_cat_json|default:"{}"|escapejs }}');
+        const categories = JSON.parse('{{ cat_names_json|default:"[]"|escapejs }}');
+        const values = JSON.parse('{{ current_category_values_json|default:"[]"|escapejs }}');
         const breakdown = JSON.parse('{{ breakdown_by_cat_month_json|default:"{}"|escapejs }}');
-        const capByCat = JSON.parse('{{ cap_by_cat_json|default:"{}"|escapejs }}');
+        const currentMonth = '{{ current_category_month|escapejs }}';
 
-        if (!(catMonths.length && Object.keys(seriesByCat).length)) return;
+        if (!categories.length) return;
 
         const ctx = document.getElementById('catChart').getContext('2d');
         const typeSelect = document.getElementById('catChartType');
         const catSelect = document.getElementById('catSelect');
-        const yearButtons = document.getElementById('catYearButtons');
-        const monthButtons = document.getElementById('catMonthButtons');
-        const capNotice = document.getElementById('catCapNotice');
+        const detailTitle = document.getElementById('catDetailTitle');
+        const colors = ['#00cea6', '#3182ce', '#805ad5', '#e53e3e', '#d69e2e', '#38a169', '#00b5d8', '#d53f8c'];
+        let currentCat = catSelect.value;
 
-        let currentCat = catSelect ? catSelect.value : null;
-        let currentMonth = catMonths[catMonths.length - 1];
-
-        function capFor(cat) {
-            const v = capByCat && Object.prototype.hasOwnProperty.call(capByCat, cat) ? capByCat[cat] : 0;
-            const n = Number(v || 0);
-            return (isFinite(n) && n > 0) ? n : 0;
-        }
-
-        function getSpentDS(cat, chartType) {
-            return {
-                label: cat,
-                data: seriesByCat[cat] || [],
-                backgroundColor: '#3182ce',
-                borderColor: '#3182ce',
-                type: chartType,
-            };
-        }
-
-        function getCapDS(capVal) {
-            return {
-                label: '{% trans "Cap" %}',
-                data: Array(catMonths.length).fill(capVal),
-                type: 'line',
-                borderColor: '#d32f2f',
-                backgroundColor: '#d32f2f',
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-                tension: 0,
-            };
-        }
-
-        function updateCapNotice(cat) {
-            const capVal = capFor(cat);
-            if (capVal > 0) {
-                capNotice.style.display = 'none';
-            } else {
-                capNotice.style.display = 'block';
-            }
-        }
-
-        let chartType = (typeSelect && typeSelect.value) ? typeSelect.value : 'bar';
-
-        function buildDatasets(cat, spentType) {
-            const ds = [getSpentDS(cat, spentType)];
-            const capVal = capFor(cat);
-            if (capVal > 0) ds.push(getCapDS(capVal));
-            return ds;
-        }
-
-        let chart = new Chart(ctx, {
-            type: chartType,
-            data: { labels: catMonths, datasets: buildDatasets(currentCat, chartType) },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { display: true } }
-            }
-        });
-
-        catSelect.addEventListener('change', () => {
-                currentCat = catSelect.value;
-
-                const t = (typeSelect && typeSelect.value) ? typeSelect.value : 'bar';
-                chart.data.datasets = buildDatasets(currentCat, t);
-                chart.update();
-
-                updateCapNotice(currentCat);
-                renderTable(currentMonth);
-            });
-
-        typeSelect.addEventListener('change', () => {
-            const type = typeSelect.value;
-            chart.destroy();
-            chart = new Chart(ctx, {
-                type: type,
-                data: { labels: catMonths, datasets: buildDatasets(currentCat, type) },
+        function createChart(type) {
+            return new Chart(ctx, {
+                type,
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: currentMonth,
+                        data: values,
+                        backgroundColor: categories.map((_, index) => colors[index % colors.length]),
+                        borderColor: type === 'line' ? '#3182ce' : categories.map((_, index) => colors[index % colors.length]),
+                        borderWidth: type === 'line' ? 3 : 1,
+                        tension: 0.25,
+                        fill: false,
+                    }],
+                },
                 options: {
                     responsive: true,
                     scales: { y: { beginAtZero: true } },
                     plugins: { legend: { display: true } }
-                }
+                },
             });
-        });
-
-        function makePeriodButton(label, value, selected, onClick) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'category-period-button';
-            button.textContent = label;
-            button.dataset.value = value;
-            button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-            button.addEventListener('click', onClick);
-            return button;
         }
 
-        function renderPeriodButtons() {
-            const years = [...new Set(catMonths.map(mk => mk.slice(0, 4)))].reverse();
-            const selectedYear = currentMonth.slice(0, 4);
-            yearButtons.innerHTML = '';
-
-            years.forEach(year => {
-                yearButtons.appendChild(makePeriodButton(year, year, year === selectedYear, () => {
-                    const availableMonths = catMonths.filter(mk => mk.startsWith(`${year}-`));
-                    currentMonth = availableMonths[availableMonths.length - 1];
-                    renderPeriodButtons();
-                    renderTable(currentMonth);
-                }));
-            });
-
-            monthButtons.innerHTML = '';
-            catMonths
-                .filter(mk => mk.startsWith(`${selectedYear}-`))
-                .forEach(mk => {
-                    const monthLabel = mk.slice(5, 7);
-                    monthButtons.appendChild(makePeriodButton(monthLabel, mk, mk === currentMonth, () => {
-                        currentMonth = mk;
-                        renderPeriodButtons();
-                        renderTable(currentMonth);
-                    }));
-                });
-        }
+        let chart = createChart(typeSelect.value);
 
         function escapeHtml(s) {
           return String(s).replace(/[&<>"']/g, (c) => ({
@@ -471,29 +319,38 @@
           }[c]));
         }
 
-        function renderTable(mk) {
+        function renderTable() {
             const wrap = document.getElementById('catMonthTableWrap');
-            const rows = (breakdown[currentCat] && breakdown[currentCat][mk]) || [];
-            let html = '<table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
+            const rows = (breakdown[currentCat] && breakdown[currentCat][currentMonth]) || [];
+            detailTitle.textContent = `${currentCat} · ${currentMonth}`;
+            let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
             rows.forEach(r => {
-                const [year, month] = mk.split('-').map(Number);
+                const [year, month] = currentMonth.split('-').map(Number);
                 const lastDay = new Date(year, month, 0).getDate();
-                const fromDate = `${mk}-01`;
-                const toDate = `${mk}-${String(lastDay).padStart(2, '0')}`;
+                const fromDate = `${currentMonth}-01`;
+                const toDate = `${currentMonth}-${String(lastDay).padStart(2, '0')}`;
 
                 html += `<tr><td>${escapeHtml(r.merchant)}</td>
                 <td>${r.total.toFixed(2)}</td>
                 <td>${r.count}</td><td>${r.avg.toFixed(2)}</td>
                 <td><a href="{% url 'upload' %}?q=${encodeURIComponent(r.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             if(!rows.length) html = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
             wrap.innerHTML = html;
         }
 
-        updateCapNotice(currentCat);
-        renderPeriodButtons();
-        renderTable(currentMonth);
+        catSelect.addEventListener('change', () => {
+            currentCat = catSelect.value;
+            renderTable();
+        });
+
+        typeSelect.addEventListener('change', () => {
+            chart.destroy();
+            chart = createChart(typeSelect.value);
+        });
+
+        renderTable();
     })();
 </script>
 </div>
