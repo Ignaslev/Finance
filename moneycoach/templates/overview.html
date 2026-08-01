@@ -2,6 +2,7 @@
 {% load i18n guide_links %}
 {% block title %}{% trans "Overview" %} · MoneyCoach{% endblock %}
 {% block content %}
+{% get_current_language as LANGUAGE_CODE %}
 <div class="dashboard-page">
 
 <div class="page-title-row dashboard-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
@@ -78,9 +79,14 @@
 
 
 <div class="card dashboard-history-card">
-    <div class="card-title title-with-guide">
-        <span>{% trans "Net Worth History" %}</span>
-        {% guide_icon "dashboard_history" %}
+    <div class="flex justify-between items-start" style="gap:1rem; flex-wrap:wrap;">
+        <div class="card-title title-with-guide" style="margin:0;">
+            <span>{% trans "Net Worth History" %}</span>
+            {% guide_icon "dashboard_history" %}
+        </div>
+        <div class="text-medium" style="font-size:0.85rem;">
+            {% if LANGUAGE_CODE|slice:":2" == "lt" %}Dienos reikšmės · paskutinės 90 dienų{% else %}Daily values · last 90 days{% endif %}
+        </div>
     </div>
     <div style="height:320px; width:100%;">
         <canvas id="netWorthChart"></canvas>
@@ -127,7 +133,7 @@
   </div>
 </div>
 
-<div class="card dashboard-net-month-card">
+<div class="card dashboard-net-month-card" id="net-by-month">
   <div class="card-title title-with-guide">
     <span>{% trans "Net by Month" %}</span>
     {% guide_icon "dashboard_net_month" %}
@@ -136,7 +142,7 @@
     <table>
       <thead><tr><th>{% trans "Month" %}</th><th>{% trans "Net" %}</th></tr></thead>
       <tbody>
-      {% for r in net_rows %}
+      {% for r in net_page %}
         <tr>
           <td>{{ r.month }}</td>
           <td>
@@ -148,6 +154,17 @@
       </tbody>
     </table>
   </div>
+  {% if net_page.has_other_pages %}
+    <nav aria-label="{% trans 'Net by Month' %}" style="display:flex; justify-content:center; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:1rem; font-size:0.9rem;">
+      {% if net_page.has_previous %}
+        <a href="?net_page={{ net_page.previous_page_number }}#net-by-month" class="text-teal" style="text-decoration:none; font-weight:600;">← {% trans "Previous" %}</a>
+      {% endif %}
+      <span class="text-medium">{% trans "Page" %} {{ net_page.number }} / {{ net_page.paginator.num_pages }}</span>
+      {% if net_page.has_next %}
+        <a href="?net_page={{ net_page.next_page_number }}#net-by-month" class="text-teal" style="text-decoration:none; font-weight:600;">{% trans "Next" %} →</a>
+      {% endif %}
+    </nav>
+  {% endif %}
 </div>
 
 <div class="card dashboard-category-card">
@@ -156,13 +173,16 @@
     {% guide_icon "dashboard_categories" %}
   </div>
   {% if cat_names %}
-    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
-      {% for cname in cat_names %}
-        <button class="cat-btn" data-cat="{{ cname }}" style="padding:0.35rem 0.6rem; border:1px solid #e2e8f0; border-radius:6px; background:#f7fafc; cursor:pointer; font-size:0.85rem;">
-            {{ cname }}
-        </button>
-      {% endfor %}
-      <select id="catChartType" style="margin-left:auto; padding:0.3rem; border-radius:6px; border:1px solid #e2e8f0;">
+    <div style="display:flex; align-items:end; gap:0.75rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
+      <label style="display:flex; flex-direction:column; gap:0.3rem; min-width:min(100%, 240px); font-size:0.85rem; color:var(--text-medium);">
+        <span>{% trans "Category" %}</span>
+        <select id="catSelect" style="width:100%; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:var(--text-dark);">
+          {% for cname in cat_names %}
+            <option value="{{ cname }}">{{ cname }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <select id="catChartType" aria-label="Bar / Line" style="margin-left:auto; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff;">
           <option value="bar">Bar</option><option value="line">Line</option>
       </select>
     </div>
@@ -174,10 +194,10 @@
 
     <div style="max-width:1000px; margin:0 auto 1.25rem;"><canvas id="catChart"></canvas></div>
     <div id="catBreakdown">
-      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin:0.5rem 0;">
-        <span style="font-size:0.9rem; color:#666;">{% trans "Month" %}:</span>
-        <div id="catMonthButtons" style="display:flex; gap:0.35rem; flex-wrap:wrap;"></div>
-      </div>
+      <label style="display:flex; flex-direction:column; gap:0.3rem; width:min(100%, 220px); margin:0.5rem 0; font-size:0.85rem; color:var(--text-medium);">
+        <span>{% trans "Month" %}</span>
+        <select id="catMonthSelect" style="width:100%; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:var(--text-dark);"></select>
+      </label>
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
@@ -214,7 +234,15 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { x: { display: false }, y: { grid: { color: '#f7fafc' } } }
+            scales: {
+                x: {
+                    display: true,
+                    title: { display: true, text: '{% trans "Date" %}' },
+                    ticks: { autoSkip: true, maxTicksLimit: 7, maxRotation: 0, minRotation: 0 },
+                    grid: { display: false }
+                },
+                y: { grid: { color: '#f7fafc' } }
+            }
         }
     });
     {% endif %}
@@ -244,10 +272,11 @@
 
         const ctx = document.getElementById('catChart').getContext('2d');
         const typeSelect = document.getElementById('catChartType');
-        const buttons = Array.from(document.querySelectorAll('.cat-btn'));
+        const catSelect = document.getElementById('catSelect');
+        const monthSelect = document.getElementById('catMonthSelect');
         const capNotice = document.getElementById('catCapNotice');
 
-        let currentCat = buttons.length ? buttons[0].dataset.cat : null;
+        let currentCat = catSelect ? catSelect.value : null;
 
         function capFor(cat) {
             const v = capByCat && Object.prototype.hasOwnProperty.call(capByCat, cat) ? capByCat[cat] : 0;
@@ -307,21 +336,16 @@
             }
         });
 
-        buttons.forEach(b => {
-            b.addEventListener('click', () => {
-                currentCat = b.dataset.cat;
+        catSelect.addEventListener('change', () => {
+                currentCat = catSelect.value;
 
                 const t = (typeSelect && typeSelect.value) ? typeSelect.value : 'bar';
                 chart.data.datasets = buildDatasets(currentCat, t);
                 chart.update();
 
-                buttons.forEach(x => x.style.background = '#f7fafc');
-                b.style.background = '#e2e8f0';
-
                 updateCapNotice(currentCat);
-                renderMonthButtons();
+                renderMonthTable();
             });
-        });
 
         typeSelect.addEventListener('change', () => {
             const type = typeSelect.value;
@@ -337,18 +361,22 @@
             });
         });
 
-        function renderMonthButtons() {
-            const wrap = document.getElementById('catMonthButtons');
-            wrap.innerHTML = '';
-            catMonths.forEach(mk => {
-                const btn = document.createElement('button');
-                btn.textContent = mk;
-                btn.style.cssText = "padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer;";
-                btn.onclick = () => renderTable(mk);
-                wrap.appendChild(btn);
+        function populateMonthSelect() {
+            monthSelect.innerHTML = '';
+            [...catMonths].reverse().forEach(mk => {
+                const option = document.createElement('option');
+                option.value = mk;
+                option.textContent = mk;
+                monthSelect.appendChild(option);
             });
-            if(catMonths.length) renderTable(catMonths[catMonths.length-1]);
+            renderMonthTable();
         }
+
+        function renderMonthTable() {
+            if (monthSelect && monthSelect.value) renderTable(monthSelect.value);
+        }
+
+        monthSelect.addEventListener('change', renderMonthTable);
 
         function escapeHtml(s) {
           return String(s).replace(/[&<>"']/g, (c) => ({
@@ -380,13 +408,8 @@
             wrap.innerHTML = html;
         }
 
-        // Initial UI state
-        if (buttons.length) {
-            buttons.forEach(x => x.style.background = '#f7fafc');
-            buttons[0].style.background = '#e2e8f0';
-        }
         updateCapNotice(currentCat);
-        renderMonthButtons();
+        populateMonthSelect();
     })();
 </script>
 </div>

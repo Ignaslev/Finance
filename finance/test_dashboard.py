@@ -43,6 +43,21 @@ class OverviewAnalyticsTests(TestCase):
             fingerprint=fingerprint,
         )
 
+    def _monthly_transaction(self, *, year, month, amount, fingerprint):
+        return Transaction.objects.create(
+            user=self.user,
+            money_source=self.source,
+            date=date(year, month, 15),
+            merchant="Monthly test",
+            amount=Decimal(amount),
+            currency="EUR",
+            in_out=Transaction.IN,
+            category=self.income_category.name,
+            category_fk=self.income_category,
+            category_source="user",
+            fingerprint=fingerprint,
+        )
+
     def test_internal_transfers_are_excluded_from_overview_analytics(self):
         self._transaction(
             amount="1000.00",
@@ -99,3 +114,40 @@ class OverviewAnalyticsTests(TestCase):
         self.assertEqual(json.loads(response.context["spending_json"]), [])
         transfer.refresh_from_db()
         self.assertFalse(transfer.is_deleted)
+
+    def test_net_by_month_is_newest_first_and_paginated_by_eight(self):
+        for month in range(1, 11):
+            self._monthly_transaction(
+                year=2026,
+                month=month,
+                amount=str(month),
+                fingerprint=f"month-{month}",
+            )
+
+        first_page = self.client.get(reverse("overview"))
+        second_page = self.client.get(reverse("overview"), {"net_page": 2})
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(first_page.context["net_page"].paginator.per_page, 8)
+        self.assertEqual(
+            [row["month"] for row in first_page.context["net_page"]],
+            ["2026-10", "2026-09", "2026-08", "2026-07", "2026-06", "2026-05", "2026-04", "2026-03"],
+        )
+        self.assertEqual(
+            [row["month"] for row in second_page.context["net_page"]],
+            ["2026-02", "2026-01"],
+        )
+
+    def test_category_and_month_filters_render_as_dropdowns(self):
+        self._transaction(
+            amount="20.00",
+            in_out=Transaction.OUT,
+            category=self.groceries_category,
+            fingerprint="category-dropdown",
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertContains(response, 'id="catSelect"')
+        self.assertContains(response, 'id="catMonthSelect"')
+        self.assertNotContains(response, 'class="cat-btn"')

@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Q, Count
 from django.db.models.functions import TruncMonth
+from django.core.paginator import Paginator
 from django.utils import timezone
 from collections import defaultdict
 from datetime import timedelta, datetime, date as _date, timezone as dt_timezone
@@ -267,7 +268,11 @@ def overview(request):
 
     income_series = [float(totals_in[m]) for m in months]
     spending_series = [float(totals_out[m]) for m in months]
-    net_rows = [{"month": m.strftime("%Y-%m"), "net": float(totals_in[m] - totals_out[m])} for m in months]
+    net_rows = [
+        {"month": m.strftime("%Y-%m"), "net": float(totals_in[m] - totals_out[m])}
+        for m in reversed(months)
+    ]
+    net_page = Paginator(net_rows, 8).get_page(request.GET.get("net_page"))
 
     # 4. CATEGORIES & (caps moved into category chart)
     qs_cat = (
@@ -391,6 +396,7 @@ def overview(request):
         "income_json": json.dumps(income_series),
         "spending_json": json.dumps(spending_series),
         "net_rows": net_rows,
+        "net_page": net_page,
 
         "cat_names": cat_names,
         "cat_month_labels_json": json.dumps(cat_labels),
