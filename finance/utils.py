@@ -107,7 +107,8 @@ def build_fingerprint_v2(*, date_iso: str, time_str: str | None, merchant: str,
     desc_prefix = norm_desc[:80]
     desc8 = hashlib.sha1(desc_prefix.encode("utf-8"), usedforsecurity=False).hexdigest()[:8] if desc_prefix else ""
     tpart = (time_str or "").strip()
-    return f"{date_iso}|{tpart}|{norm_merchant}|{amount}|{currency}|{in_out}|{money_source_id}|{desc8}"
+    payload = f"{date_iso}|{tpart}|{norm_merchant}|{amount}|{currency}|{in_out}|{money_source_id}|{desc8}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 def parse_amount(raw):
     if raw is None: return Decimal("0")

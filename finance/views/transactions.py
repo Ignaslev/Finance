@@ -766,13 +766,6 @@ def upload(request):
                 )
                 return redirect("upload")
 
-            batch = ImportBatch.objects.create(
-                user=request.user,
-                money_source=import_src,
-                filename=filename,
-                bank_key=bank,
-            )
-
             # ---------------- DB-only dedupe using fingerprint v2 ----------------
             existing_fps = set(
                 Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
@@ -838,27 +831,37 @@ def upload(request):
                     category=None,
                     category_source="import",
                     fingerprint=fp,
-                    import_batch=batch,   # ---------------- NEW ----------------
                 ))
 
-            added = 0
-            if to_create:
-                Transaction.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
-                created_fps = set(
-                    Transaction.objects
-                    .filter(user=request.user, fingerprint__in=[t.fingerprint for t in to_create])
-                    .values_list("fingerprint", flat=True)
+            with db_transaction.atomic():
+                batch = ImportBatch.objects.create(
+                    user=request.user,
+                    money_source=import_src,
+                    filename=filename,
+                    bank_key=bank,
                 )
-                added = len(created_fps)
 
-            # Keep "Undo last upload" meaningful: duplicate-only uploads should not create an empty batch.
-            if added == 0 and not Transaction.objects.filter(import_batch=batch).exists():
-                batch.delete()
-            else:
-                batch.added_count = added
-                batch.skipped_count = skipped_count
-                batch.dup_count = db_dups
-                batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
+                for pending_transaction in to_create:
+                    pending_transaction.import_batch = batch
+
+                added = 0
+                if to_create:
+                    Transaction.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
+                    created_fps = set(
+                        Transaction.objects
+                        .filter(user=request.user, fingerprint__in=[t.fingerprint for t in to_create])
+                        .values_list("fingerprint", flat=True)
+                    )
+                    added = len(created_fps)
+
+                # Keep "Undo last upload" meaningful: duplicate-only uploads should not create an empty batch.
+                if added == 0 and not Transaction.objects.filter(import_batch=batch).exists():
+                    batch.delete()
+                else:
+                    batch.added_count = added
+                    batch.skipped_count = skipped_count
+                    batch.dup_count = db_dups
+                    batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
 
             msg = _(
                 "Imported into: %(account)s. Parsed %(parsed)s, skipped %(skipped)s. Added %(added)s new transactions. (DB duplicates: %(dups)s, blocked by deleted: %(blocked)s.)"
