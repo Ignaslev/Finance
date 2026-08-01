@@ -149,5 +149,7 @@ class OverviewAnalyticsTests(TestCase):
         response = self.client.get(reverse("overview"))
 
         self.assertContains(response, 'id="catSelect"')
-        self.assertContains(response, 'id="catMonthSelect"')
+        self.assertContains(response, 'id="catYearButtons"')
+        self.assertContains(response, 'id="catMonthButtons"')
+        self.assertNotContains(response, 'id="catMonthSelect"')
         self.assertNotContains(response, 'class="cat-btn"')

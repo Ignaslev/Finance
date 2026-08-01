@@ -174,7 +174,7 @@
   </div>
   {% if cat_names %}
     <div style="display:flex; align-items:end; gap:0.75rem; flex-wrap:wrap; margin:0.75rem 0 0.6rem;">
-      <label style="display:flex; flex-direction:column; gap:0.3rem; min-width:min(100%, 240px); font-size:0.85rem; color:var(--text-medium);">
+      <label style="display:flex; flex-direction:column; gap:0.3rem; width:min(100%, 240px); font-size:0.85rem; color:var(--text-medium);">
         <span>{% trans "Category" %}</span>
         <select id="catSelect" style="width:100%; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:var(--text-dark);">
           {% for cname in cat_names %}
@@ -182,9 +182,12 @@
           {% endfor %}
         </select>
       </label>
-      <select id="catChartType" aria-label="Bar / Line" style="margin-left:auto; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff;">
-          <option value="bar">Bar</option><option value="line">Line</option>
-      </select>
+      <label style="display:flex; flex-direction:column; gap:0.3rem; width:min(100%, 240px); font-size:0.85rem; color:var(--text-medium);">
+        <span>{% if LANGUAGE_CODE|slice:":2" == "lt" %}Diagramos tipas{% else %}Chart type{% endif %}</span>
+        <select id="catChartType" style="width:100%; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:var(--text-dark);">
+            <option value="bar">Bar</option><option value="line">Line</option>
+        </select>
+      </label>
     </div>
 
     <!-- Cap notice (only shown when selected category has no cap) -->
@@ -194,16 +197,73 @@
 
     <div style="max-width:1000px; margin:0 auto 1.25rem;"><canvas id="catChart"></canvas></div>
     <div id="catBreakdown">
-      <label style="display:flex; flex-direction:column; gap:0.3rem; width:min(100%, 220px); margin:0.5rem 0; font-size:0.85rem; color:var(--text-medium);">
-        <span>{% trans "Month" %}</span>
-        <select id="catMonthSelect" style="width:100%; padding:0.5rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:var(--text-dark);"></select>
-      </label>
+      <div class="category-period-picker">
+        <div>
+          <div class="category-period-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}</div>
+          <div id="catYearButtons" class="category-period-buttons" role="group" aria-label="{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}"></div>
+        </div>
+        <div>
+          <div class="category-period-label">{% trans "Month" %}</div>
+          <div id="catMonthButtons" class="category-period-buttons category-month-buttons" role="group" aria-label="{% trans 'Month' %}"></div>
+        </div>
+      </div>
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
     <p style="opacity:0.7; padding:1rem;">{% trans "No categorized spending yet." %}</p>
   {% endif %}
 </div>
+
+<style>
+  .category-period-picker {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0.5rem 0 1rem;
+  }
+  .category-period-label {
+    margin-bottom: 0.35rem;
+    color: var(--text-medium);
+    font-size: 0.85rem;
+  }
+  .category-period-buttons {
+    display: flex;
+    gap: 0.4rem;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0 0 0.25rem;
+  }
+  .category-period-button {
+    min-width: 58px;
+    height: 36px;
+    padding: 0 0.7rem;
+    border: 1px solid #dbe4ec;
+    border-radius: 6px;
+    background: #f7fafc;
+    color: var(--text-medium);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .category-month-buttons .category-period-button {
+    min-width: 42px;
+    padding: 0 0.55rem;
+  }
+  .category-period-button:hover {
+    border-color: var(--primary-teal);
+    color: var(--primary-teal-dark);
+  }
+  .category-period-button[aria-pressed="true"] {
+    border-color: var(--primary-teal);
+    background: var(--primary-teal);
+    color: #fff;
+  }
+  .category-period-button:focus-visible {
+    outline: 2px solid var(--primary-teal);
+    outline-offset: 2px;
+  }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -273,10 +333,12 @@
         const ctx = document.getElementById('catChart').getContext('2d');
         const typeSelect = document.getElementById('catChartType');
         const catSelect = document.getElementById('catSelect');
-        const monthSelect = document.getElementById('catMonthSelect');
+        const yearButtons = document.getElementById('catYearButtons');
+        const monthButtons = document.getElementById('catMonthButtons');
         const capNotice = document.getElementById('catCapNotice');
 
         let currentCat = catSelect ? catSelect.value : null;
+        let currentMonth = catMonths[catMonths.length - 1];
 
         function capFor(cat) {
             const v = capByCat && Object.prototype.hasOwnProperty.call(capByCat, cat) ? capByCat[cat] : 0;
@@ -344,7 +406,7 @@
                 chart.update();
 
                 updateCapNotice(currentCat);
-                renderMonthTable();
+                renderTable(currentMonth);
             });
 
         typeSelect.addEventListener('change', () => {
@@ -361,22 +423,43 @@
             });
         });
 
-        function populateMonthSelect() {
-            monthSelect.innerHTML = '';
-            [...catMonths].reverse().forEach(mk => {
-                const option = document.createElement('option');
-                option.value = mk;
-                option.textContent = mk;
-                monthSelect.appendChild(option);
+        function makePeriodButton(label, value, selected, onClick) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'category-period-button';
+            button.textContent = label;
+            button.dataset.value = value;
+            button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            button.addEventListener('click', onClick);
+            return button;
+        }
+
+        function renderPeriodButtons() {
+            const years = [...new Set(catMonths.map(mk => mk.slice(0, 4)))].reverse();
+            const selectedYear = currentMonth.slice(0, 4);
+            yearButtons.innerHTML = '';
+
+            years.forEach(year => {
+                yearButtons.appendChild(makePeriodButton(year, year, year === selectedYear, () => {
+                    const availableMonths = catMonths.filter(mk => mk.startsWith(`${year}-`));
+                    currentMonth = availableMonths[availableMonths.length - 1];
+                    renderPeriodButtons();
+                    renderTable(currentMonth);
+                }));
             });
-            renderMonthTable();
-        }
 
-        function renderMonthTable() {
-            if (monthSelect && monthSelect.value) renderTable(monthSelect.value);
+            monthButtons.innerHTML = '';
+            catMonths
+                .filter(mk => mk.startsWith(`${selectedYear}-`))
+                .forEach(mk => {
+                    const monthLabel = mk.slice(5, 7);
+                    monthButtons.appendChild(makePeriodButton(monthLabel, mk, mk === currentMonth, () => {
+                        currentMonth = mk;
+                        renderPeriodButtons();
+                        renderTable(currentMonth);
+                    }));
+                });
         }
-
-        monthSelect.addEventListener('change', renderMonthTable);
 
         function escapeHtml(s) {
           return String(s).replace(/[&<>"']/g, (c) => ({
@@ -409,7 +492,8 @@
         }
 
         updateCapNotice(currentCat);
-        populateMonthSelect();
+        renderPeriodButtons();
+        renderTable(currentMonth);
     })();
 </script>
 </div>
