@@ -122,8 +122,12 @@
     </div>
   </div>
 
-  <div>
-    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Income source breakdown" %}</div>
+  <details class="statistics-disclosure">
+    <summary>
+      <span>{% trans "Income source breakdown" %}</span>
+      <span class="statistics-disclosure-count">{{ income_sources|length }}</span>
+    </summary>
+    <div class="statistics-disclosure-content">
     {% if income_sources %}
       <div style="overflow-x:auto;">
         <table style="font-size:0.9rem">
@@ -180,7 +184,8 @@
     {% else %}
       <p class="text-medium" style="margin:0;">{% trans "No income sources detected yet." %}</p>
     {% endif %}
-  </div>
+    </div>
+  </details>
 </div>
 
 
@@ -245,9 +250,12 @@
     </div>
   </div>
 
-  <div style="margin-top:1rem;">
-    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Active subscriptions" %}</div>
-
+  <details class="statistics-disclosure">
+    <summary>
+      <span>{% trans "Active subscriptions" %}</span>
+      <span class="statistics-disclosure-count">{{ active_subscriptions|length }}</span>
+    </summary>
+    <div class="statistics-disclosure-content">
     {% if active_subscriptions %}
       <div style="overflow-x:auto;">
         <table style="font-size:0.9rem;">
@@ -300,11 +308,13 @@
     {% else %}
       <p class="text-medium" style="margin:0;">{% trans "No active subscriptions detected yet." %}</p>
     {% endif %}
-  </div>
 
-  <div style="margin-top:2rem;">
-    <div class="card-title" style="margin-bottom:0.75rem;">{% trans "Past subscriptions" %}</div>
-
+    <details class="statistics-disclosure statistics-disclosure-nested">
+      <summary>
+        <span>{% trans "Past subscriptions" %}</span>
+        <span class="statistics-disclosure-count">{{ past_subscriptions|length }}</span>
+      </summary>
+      <div class="statistics-disclosure-content">
     {% if past_subscriptions %}
       <div style="overflow-x:auto;">
         <table style="font-size:0.9rem;">
@@ -356,8 +366,11 @@
       </div>
     {% else %}
       <p class="text-medium" style="margin:0;">{% trans "No past subscriptions detected yet." %}</p>
-    {% endif %}
-  </div>
+      {% endif %}
+      </div>
+    </details>
+    </div>
+  </details>
 </div>
 
 
@@ -457,8 +470,13 @@
   </div>
 
   {% if cat_summary_rows %}
-    <div style="margin-top:2rem; overflow-x: auto;">
-      <table style="font-size:0.9rem;">
+    <details class="statistics-disclosure" style="margin-top:2rem;">
+      <summary>
+        <span>{% trans "Category Share" %}: {% trans "Details" %}</span>
+        <span class="statistics-disclosure-count">{{ cat_summary_rows|length }}</span>
+      </summary>
+      <div class="statistics-disclosure-content" style="overflow-x:auto;">
+        <table style="font-size:0.9rem;">
         <thead>
             <tr>
               <th>{% trans "Category" %}</th>
@@ -501,11 +519,13 @@
           </tr>
         {% endfor %}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+    </details>
   {% endif %}
 </div>
 
+{% comment %}
 <div class="card statistics-weekday-card">
   <div class="card-title title-with-guide">
     <span>{% trans "Weekday Spending (Last 90 Days)" %}</span>
@@ -515,6 +535,7 @@
     <canvas id="weekdayChart"></canvas>
   </div>
 </div>
+{% endcomment %}
 
 <div id="catsModal" class="modal-backdrop" style="display:none;">
     <div class="modal-content card" style="max-width:500px;">
@@ -611,6 +632,76 @@
 </div>
 
 <style>
+    .statistics-disclosure {
+        margin-top: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        overflow: hidden;
+    }
+    .statistics-disclosure > summary {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-height: 48px;
+        padding: 0.75rem 1rem;
+        color: var(--text-dark);
+        font-weight: 700;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+    }
+    .statistics-disclosure > summary::-webkit-details-marker {
+        display: none;
+    }
+    .statistics-disclosure > summary::after {
+        content: "";
+        width: 9px;
+        height: 9px;
+        margin-left: 0.15rem;
+        border-right: 2px solid var(--text-medium);
+        border-bottom: 2px solid var(--text-medium);
+        transform: rotate(45deg) translateY(-2px);
+        transition: transform 0.18s ease;
+    }
+    .statistics-disclosure[open] > summary::after {
+        transform: rotate(225deg) translate(-2px, -2px);
+    }
+    .statistics-disclosure > summary:hover,
+    .statistics-disclosure > summary:focus-visible {
+        background: #edf7f5;
+    }
+    .statistics-disclosure > summary:focus-visible {
+        outline: 2px solid var(--primary-teal);
+        outline-offset: -2px;
+    }
+    .statistics-disclosure-count {
+        min-width: 1.75rem;
+        margin-left: auto;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: var(--text-medium);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        text-align: center;
+    }
+    .statistics-disclosure-content {
+        padding: 0.25rem 1rem 1rem;
+        border-top: 1px solid #e2e8f0;
+        background: #fff;
+    }
+    .statistics-disclosure-nested {
+        margin-top: 1rem;
+    }
+    @media (max-width: 640px) {
+        .statistics-disclosure > summary {
+            padding: 0.7rem 0.8rem;
+        }
+        .statistics-disclosure-content {
+            padding: 0.25rem 0.8rem 0.8rem;
+        }
+    }
     .modal-backdrop {
         position: fixed;
         top: 0;
@@ -668,18 +759,20 @@
     });
   {% endif %}
 
-  const wdLabels = JSON.parse('{{ weekday_labels_json|escapejs }}');
-  const wdValues = JSON.parse('{{ weekday_values_json|escapejs }}');
-  const wdCtx = document.getElementById('weekdayChart').getContext('2d');
-  new Chart(wdCtx, {
-    type: 'bar',
-    data: { labels: wdLabels, datasets: [{ label: '{% trans "Spending (EUR)" %}', data: wdValues, backgroundColor: '#00cea6', borderRadius: 4 }] },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },
-      plugins: { legend: { display: false } }
-    }
-  });
+  {% comment %}
+    const wdLabels = JSON.parse('{{ weekday_labels_json|escapejs }}');
+    const wdValues = JSON.parse('{{ weekday_values_json|escapejs }}');
+    const wdCtx = document.getElementById('weekdayChart').getContext('2d');
+    new Chart(wdCtx, {
+      type: 'bar',
+      data: { labels: wdLabels, datasets: [{ label: '{% trans "Spending (EUR)" %}', data: wdValues, backgroundColor: '#00cea6', borderRadius: 4 }] },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  {% endcomment %}
 
   // Modal Logic (Category Filter)
   (function(){
