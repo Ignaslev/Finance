@@ -156,6 +156,10 @@ class OverviewAnalyticsTests(TestCase):
         self.assertContains(response, 'href="/statistics/#spending-by-category"')
         self.assertContains(response, 'id="monthCategoryChart"')
         self.assertNotContains(response, 'id="monthCategoryChartType"')
+        self.assertContains(
+            response,
+            'id="monthly-category-spending" style="grid-column:1 / -1; order:3;"',
+        )
         self.assertContains(response, 'id="monthCategoryYearButtons"')
         self.assertContains(response, 'id="monthCategoryMonthButtons"')
         self.assertContains(response, 'id="monthCategoryDetailSelect"')
