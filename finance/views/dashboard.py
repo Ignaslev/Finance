@@ -236,6 +236,11 @@ def overview(request):
         "current_category_month": category_analytics["current_month_key"],
         "current_category_values_json": json.dumps(category_analytics["current_category_values"]),
         "breakdown_by_cat_month_json": json.dumps(category_analytics["breakdown"]),
+        "month_category_names": category_analytics["category_names"],
+        "month_category_names_json": json.dumps(category_analytics["category_names"]),
+        "month_category_months_json": json.dumps(category_analytics["month_labels"]),
+        "month_category_series_json": json.dumps(category_analytics["series_by_category"]),
+        "month_category_top_transactions_json": json.dumps(category_analytics["top_transactions"]),
 
         "goals": goals,
 

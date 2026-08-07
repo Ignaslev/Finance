@@ -109,8 +109,15 @@ def build_spending_category_analytics(user, base_qs=None):
 
     merchant_rows = (
         base.filter(in_out=Transaction.OUT, category_fk__isnull=False)
-        .select_related("category_fk")
-        .only("date", "merchant", "amount", "category_fk__name")
+        .select_related("category_fk", "money_source")
+        .only(
+            "date",
+            "merchant",
+            "amount",
+            "currency",
+            "category_fk__name",
+            "money_source__name",
+        )
         .order_by("date", "id")
     )
     breakdown_acc = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {
@@ -118,6 +125,7 @@ def build_spending_category_analytics(user, base_qs=None):
         "total": Decimal("0"),
         "count": 0,
     })))
+    transaction_acc = defaultdict(lambda: defaultdict(list))
 
     for transaction in merchant_rows:
         if not transaction.date:
@@ -129,6 +137,14 @@ def build_spending_category_analytics(user, base_qs=None):
         bucket["merchant"] = merchant
         bucket["total"] += transaction.amount or Decimal("0")
         bucket["count"] += 1
+        transaction_acc[category_name][month_key].append({
+            "id": transaction.id,
+            "date": transaction.date.strftime("%Y-%m-%d"),
+            "merchant": (transaction.merchant or "-")[:120],
+            "account": transaction.money_source.name if transaction.money_source else "",
+            "amount": float(transaction.amount or Decimal("0")),
+            "currency": transaction.currency or "EUR",
+        })
 
     breakdown = {}
     for category_name, per_month in breakdown_acc.items():
@@ -149,6 +165,15 @@ def build_spending_category_analytics(user, base_qs=None):
                 key=lambda item: (-item["total"], item["merchant"]),
             )[:12]
 
+    top_transactions = {}
+    for category_name, per_month in transaction_acc.items():
+        top_transactions[category_name] = {}
+        for month_key, rows in per_month.items():
+            top_transactions[category_name][month_key] = sorted(
+                rows,
+                key=lambda item: (-item["amount"], item["date"], item["id"]),
+            )[:10]
+
     caps = {}
     for category in Category.objects.filter(user=user):
         cap = category.monthly_cap or Decimal("0")
@@ -167,6 +192,7 @@ def build_spending_category_analytics(user, base_qs=None):
         "month_labels": [month.strftime("%Y-%m") for month in months],
         "series_by_category": series_by_category,
         "breakdown": breakdown,
+        "top_transactions": top_transactions,
         "caps": caps,
         "current_month_key": current_month_key,
         "current_category_names": current_category_names,

@@ -152,7 +152,13 @@ class OverviewAnalyticsTests(TestCase):
 
         self.assertContains(response, 'id="catSelect"')
         self.assertContains(response, 'id="catChartType"')
+        self.assertContains(response, "Išlaidos pagal kategoriją šį mėnesį")
         self.assertContains(response, 'href="/statistics/#spending-by-category"')
+        self.assertContains(response, 'id="monthCategoryChart"')
+        self.assertNotContains(response, 'id="monthCategoryChartType"')
+        self.assertContains(response, 'id="monthCategoryYearButtons"')
+        self.assertContains(response, 'id="monthCategoryMonthButtons"')
+        self.assertContains(response, 'id="monthCategoryDetailSelect"')
         self.assertNotContains(response, 'id="catYearButtons"')
         self.assertNotContains(response, 'id="catMonthButtons"')
         self.assertNotContains(response, 'class="cat-btn"')
@@ -179,3 +185,36 @@ class OverviewAnalyticsTests(TestCase):
         self.assertEqual(json.loads(response.context["cat_names_json"]), ["Groceries", "Transport"])
         self.assertEqual(json.loads(response.context["current_category_values_json"]), [20.0, 15.0])
         self.assertEqual(response.context["current_category_month"], timezone.localdate().strftime("%Y-%m"))
+
+    def test_month_category_card_returns_top_ten_individual_transactions(self):
+        transport = Category.objects.create(user=self.user, name="Transport")
+        selected_date = date(2026, 5, 15)
+        for index in range(12):
+            transaction = self._transaction(
+                amount=str(index + 1),
+                in_out=Transaction.OUT,
+                category=self.groceries_category,
+                fingerprint=f"top-transaction-{index}",
+                transaction_date=selected_date,
+            )
+            transaction.merchant = f"Merchant {index + 1}"
+            transaction.save(update_fields=["merchant"])
+        self._transaction(
+            amount="25.00",
+            in_out=Transaction.OUT,
+            category=transport,
+            fingerprint="month-transport",
+            transaction_date=selected_date,
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.context["month_category_names_json"]), ["Groceries", "Transport"])
+        self.assertIn("2026-05", json.loads(response.context["month_category_months_json"]))
+        top_transactions = json.loads(response.context["month_category_top_transactions_json"])
+        grocery_rows = top_transactions["Groceries"]["2026-05"]
+        self.assertEqual(len(grocery_rows), 10)
+        self.assertEqual([row["amount"] for row in grocery_rows], [12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0])
+        self.assertEqual(grocery_rows[0]["merchant"], "Merchant 12")
+        self.assertEqual(grocery_rows[0]["account"], "Main account")
