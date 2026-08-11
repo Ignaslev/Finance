@@ -223,6 +223,7 @@ class OnboardingState(models.Model):
     balance_done = models.BooleanField(default=False)
     teach_ai_done = models.BooleanField(default=False)
     ready_dismissed = models.BooleanField(default=False)
+    intro_acknowledged_at = models.DateTimeField(null=True, blank=True)
     # Housekeeping
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

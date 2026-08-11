@@ -43,9 +43,16 @@ def onboarding(request):
     # Load persisted state (or create)
     state, _created = OnboardingState.objects.get_or_create(user=request.user)
 
+    shared_context = {
+        "show_onboarding_intro": (
+            state.intro_acknowledged_at is None and not state.ready_dismissed
+        ),
+        "onboarding_min_user_labels": MIN_USER_LABELS,
+    }
+
     # If the user dismissed the final step, never show again
     if state.ready_dismissed:
-        return {"onboarding": None, "onboarding_min_user_labels": MIN_USER_LABELS}
+        return {**shared_context, "onboarding": None}
 
     # Heuristics for step gating
     has_tx = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
@@ -60,8 +67,10 @@ def onboarding(request):
                 "cta_text": _("Open Categories"),
                 "cta_href": reverse("category_list"),
                 "code": "categories",
+                "step_number": 1,
+                "step_total": 4,
             },
-            "onboarding_min_user_labels": MIN_USER_LABELS,
+            **shared_context,
         }
 
     # --- 2) Upload (until any transactions exist)
@@ -72,8 +81,10 @@ def onboarding(request):
                 "cta_text": _("Go to Upload"),
                 "cta_href": reverse("upload"),
                 "code": "upload",
+                "step_number": 2,
+                "step_total": 4,
             },
-            "onboarding_min_user_labels": MIN_USER_LABELS,
+            **shared_context,
         }
 
     # --- 3) Balance (until any snapshot exists)
@@ -84,8 +95,10 @@ def onboarding(request):
                 "cta_text": _("Set a Balance"),
                 "cta_href": reverse("profile"),
                 "code": "balance",
+                "step_number": 3,
+                "step_total": 4,
             },
-            "onboarding_min_user_labels": MIN_USER_LABELS,
+            **shared_context,
         }
 
     # --- 4) Teach AI (until enough user labels exist)
@@ -99,8 +112,10 @@ def onboarding(request):
                 "cta_text": _("Teach AI"),
                 "cta_href": reverse("teach_ai"),
                 "code": "teach_ai",
+                "step_number": 4,
+                "step_total": 4,
             },
-            "onboarding_min_user_labels": MIN_USER_LABELS,
+            **shared_context,
         }
 
     # --- 5) Ready (shows until dismissed)
@@ -110,8 +125,10 @@ def onboarding(request):
             "cta_text": None,
             "cta_href": None,
             "code": "ready",
+            "step_number": 4,
+            "step_total": 4,
         },
-        "onboarding_min_user_labels": MIN_USER_LABELS,
+        **shared_context,
     }
 
 

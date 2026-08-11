@@ -20,7 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <link rel="stylesheet" href="{% static 'css/redesign.css' %}?v=20260811-category-card-pair-order">
+    <link rel="stylesheet" href="{% static 'css/redesign.css' %}?v=20260811-onboarding-intro">
     {% include "includes/google_analytics.html" %}
     {% include "includes/meta_pixel.html" %}
     {% block extra_head %}
@@ -32,7 +32,7 @@
         {% endif %}
     {% endblock %}
 </head>
-<body class="{% if user.is_authenticated %}is-authenticated{% else %}is-public{% endif %} {% block body_class %}{% endblock %}">
+<body class="{% if user.is_authenticated %}is-authenticated{% else %}is-public{% endif %}{% if show_onboarding_intro %} has-onboarding-intro{% endif %} {% block body_class %}{% endblock %}">
 
     <nav class="navbar">
         <div class="navbar-inner">
@@ -100,12 +100,82 @@
 
     </nav>
 
+   {% if show_onboarding_intro %}
+    <div class="onboarding-intro-backdrop">
+        <section class="onboarding-intro-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="onboarding-intro-title"
+                 aria-describedby="onboarding-intro-description">
+            <div class="onboarding-intro-heading">
+                <div class="onboarding-intro-icon" aria-hidden="true">
+                    <i class="ph ph-compass"></i>
+                </div>
+                <div>
+                    <h2 id="onboarding-intro-title">
+                        {% if LANGUAGE_CODE == "lt" %}Sveiki prisijungę prie MoneyCompass{% else %}Welcome to MoneyCompass{% endif %}
+                    </h2>
+                    <p id="onboarding-intro-description">
+                        {% if LANGUAGE_CODE == "lt" %}Smagu jus čia matyti! Kad MoneyCompass galėtų tiksliai apskaičiuoti jūsų finansus ir padėti suskirstyti operacijas, pirmiausia reikės atlikti 4 trumpus veiksmus.{% else %}It’s great to have you here! To make your financial calculations accurate and help categorize your transactions, complete four quick setup steps.{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <ol class="onboarding-intro-steps">
+                <li>
+                    <strong>{% if LANGUAGE_CODE == "lt" %}Peržiūrėti kategorijas{% else %}Review your categories{% endif %}</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Patikrinkite paruoštas kategorijas ir pridėkite tas, kurių jums trūksta.{% else %}Check the prepared categories and add any that you need.{% endif %}</span>
+                </li>
+                <li>
+                    <strong>{% if LANGUAGE_CODE == "lt" %}Įkelti pirmą banko išrašą{% else %}Upload your first bank statement{% endif %}</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Įkelkite CSV arba XLSX failą su savo banko operacijomis.{% else %}Upload a CSV or XLSX file containing your bank transactions.{% endif %}</span>
+                </li>
+                <li>
+                    <strong>{% if LANGUAGE_CODE == "lt" %}Nustatyti sąskaitų likučius{% else %}Set your account balances{% endif %}</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Įrašykite dabartinį kiekvienos sąskaitos likutį, kad turto ir likučio skaičiavimai būtų tikslūs.{% else %}Enter each account’s current balance so net worth and balance calculations are accurate.{% endif %}</span>
+                </li>
+                <li>
+                    <strong>{% if LANGUAGE_CODE == "lt" %}Patvirtinti operacijų kategorijas{% else %}Confirm transaction categories{% endif %}</strong>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Rankiniu būdu priskirkite kategorijas bent 30 operacijų, kad MoneyCompass išmoktų jūsų įpročius ir galėtų siūlyti kategorijas.{% else %}Manually categorize at least 30 transactions so MoneyCompass can learn your habits and suggest categories.{% endif %}</span>
+                </li>
+            </ol>
+
+            <p class="onboarding-intro-banner-note">
+                {% if LANGUAGE_CODE == "lt" %}Kol nustatymas nebaigtas, po pagrindiniu meniu matysite nustatymo juostą. Ji visada parodys kitą žingsnį ir nuves ten, kur reikia.{% else %}Until setup is complete, you will see a setup bar below the main menu. It will always show your next step and take you to the right place.{% endif %}
+            </p>
+
+            <div class="onboarding-intro-privacy">
+                <i class="ph ph-shield-check" aria-hidden="true"></i>
+                <span>{% if LANGUAGE_CODE == "lt" %}MoneyCompass nesijungia prie jūsų banko ir neprašo banko prisijungimo duomenų. Banko išrašą įkeliate patys.{% else %}MoneyCompass never connects to your bank or asks for your banking credentials. You upload the statement yourself.{% endif %}</span>
+            </div>
+
+            <div class="onboarding-intro-actions">
+                <a href="{% url 'guide' %}#getting-started" target="_blank" rel="noopener noreferrer" class="onboarding-intro-guide-link">
+                    {% if LANGUAGE_CODE == "lt" %}Atidaryti gidą{% else %}Open the guide{% endif %}
+                </a>
+                <form action="{% url 'onboarding_intro_acknowledge' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-primary" autofocus>
+                        {% if LANGUAGE_CODE == "lt" %}Supratau, pradėkime{% else %}Got it, let’s begin{% endif %}
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+   {% endif %}
+
    {% include "includes/pending_delete_banner.html" %}
 
    {% if onboarding %}
     <div class="onboarding-banner">
         <div class="container">
-            <span>{{ onboarding.text }}</span>
+            <div class="onboarding-banner-copy">
+                <strong class="onboarding-progress">
+                    {% if LANGUAGE_CODE == "lt" %}{{ onboarding.step_number }} iš {{ onboarding.step_total }}{% else %}{{ onboarding.step_number }} of {{ onboarding.step_total }}{% endif %}
+                </strong>
+                <span>{{ onboarding.text }}</span>
+            </div>
 
             <div style="display:flex; gap: 0.5rem; align-items: center;">
                 {% if onboarding.cta_href %}

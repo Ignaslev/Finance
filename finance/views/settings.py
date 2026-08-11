@@ -561,6 +561,17 @@ def set_preferred_language(request):
 
 @login_required
 @require_POST
+def onboarding_intro_acknowledge(request):
+    state, _created = OnboardingState.objects.get_or_create(user=request.user)
+    if state.intro_acknowledged_at is None:
+        state.intro_acknowledged_at = timezone.now()
+        state.save(update_fields=["intro_acknowledged_at", "updated_at"])
+
+    return redirect(_safe_next_url(request, request.POST.get("next"), "overview"))
+
+
+@login_required
+@require_POST
 def onboarding_mark_done(request):
     step = (request.POST.get("step") or "").strip()
 

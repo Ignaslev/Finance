@@ -69,6 +69,7 @@ urlpatterns = [
     path("reports/generate/", f.reports_generate, name="reports_generate"),
 
     path("teach-ai/", f.teach_ai, name="teach_ai"),
+    path("onboarding/intro/acknowledge", f.onboarding_intro_acknowledge, name="onboarding_intro_acknowledge"),
     path("onboarding/mark", f.onboarding_mark_done, name="onboarding_mark_done"),
 
     path("review/ai/", f.review_ai_runs, name="review_ai_runs"),

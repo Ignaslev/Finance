@@ -25,7 +25,8 @@ from .reports import (
 )
 from .settings import (
     profile, category_list, category_edit, category_delete,
-    onboarding_mark_done, profile_delete_account, profile_cancel_delete_account
+    onboarding_intro_acknowledge, onboarding_mark_done,
+    profile_delete_account, profile_cancel_delete_account
 )
 # UNCOMMENTED THESE LINES:
 from .ai import (

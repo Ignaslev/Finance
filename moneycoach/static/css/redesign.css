@@ -408,6 +408,173 @@ tbody tr:hover td {
 }
 
 /* Onboarding */
+body.has-onboarding-intro {
+    overflow: hidden;
+}
+
+.onboarding-intro-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.58);
+}
+
+.onboarding-intro-dialog {
+    width: min(680px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 28px;
+    border: 1px solid var(--mc-border);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.onboarding-intro-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.onboarding-intro-icon {
+    display: grid;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 8px;
+    background: #e6faf6;
+    color: var(--primary-teal-dark);
+    font-size: 1.55rem;
+}
+
+.onboarding-intro-dialog h2 {
+    margin: 0;
+    color: var(--text-dark);
+    font-size: 1.45rem;
+    line-height: 1.25;
+}
+
+.onboarding-intro-dialog p {
+    margin: 8px 0 0;
+    color: var(--text-medium);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.onboarding-intro-steps {
+    display: grid;
+    gap: 12px;
+    margin: 22px 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: onboarding-step;
+}
+
+.onboarding-intro-steps li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 12px;
+    counter-increment: onboarding-step;
+}
+
+.onboarding-intro-steps li::before {
+    content: counter(onboarding-step);
+    display: grid;
+    width: 32px;
+    height: 32px;
+    grid-row: 1 / span 2;
+    place-items: center;
+    border: 1px solid #b8eee3;
+    border-radius: 50%;
+    background: #effbf8;
+    color: var(--primary-teal-dark);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.onboarding-intro-steps strong {
+    align-self: center;
+    color: var(--text-dark);
+    font-size: 0.91rem;
+}
+
+.onboarding-intro-steps span {
+    margin-top: 2px;
+    color: var(--text-medium);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.onboarding-intro-banner-note {
+    margin-top: 0 !important;
+}
+
+.onboarding-intro-privacy {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid #ccefe7;
+    border-radius: 8px;
+    background: #f3fbf9;
+    color: #285f54;
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.onboarding-intro-privacy i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--primary-teal-dark);
+    font-size: 1.15rem;
+}
+
+.onboarding-intro-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.onboarding-intro-actions form {
+    margin: 0;
+}
+
+.onboarding-intro-guide-link {
+    color: var(--primary-teal-dark);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.onboarding-intro-guide-link:hover {
+    text-decoration: underline;
+}
+
+.onboarding-banner-copy {
+    display: flex;
+    flex: 1 1 520px;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.onboarding-banner .onboarding-progress {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #e6faf6;
+    color: var(--primary-teal-dark);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
 .onboarding-banner {
     width: calc(100% - 68px);
     max-width: 1312px;
@@ -430,6 +597,57 @@ tbody tr:hover td {
     border-radius: 9px;
     background: var(--primary-teal);
     font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+    .onboarding-intro-backdrop {
+        align-items: end;
+        padding: 12px;
+    }
+
+    .onboarding-intro-dialog {
+        max-height: calc(100vh - 24px);
+        padding: 20px 18px;
+    }
+
+    .onboarding-intro-heading {
+        gap: 12px;
+    }
+
+    .onboarding-intro-icon {
+        flex-basis: 40px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.3rem;
+    }
+
+    .onboarding-intro-dialog h2 {
+        font-size: 1.2rem;
+    }
+
+    .onboarding-intro-steps {
+        margin: 18px 0;
+    }
+
+    .onboarding-intro-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .onboarding-intro-actions form,
+    .onboarding-intro-actions .btn {
+        width: 100%;
+    }
+
+    .onboarding-intro-guide-link {
+        text-align: center;
+    }
+
+    .onboarding-banner-copy {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
 }
 
 /* Dashboard */
