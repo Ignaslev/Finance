@@ -551,6 +551,7 @@
 </div>
 </div>
 
+{% include "monthly_category_history.html" %}
 {% include "spending_category_history.html" %}
 
 {% comment %}
@@ -746,6 +747,12 @@
         outline: 2px solid var(--primary-teal);
         outline-offset: 2px;
     }
+    .monthly-category-history-chart {
+        position: relative;
+        width: 100%;
+        height: 360px;
+        margin: 0.75rem auto 1.25rem;
+    }
     @media (max-width: 960px) {
         .statistics-insight-grid {
             grid-template-columns: 1fr;
@@ -814,6 +821,9 @@
         margin-top: 1rem;
     }
     @media (max-width: 640px) {
+        .monthly-category-history-chart {
+            height: 320px;
+        }
         .statistics-disclosure > summary {
             padding: 0.7rem 0.8rem;
         }
@@ -1021,6 +1031,141 @@
     updateCapNotice();
     renderPeriodButtons();
     renderTable(currentMonth);
+  })();
+  {% endif %}
+
+  {% if spending_cat_names %}
+  (function(){
+    const allCategories = JSON.parse('{{ spending_cat_names_json|default:"[]"|escapejs }}');
+    const allMonths = JSON.parse('{{ spending_cat_month_labels_json|default:"[]"|escapejs }}');
+    const series = JSON.parse('{{ spending_series_by_cat_json|default:"{}"|escapejs }}');
+    const transactions = JSON.parse('{{ spending_top_transactions_by_cat_month_json|default:"{}"|escapejs }}');
+    const canvas = document.getElementById('monthlyHistoryChart');
+    if (!canvas || !allCategories.length || !allMonths.length) return;
+
+    const availableMonths = allMonths.filter((monthKey, monthIndex) =>
+      allCategories.some(category => Number((series[category] || [])[monthIndex] || 0) > 0)
+    );
+    if (!availableMonths.length) return;
+
+    const categorySelect = document.getElementById('monthlyHistoryCategorySelect');
+    const detailTitle = document.getElementById('monthlyHistoryDetailTitle');
+    const yearButtons = document.getElementById('monthlyHistoryYearButtons');
+    const monthButtons = document.getElementById('monthlyHistoryMonthButtons');
+    const transactionsWrap = document.getElementById('monthlyHistoryTransactionsWrap');
+    const colors = ['#00cea6', '#3182ce', '#805ad5', '#e53e3e', '#d69e2e', '#38a169', '#00b5d8', '#d53f8c'];
+    let selectedMonth = availableMonths[availableMonths.length - 1];
+    let selectedCategory = '';
+    let chart = null;
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[character]));
+    }
+
+    function monthEntries(monthKey) {
+      const monthIndex = allMonths.indexOf(monthKey);
+      return allCategories
+        .map(category => ({
+          category,
+          value: Number((series[category] || [])[monthIndex] || 0),
+        }))
+        .filter(entry => entry.value > 0)
+        .sort((a, b) => b.value - a.value || a.category.localeCompare(b.category));
+    }
+
+    function makePeriodButton(label, value, selected, onClick) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'category-period-button';
+      button.textContent = label;
+      button.dataset.value = value;
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    function renderPeriodButtons() {
+      const selectedYear = selectedMonth.slice(0, 4);
+      const years = [...new Set(availableMonths.map(month => month.slice(0, 4)))].reverse();
+      yearButtons.innerHTML = '';
+      years.forEach(year => {
+        yearButtons.appendChild(makePeriodButton(year, year, year === selectedYear, () => {
+          const yearMonths = availableMonths.filter(month => month.startsWith(`${year}-`));
+          selectedMonth = yearMonths[yearMonths.length - 1];
+          renderAll();
+        }));
+      });
+
+      monthButtons.innerHTML = '';
+      availableMonths.filter(month => month.startsWith(`${selectedYear}-`)).forEach(monthKey => {
+        monthButtons.appendChild(makePeriodButton(monthKey.slice(5), monthKey, monthKey === selectedMonth, () => {
+          selectedMonth = monthKey;
+          renderAll();
+        }));
+      });
+    }
+
+    function renderCategorySelect(entries) {
+      const categories = entries.map(entry => entry.category);
+      if (!categories.includes(selectedCategory)) selectedCategory = categories[0] || '';
+      categorySelect.innerHTML = categories
+        .map(category => `<option value="${escapeHtml(category)}"${category === selectedCategory ? ' selected' : ''}>${escapeHtml(category)}</option>`)
+        .join('');
+    }
+
+    function renderChart(entries) {
+      if (chart) chart.destroy();
+      chart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: entries.map(entry => entry.category),
+          datasets: [{
+            label: `${selectedMonth} · EUR`,
+            data: entries.map(entry => entry.value),
+            backgroundColor: entries.map((_, index) => colors[index % colors.length]),
+            borderColor: entries.map((_, index) => colors[index % colors.length]),
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } },
+          plugins: { legend: { display: true } },
+        },
+      });
+    }
+
+    function renderTransactions() {
+      const rows = (transactions[selectedCategory] && transactions[selectedCategory][selectedMonth]) || [];
+      detailTitle.textContent = `{% if LANGUAGE_CODE|slice:":2" == "lt" %}10 didžiausių operacijų{% else %}Top 10 transactions{% endif %} · ${selectedCategory} · ${selectedMonth}`;
+      if (!rows.length) {
+        transactionsWrap.innerHTML = '<p style="opacity:0.6; font-size:0.9em;">{% trans "No data." %}</p>';
+        return;
+      }
+
+      let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Date" %}</th><th>{% trans "Merchant" %}</th><th>{% trans "Account" %}</th><th style="text-align:right;">{% trans "Amount" %}</th></tr></thead><tbody>';
+      rows.forEach(row => {
+        html += `<tr><td style="white-space:nowrap;">${escapeHtml(row.date)}</td><td>${escapeHtml(row.merchant)}</td><td>${escapeHtml(row.account || '-')}</td><td style="text-align:right; white-space:nowrap; font-weight:600;">${Number(row.amount).toFixed(2)} ${escapeHtml(row.currency)}</td></tr>`;
+      });
+      transactionsWrap.innerHTML = html + '</tbody></table></div>';
+    }
+
+    function renderAll() {
+      const entries = monthEntries(selectedMonth);
+      renderPeriodButtons();
+      renderCategorySelect(entries);
+      renderChart(entries);
+      renderTransactions();
+    }
+
+    categorySelect.addEventListener('change', () => {
+      selectedCategory = categorySelect.value;
+      renderTransactions();
+    });
+    renderAll();
   })();
   {% endif %}
 

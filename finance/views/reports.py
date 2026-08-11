@@ -718,9 +718,11 @@ def statistics(request):
         "include_uncat": include_uncat,
 
         "spending_cat_names": spending_category_analytics["category_names"],
+        "spending_cat_names_json": json.dumps(spending_category_analytics["category_names"]),
         "spending_cat_month_labels_json": json.dumps(spending_category_analytics["month_labels"]),
         "spending_series_by_cat_json": json.dumps(spending_category_analytics["series_by_category"]),
         "spending_breakdown_by_cat_month_json": json.dumps(spending_category_analytics["breakdown"]),
+        "spending_top_transactions_by_cat_month_json": json.dumps(spending_category_analytics["top_transactions"]),
         "spending_cap_by_cat_json": json.dumps(spending_category_analytics["caps"]),
     }
     return render(request, "statistics.html", ctx)

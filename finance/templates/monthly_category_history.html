@@ -1,0 +1,41 @@
+{% load i18n guide_links %}
+{% get_current_language as LANGUAGE_CODE %}
+<div class="card statistics-month-category-history-card" id="monthly-spending-by-category">
+  <div class="card-title title-with-guide" style="margin:0;">
+    <span>{% if LANGUAGE_CODE|slice:":2" == "lt" %}Mėnesio išlaidos pagal kategoriją{% else %}Monthly Spending by Category{% endif %}</span>
+    {% guide_icon "dashboard_categories" %}
+  </div>
+  <p class="text-medium" style="font-size:0.88rem; margin:0.35rem 0 0;">
+    {% if LANGUAGE_CODE|slice:":2" == "lt" %}Pasirinkite mėnesį ir palyginkite, kiek išleidote kiekvienai kategorijai.{% else %}Choose a month and compare how much you spent in each category.{% endif %}
+  </p>
+
+  {% if spending_cat_names %}
+    <div class="category-period-picker" style="margin-top:1rem;">
+      <div>
+        <div class="category-period-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Metai{% else %}Year{% endif %}</div>
+        <div id="monthlyHistoryYearButtons" class="category-period-buttons" role="group" aria-label="{% if LANGUAGE_CODE|slice:':2' == 'lt' %}Metai{% else %}Year{% endif %}"></div>
+      </div>
+      <div>
+        <div class="category-period-label">{% trans "Month" %}</div>
+        <div id="monthlyHistoryMonthButtons" class="category-period-buttons category-month-buttons" role="group" aria-label="{% trans 'Month' %}"></div>
+      </div>
+    </div>
+
+    <div class="monthly-category-history-chart">
+      <canvas id="monthlyHistoryChart"></canvas>
+    </div>
+
+    <div style="border-top:1px solid #edf2f7; padding-top:1rem;">
+      <div class="spending-history-top-controls" style="margin-top:0;">
+        <label class="spending-history-select-label">
+          <span>{% trans "Category" %}</span>
+          <select id="monthlyHistoryCategorySelect"></select>
+        </label>
+      </div>
+      <div id="monthlyHistoryDetailTitle" style="font-weight:700; color:var(--text-dark); margin-bottom:0.5rem;"></div>
+      <div id="monthlyHistoryTransactionsWrap"></div>
+    </div>
+  {% else %}
+    <p style="opacity:0.7; padding:1rem 0 0;">{% trans "No categorized spending yet." %}</p>
+  {% endif %}
+</div>

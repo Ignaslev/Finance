@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from decimal import Decimal
 
@@ -69,3 +70,22 @@ class StatisticsDisclosureTests(TestCase):
         self.assertIn('id="historyCatChartType"', html)
         self.assertIn('id="historyCatYearButtons"', html)
         self.assertIn('id="historyCatMonthButtons"', html)
+        self.assertIn('id="monthly-spending-by-category"', html)
+        self.assertIn('id="monthlyHistoryYearButtons"', html)
+        self.assertIn('id="monthlyHistoryMonthButtons"', html)
+        self.assertIn('id="monthlyHistoryChart"', html)
+        self.assertIn('id="monthlyHistoryCategorySelect"', html)
+        self.assertNotIn('id="monthlyHistoryChartType"', html)
+        self.assertLess(
+            html.index('id="monthly-spending-by-category"'),
+            html.index('id="spending-by-category"'),
+        )
+
+        month_key = timezone.localdate().strftime("%Y-%m")
+        top_transactions = json.loads(
+            response.context["spending_top_transactions_by_cat_month_json"]
+        )
+        self.assertEqual(
+            top_transactions["Subscriptions"][month_key][0]["merchant"],
+            "Streaming service",
+        )

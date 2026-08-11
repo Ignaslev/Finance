@@ -446,9 +446,7 @@ tbody tr:hover td {
 
 .dashboard-title-row,
 .net-worth-card,
-.dashboard-goals-card,
-.dashboard-category-card,
-.dashboard-month-category-card {
+.dashboard-goals-card {
     grid-column: 1 / -1;
 }
 
@@ -469,7 +467,9 @@ tbody tr:hover td {
     order: 2;
 }
 
-.dashboard-month-category-card {
+.dashboard-month-category-card,
+.dashboard-category-card {
+    grid-column: auto;
     order: 3;
 }
 
@@ -483,10 +483,6 @@ tbody tr:hover td {
 
 .dashboard-net-month-card {
     order: 5;
-}
-
-.dashboard-category-card {
-    order: 6;
 }
 
 .net-worth-card > .text-medium:first-child {
@@ -1218,20 +1214,20 @@ tbody tr:hover td {
         order: 4;
     }
 
-    .dashboard-goals-card {
+    .dashboard-category-card {
         order: 5;
     }
 
-    .dashboard-income-card {
+    .dashboard-goals-card {
         order: 6;
     }
 
-    .dashboard-category-card {
-        order: 8;
+    .dashboard-income-card {
+        order: 7;
     }
 
     .dashboard-net-month-card {
-        order: 7;
+        order: 8;
     }
 
     .statistics-page .statistics-summary-grid {
@@ -1379,19 +1375,19 @@ tbody tr:hover td {
         order: 4;
     }
 
-    .dashboard-goals-card {
+    .dashboard-category-card {
         order: 5;
     }
 
-    .dashboard-income-card {
+    .dashboard-goals-card {
         order: 6;
     }
 
-    .dashboard-net-month-card {
+    .dashboard-income-card {
         order: 7;
     }
 
-    .dashboard-category-card {
+    .dashboard-net-month-card {
         order: 8;
     }
 
