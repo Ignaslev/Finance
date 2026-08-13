@@ -11,14 +11,14 @@ from django.db.models import Sum, Case, When, F, DecimalField
 
 DEFAULT_CATEGORIES_BY_LANGUAGE = {
     "en": [
-        "Income", "Cash", "Dining", "Fitness & Health",
+        "Salary", "Individual activity", "Cash", "Dining", "Fitness & Health",
         "Groceries", "Shopping", "Crypto", "Utilities",
-        "Other", "Subscriptions", "Transportation", "Internal transfer",
+        "Other", "Subscriptions", "Transportation",
     ],
     "lt": [
-        "Pajamos", "Grynieji", "Kavinės ir restoranai", "Sportas ir sveikata",
+        "Atlyginimas", "Individuali veikla", "Grynieji", "Kavinės ir restoranai", "Sportas ir sveikata",
         "Maisto prekės", "Pirkiniai", "Kripto", "Komunaliniai",
-        "Kita", "Prenumeratos", "Transportas", "Vidinis pavedimas",
+        "Kita", "Prenumeratos", "Transportas",
     ],
 }
 
@@ -57,7 +57,7 @@ def default_category_name(kind, user_or_language=None):
         language = normalized_language(user_or_language)
 
     localized = {
-        "income": {"en": "Income", "lt": "Pajamos"},
+        "income": {"en": "Salary", "lt": "Atlyginimas"},
         "other": {"en": "Other", "lt": "Kita"},
         "subscriptions": {"en": "Subscriptions", "lt": "Prenumeratos"},
         "internal_transfer": {"en": "Internal transfer", "lt": "Vidinis pavedimas"},

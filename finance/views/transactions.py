@@ -31,7 +31,7 @@ from finance.models import (
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
-    parse_decimal_filter, category_names_for, default_money_source_name
+    parse_decimal_filter, default_money_source_name
 )
 from finance.subscriptions import access_context, require_paid_access
 from django.db import transaction as db_transaction
@@ -60,14 +60,28 @@ def tx_edit(request, pk):
     if request.method == "POST":
         cat_id = request.POST.get("category_fk")
         user_note = (request.POST.get("user_note") or "").strip()[:500]
+        is_internal_transfer = request.POST.get("is_internal_transfer") == "1"
         try:
             if cat_id:
                 cat = Category.objects.get(id=int(cat_id), user=request.user)
                 tx.category_fk = cat
                 tx.category = cat.name
                 tx.category_source = "user"
+            elif not cat_id:
+                tx.category_fk = None
+                tx.category = None
+                tx.category_source = "unknown"
             tx.user_note = user_note
-            tx.save(update_fields=["category_fk", "category", "category_source", "user_note"])
+            tx.is_internal_transfer = is_internal_transfer
+            if is_internal_transfer:
+                tx.ai_suggested_fk = None
+                tx.ai_confidence = None
+                tx.ai_reason = ""
+            tx.save(update_fields=[
+                "category_fk", "category", "category_source", "user_note",
+                "is_internal_transfer", "ai_suggested_fk", "ai_confidence",
+                "ai_reason", "updated_at",
+            ])
             messages.success(request, _("Saved."))
         except Exception as e:
             messages.error(request, _("Error: %(error)s") % {"error": e})
@@ -101,6 +115,7 @@ def tx_add(request):
         amount_str = (request.POST.get("amount") or "").strip().replace(",", ".")
         currency   = (request.POST.get("currency") or "EUR").strip().upper()[:8] or "EUR"
         in_out     = (request.POST.get("in_out") or "out").strip()
+        is_internal_transfer = request.POST.get("is_internal_transfer") == "1"
         notes      = (request.POST.get("notes") or "").strip()[:2000]
         user_note  = (request.POST.get("user_note") or "").strip()[:2000]
         src_id     = request.POST.get("money_source") or ""
@@ -152,6 +167,7 @@ def tx_add(request):
             amount=amount,
             currency=currency,
             in_out=in_out,
+            is_internal_transfer=is_internal_transfer,
             notes=notes,
             user_note=user_note,
             fingerprint=fp,
@@ -246,7 +262,7 @@ def tx_bulk_category_apply(request):
 def uncategorized(request):
     qs = (
         Transaction.objects
-        .filter(user=request.user, is_deleted=False)
+        .filter(user=request.user, is_deleted=False, is_internal_transfer=False)
         .filter(
             Q(category_fk__isnull=True) |
             Q(category__isnull=True) |
@@ -377,7 +393,7 @@ REFUND_MAX_DAYS = 10
 
 
 def _build_refund_candidates(user, filtered_qs):
-    qs = filtered_qs.filter(is_deleted=False)
+    qs = filtered_qs.filter(is_deleted=False, is_internal_transfer=False)
 
     outs = list(
         qs.filter(in_out=Transaction.OUT)
@@ -886,9 +902,16 @@ def upload(request):
                 state = None
 
             if state and state.categories_done:
-                labeled = Transaction.objects.filter(user=request.user, category_source="user").count()
+                labeled = Transaction.objects.filter(
+                    user=request.user,
+                    category_source="user",
+                    is_internal_transfer=False,
+                ).count()
                 has_uncat = Transaction.objects.filter(
-                    user=request.user, is_deleted=False, category_fk__isnull=True
+                    user=request.user,
+                    is_deleted=False,
+                    is_internal_transfer=False,
+                    category_fk__isnull=True,
                 ).exists()
                 if labeled >= TEACH_AI_UNLOCK and has_uncat:
                     AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
@@ -984,12 +1007,15 @@ def upload(request):
 
     uncat_count = (
         Transaction.objects
-        .filter(user=request.user, is_deleted=False)
+        .filter(user=request.user, is_deleted=False, is_internal_transfer=False)
         .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
         .count()
     )
     low_conf_count = Transaction.objects.filter(
-        user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        ai_suggested_fk__isnull=False,
     ).count()
 
     try:
@@ -1002,20 +1028,19 @@ def upload(request):
     categories = Category.objects.filter(user=request.user).order_by("name")
 
     ensure_default_categories(request.user)
-    income_exists = Category.objects.filter(
-        user=request.user,
-        name__in=category_names_for("income"),
-    ).exists()
     try:
         state = request.user.onboarding_state
-        cats_done = bool(state and state.categories_done and income_exists)
+        cats_done = bool(state and state.categories_done)
     except OnboardingState.DoesNotExist:
         cats_done = False
 
     MIN_USER_LABELS = getattr(settings, "MIN_USER_LABELS", 30)
     has_any_tx = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
     user_labels_count = Transaction.objects.filter(
-        user=request.user, is_deleted=False, category_source="user"
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        category_source="user",
     ).count()
     ai_locked = (has_any_tx and user_labels_count < MIN_USER_LABELS)
 
@@ -1072,7 +1097,6 @@ def upload(request):
         "subscription_access": access_context(request.user),
         "onboarding_state": {
             "categories_done": cats_done,
-            "has_income": income_exists,
             "has_any_tx": has_any_tx,
             "user_labels_count": user_labels_count,
             "min_needed": MIN_USER_LABELS,

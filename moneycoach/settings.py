@@ -181,9 +181,9 @@ LOGIN_REDIRECT_URL = "overview"   # optional but recommended
 LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_CATEGORIES = [
-    "Income", "Cash", "Dining", "Fitness & Health",
+    "Salary", "Individual activity", "Cash", "Dining", "Fitness & Health",
     "Groceries", "Shopping", "Crypto", "Utilities",
-    "Other", "Subscriptions", "Transportation", "Internal transfer",
+    "Other", "Subscriptions", "Transportation",
 ]
 
 TEACH_AI_UNLOCK = 20

@@ -14,7 +14,7 @@ import re
 
 from finance.models import (
     Transaction, Category, MoneySource, AdvisorReport, BalanceSnapshot,
-    UserProfile, SubscriptionDecision, IncomeSourceDecision
+    SubscriptionDecision, IncomeSourceDecision
 )
 from finance.services import _advisor_build_payload, _advisor_call_model
 from finance.category_analytics import build_spending_category_analytics
@@ -25,7 +25,6 @@ from django.views.decorators.http import require_POST
 from django.utils.translation import gettext as _, ngettext
 
 SUBSCRIPTIONS_CATEGORY_NAMES = category_names_for("subscriptions")
-INCOME_CATEGORY_NAMES = category_names_for("income")
 SUBSCRIPTION_IGNORE_TERMS = (
     "atm", "bank", "bankas", "cash", "withdraw", "withdrawal",
     "brink", "brinks", "transfer", "paved", "mokej", "mokėj",
@@ -288,13 +287,6 @@ def _canonical_income_source(raw_merchant: str) -> str:
     return norm
 
 
-def _tx_is_income_category(tx) -> bool:
-    name = tx.category_fk.name if tx.category_fk else tx.category
-    return (
-        name in INCOME_CATEGORY_NAMES
-    )
-
-
 def _build_income_source_row(normalized_merchant, items, display_name=""):
     items = sorted(items, key=lambda t: (t.date, t.id))
     months = sorted({_subscription_month_key(t.date) for t in items})
@@ -328,9 +320,6 @@ def _build_income_source_buckets(user, base_qs):
     )
 
     for tx in txs:
-        if not _tx_is_income_category(tx):
-            continue
-
         norm = _canonical_income_source(tx.merchant or "")
         if not norm:
             norm = "__unknown_income__"
@@ -392,69 +381,11 @@ def statistics(request):
     user = request.user
     today = timezone.localtime().date()
 
-    # Preference: exclude 15% tax from investment values (display only, not portfolio page)
-    prof, _created = UserProfile.objects.get_or_create(user=user)
-    tax_on = bool(prof.exclude_investment_tax)
-    tax_factor = Decimal("0.85") if tax_on else Decimal("1.0")
-
-    # ==========================================
-    # 1. RUNWAY SIMULATOR (New Logic)
-    # ==========================================
-    # We need these for the simulator modal
-    all_sources_sim = MoneySource.objects.filter(user=user, is_active=True).order_by('type', 'name')
-    all_cats_sim = Category.objects.filter(user=user).order_by('name')
-
-    is_simulated = request.GET.get('runway_sim') == '1'
-
-    if is_simulated:
-        inc_src_ids = {int(x) for x in request.GET.getlist('inc_src') if x.isdigit()}
-        inc_cat_ids = {int(x) for x in request.GET.getlist('inc_cat') if x.isdigit()}
-        inc_uncat = request.GET.get('inc_uncat') == '1'
-    else:
-        # Default: Include everything
-        inc_src_ids = {s.id for s in all_sources_sim}
-        inc_cat_ids = {c.id for c in all_cats_sim}
-        inc_uncat = True
-
-    # Calculate Net Worth (Filtered)
-    total_net_worth = Decimal("0")
-    for acc in all_sources_sim:
-        if acc.id in inc_src_ids:
-            bal = acc.manual_balance if acc.manual_balance is not None else Decimal("0")
-
-            # Apply tax factor ONLY to investment values, and only when positive
-            if tax_on and acc.type == "investment" and bal > 0:
-                bal = bal * tax_factor
-
-            total_net_worth += bal
-
-    # Calculate Burn Rate (Filtered, Last 90 Days)
-    start_90 = today - timedelta(days=90)
-    spend_qs = Transaction.objects.filter(user=user, is_deleted=False, in_out=Transaction.OUT, date__gte=start_90)
-
-    # Exclude unchecked categories
-    spend_qs = spend_qs.exclude(category_fk__id__in=list(set(c.id for c in all_cats_sim) - inc_cat_ids))
-    if not inc_uncat:
-        spend_qs = spend_qs.exclude(category_fk__isnull=True)
-
-    recent_spend = spend_qs.aggregate(s=Sum("amount"))["s"] or Decimal("0")
-    avg_monthly_burn = recent_spend / Decimal("3.0")
-
-    if avg_monthly_burn > 0:
-        runway_months = total_net_worth / avg_monthly_burn
-    else:
-        runway_months = Decimal("999")
-
-    # Month-over-Month Delta (Raw Reality Check)
-    this_month_start = today.replace(day=1)
-    last_month_end = this_month_start - timedelta(days=1)
-    last_month_start = last_month_end.replace(day=1)
-
-    base = Transaction.objects.filter(user=user, is_deleted=False)
-
-    mom_this = base.filter(in_out=Transaction.OUT, date__gte=this_month_start).aggregate(s=Sum("amount"))["s"] or Decimal("0")
-    mom_last = base.filter(in_out=Transaction.OUT, date__gte=last_month_start, date__lte=last_month_end).aggregate(s=Sum("amount"))["s"] or Decimal("0")
-    mom_diff = mom_this - mom_last
+    base = Transaction.objects.filter(
+        user=user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
 
     # ==========================================
     # 2. EXISTING STATISTICS LOGIC (Restored 1:1)
@@ -464,19 +395,6 @@ def statistics(request):
         return render(request, "statistics.html", {
             "empty_state": True,
 
-            # Preference flag
-            "exclude_investment_tax": tax_on,
-
-            # Pass Runway vars even on empty state
-            "runway_months": float(runway_months),
-            "avg_monthly_burn": float(avg_monthly_burn),
-            "mom_diff": float(mom_diff),
-            "all_sources_sim": all_sources_sim,
-            "all_cats_sim": all_cats_sim,
-            "inc_src_ids": list(inc_src_ids),
-            "inc_cat_ids": list(inc_cat_ids),
-            "inc_uncat": inc_uncat,
-            "is_simulated": is_simulated,
         })
 
     # Lifetime stats
@@ -651,20 +569,6 @@ def statistics(request):
     weekday_values = [float(x) for x in wday_totals]
 
     ctx = {
-        # Preference flag
-        "exclude_investment_tax": tax_on,
-
-        # Runway Vars
-        "runway_months": float(runway_months),
-        "avg_monthly_burn": float(avg_monthly_burn),
-        "mom_diff": float(mom_diff),
-        "all_sources_sim": all_sources_sim,
-        "all_cats_sim": all_cats_sim,
-        "inc_src_ids": list(inc_src_ids),
-        "inc_cat_ids": list(inc_cat_ids),
-        "inc_uncat": inc_uncat,
-        "is_simulated": is_simulated,
-
         # Standard Stats
         "total_in": float(total_in),
         "total_out": float(total_out),
@@ -730,7 +634,11 @@ def statistics(request):
 
 @login_required
 def review_subscription_candidates(request):
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     rows = _build_found_subscription_candidates(request.user, base)
 
     try:
@@ -809,7 +717,11 @@ def review_subscription_candidates_apply(request):
 
 @login_required
 def untracked_subscriptions(request):
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     _active, _past, untracked_rows, _summary = _build_tracked_subscriptions(
         request.user,
         base,
@@ -924,7 +836,11 @@ def subscription_retrack(request):
 
 @login_required
 def review_income_sources(request):
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     _tracked, found_rows, _untracked, _summary = _build_income_source_buckets(request.user, base)
 
     try:
@@ -1004,7 +920,11 @@ def review_income_sources_apply(request):
 
 @login_required
 def untracked_income_sources(request):
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     _tracked, _found, untracked_rows, _summary = _build_income_source_buckets(request.user, base)
 
     try:
@@ -1081,7 +1001,12 @@ def reports(request):
     start_date = join_date.replace(day=1)  # Start from the 1st of their join month
 
     # Get all transaction dates to ensure we have data, but clip to join_date
-    base = Transaction.objects.filter(user=user, is_deleted=False, date__gte=start_date)
+    base = Transaction.objects.filter(
+        user=user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        date__gte=start_date,
+    )
 
     # Build list of available months
     # If no transactions yet, default to current month

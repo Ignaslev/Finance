@@ -99,6 +99,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)  # positive; direction via in_out
     currency = models.CharField(max_length=8, default="EUR")
     in_out = models.CharField(max_length=3, choices=IO_CHOICES, default=OUT)
+    is_internal_transfer = models.BooleanField(default=False)
     notes = models.TextField(blank=True, default="")
     goal_fk = models.ForeignKey(
         "finance.SavingsGoal",
@@ -123,6 +124,10 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=["user", "is_deleted", "date"]),
             models.Index(fields=["user", "is_deleted", "money_source", "date"]),
+            models.Index(
+                fields=["user", "is_deleted", "is_internal_transfer", "date"],
+                name="finance_tx_financial_date_idx",
+            ),
         ]
 
     def __str__(self):

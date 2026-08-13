@@ -40,6 +40,7 @@
             <div class="nav-links">
                 <a href="{% url 'overview' %}" class="nav-item {% active_link 'overview' %}">{% trans "Dashboard" %}</a>
                 <a href="{% url 'statistics' %}" class="nav-item {% active_link 'statistics' %}">{% trans "Statistics" %}</a>
+                <a href="{% url 'tools' %}" class="nav-item {% active_link 'tools' %}">{% if LANGUAGE_CODE == "lt" %}Įrankiai{% else %}Tools{% endif %}</a>
                 <a href="{% url 'reports' %}" class="nav-item {% active_link 'reports' %}">{% trans "Reports" %}</a>
                 <a href="{% url 'assets_dashboard' %}" class="nav-item {% active_link 'assets_dashboard' %}">{% trans "Portfolio" %}</a>
                 <a href="{% url 'upload' %}" class="nav-item {% active_link 'upload' %}">{% trans "Transactions" %}</a>
@@ -227,6 +228,9 @@
         </a>
         <a href="{% url 'upload' %}" class="b-item {% active_link 'upload' %}">
             <i class="ph ph-list-dashes"></i><span>{% trans "Txns" %}</span>
+        </a>
+        <a href="{% url 'tools' %}" class="b-item {% active_link 'tools' %}">
+            <i class="ph ph-magnifying-glass"></i><span>{% if LANGUAGE_CODE == "lt" %}Įrankiai{% else %}Tools{% endif %}</span>
         </a>
         <button onclick="toggleMobileMenu()" class="b-item" style="background:none; border:none; padding:0; font-family:inherit;">
             <i class="ph ph-user" style="color: {% if '/profile/' in request.path or '/statistics/' in request.path or '/reports/' in request.path %}var(--primary-teal){% else %}var(--text-light){% endif %};"></i>

@@ -2,12 +2,12 @@ import re
 from collections import defaultdict
 from decimal import Decimal
 
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
 from finance.models import Category, Transaction
-from finance.utils import _normalize_merchant, category_names_for
+from finance.utils import _normalize_merchant
 
 
 CHAIN_CANONICALS = [
@@ -63,11 +63,7 @@ def canonical_spending_merchant(raw: str) -> str:
 
 def build_spending_category_analytics(user, base_qs=None):
     base = base_qs if base_qs is not None else Transaction.objects.filter(user=user, is_deleted=False)
-    internal_transfer_names = category_names_for("internal_transfer")
-    base = base.exclude(
-        Q(category_fk__name__in=internal_transfer_names)
-        | Q(category__in=internal_transfer_names)
-    )
+    base = base.filter(is_internal_transfer=False)
 
     monthly_totals = (
         base.filter(in_out=Transaction.OUT, category_fk__isnull=False)

@@ -30,11 +30,15 @@ def _eligible_for_autocategorize(user, min_labels: int) -> bool:
         return False
     if not state.categories_done:
         return False
-    labeled = Transaction.objects.filter(user=user, category_source="user").count()
+    labeled = Transaction.objects.filter(
+        user=user,
+        category_source="user",
+        is_internal_transfer=False,
+    ).count()
     if labeled < min_labels:
         return False
     has_uncat = Transaction.objects.filter(
-        user=user, is_deleted=False
+        user=user, is_deleted=False, is_internal_transfer=False
     ).filter(
         category_fk__isnull=True
     ).exists()

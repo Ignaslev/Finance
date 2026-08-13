@@ -12,9 +12,7 @@ import os, json
 from finance.models import Transaction, Category, AiRun, AiRunItem
 from finance.utils import (
     category_names_for,
-    default_category_name,
     ensure_default_categories,
-    find_category_by_kind,
     _normalize_merchant,
     looks_like_self_transfer,
 )
@@ -65,102 +63,58 @@ def ai_full_categorize(request):
       - mode=ai:              only AI-labeled
       - mode=all:             everything EXCEPT user-labeled
 
-    Rules:
-      1) Self-transfer rule (merchant matches user's name) -> 'Internal transfer'
-         - runs BEFORE Income rule
-      2) Prefill IN rows with empty category -> 'Income' (category_source='rule')
-      3) Never assign 'Income' to OUT rows
+    Self-transfers are marked independently from categories. All other incoming
+    and outgoing transactions are categorized using the same learning flow.
     """
     blocked = require_paid_access(request, redirect_name="upload")
     if blocked:
         return blocked
 
-    # Seed defaults (now includes "Internal transfer" in your DEFAULT_CATEGORIES)
+    # Seed the user's ordinary categories before building the AI category list.
     ensure_default_categories(request.user)
 
     mode = request.GET.get("mode", "uncat")
 
-    # ---------- Candidate pool (EXCLUDE deleted) ----------
-    if mode == "uncat":
-        base = (Transaction.objects
-                .filter(user=request.user, is_deleted=False)
-                .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
-                .exclude(category_source="user"))
-    elif mode == "ai":
-        base = Transaction.objects.filter(user=request.user, is_deleted=False, category_source="ai")
-    elif mode == "all":
-        base = Transaction.objects.filter(user=request.user, is_deleted=False).exclude(category_source="user")
-    else:
-        base = Transaction.objects.none()
-
-    # Build category map early for rule lookups
-    cats_by_name = {c.name: c for c in Category.objects.filter(user=request.user)}
-
-    # ---------- HARD RULE 1: Internal transfer if merchant matches user's own name ----------
-    TRANSFER_NAME = default_category_name("internal_transfer", request.user)
-    transfer_cat = find_category_by_kind(request.user, "internal_transfer")
-
-    # Fallback for older users if category wasn't created for some reason
-    if transfer_cat is None:
-        transfer_cat = Category.objects.create(user=request.user, name=TRANSFER_NAME)
-        cats_by_name[TRANSFER_NAME] = transfer_cat
-
-    # Only apply if user has a meaningful name set (superuser often doesn't)
+    # Mark clear self-transfers before selecting AI candidates. This flag is
+    # intentionally independent from category, so transfers never distort cash
+    # flow analytics and do not consume an ordinary category.
     u_first = (getattr(request.user, "first_name", "") or "").strip()
     u_last = (getattr(request.user, "last_name", "") or "").strip()
 
-    if transfer_cat and u_first and u_last:
-        # Only fill EMPTY categories; never override user labels
+    if u_first and u_last:
         transfer_qs = (
             Transaction.objects
-            .filter(user=request.user, is_deleted=False)
+            .filter(user=request.user, is_deleted=False, is_internal_transfer=False)
             .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
             .exclude(category_source="user")
             .only("id", "merchant")
         )
 
-        # Iterate because "looks_like_self_transfer" is Python-side logic
         for t in transfer_qs:
             if looks_like_self_transfer(t.merchant or "", u_first, u_last):
                 Transaction.objects.filter(id=t.id).update(
-                    category_fk=transfer_cat,
-                    category=transfer_cat.name,
-                    category_source="rule",
+                    is_internal_transfer=True,
                     ai_suggested_fk=None,
                     ai_confidence=None,
                     ai_reason="",
                     updated_at=timezone.now(),
                 )
 
-    # ---------- HARD RULE 2: Income prefill for IN & empty (AFTER transfer rule) ----------
-    INCOME_NAME = default_category_name("income", request.user)
-    income_cat = find_category_by_kind(request.user, "income")
-
-    if income_cat:
-        prefill_income_qs = (
-            Transaction.objects
-            .filter(user=request.user, is_deleted=False, in_out=Transaction.IN)
-            .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
-            .exclude(category_source="user")
-            .only("id")
-        )
-        for t in prefill_income_qs:
-            Transaction.objects.filter(id=t.id).update(
-                category_fk=income_cat,
-                category=income_cat.name,
-                category_source="rule",
-                ai_suggested_fk=None,
-                ai_confidence=None,
-                ai_reason="",
-                updated_at=timezone.now(),
-            )
-
-    # refresh base after rule prefills if we're working on uncategorized
+    candidate_base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     if mode == "uncat":
-        base = (Transaction.objects
-                .filter(user=request.user, is_deleted=False)
+        base = (candidate_base
                 .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
                 .exclude(category_source="user"))
+    elif mode == "ai":
+        base = candidate_base.filter(category_source="ai")
+    elif mode == "all":
+        base = candidate_base.exclude(category_source="user")
+    else:
+        base = Transaction.objects.none()
 
     qs = base.order_by("date", "id").select_related("category_fk")
     total_candidates = qs.count()
@@ -173,7 +127,8 @@ def ai_full_categorize(request):
             "applied": 0,
             "parked": 0,
             "left_for_review": Transaction.objects.filter(
-                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+                user=request.user, is_deleted=False, is_internal_transfer=False,
+                ai_suggested_fk__isnull=False,
             ).count(),
         })
 
@@ -184,7 +139,8 @@ def ai_full_categorize(request):
             "applied": 0,
             "parked": 0,
             "left_for_review": Transaction.objects.filter(
-                user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+                user=request.user, is_deleted=False, is_internal_transfer=False,
+                ai_suggested_fk__isnull=False,
             ).count(),
         })
 
@@ -235,10 +191,6 @@ def ai_full_categorize(request):
             reason = (res.get("reason") or "")[:500]
             suggested_fk = cats_map.get(suggested_name)
             if not suggested_fk:
-                continue
-
-            # Guard: Never assign "Income" to OUT rows (rule safety)
-            if t.in_out == Transaction.OUT and suggested_name in category_names_for("income"):
                 continue
 
             current_name = (t.category_fk.name if t.category_fk else (t.category or "")).strip()
@@ -297,7 +249,10 @@ def ai_full_categorize(request):
                 t.save(update_fields=["ai_suggested_fk", "ai_confidence", "ai_reason", "updated_at"])
 
     left_for_review = Transaction.objects.filter(
-        user=request.user, is_deleted=False, ai_suggested_fk__isnull=False
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        ai_suggested_fk__isnull=False,
     ).count()
 
     return render(request, "ai_summary.html", {
@@ -317,7 +272,11 @@ def ai_run_uncategorized(request):
     if blocked:
         return blocked
 
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
     eligible_qs = (
         base
         .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
@@ -357,7 +316,11 @@ def ai_recheck_all(request):
     from django.utils import timezone
 
     scope = (request.GET.get("scope") or "ai").lower()
-    base = Transaction.objects.filter(user=request.user, is_deleted=False)
+    base = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
 
     if scope == "all":
         n = base.exclude(category_source="user").count()
@@ -391,6 +354,7 @@ def review_low_conf(request):
     qs = Transaction.objects.filter(
         user=request.user,
         is_deleted=False,
+        is_internal_transfer=False,
         ai_suggested_fk__isnull=False,
     ).order_by("-id")
     try:
@@ -429,7 +393,12 @@ def review_low_apply(request):
     # 2. Optimizing the DB fetch
     # Get all relevant transactions in one go
     tx_ids = [int(k) for k in mapping.keys() if str(k).isdigit()]
-    transactions = Transaction.objects.filter(id__in=tx_ids, user=request.user, is_deleted=False)
+    transactions = Transaction.objects.filter(
+        id__in=tx_ids,
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+    )
 
     # Get all relevant categories
     cat_ids = {int(v) for v in mapping.values() if str(v).isdigit()}
@@ -475,6 +444,7 @@ def review_ai_recent(request):
     qs = Transaction.objects.filter(
         user=request.user,
         is_deleted=False,
+        is_internal_transfer=False,
         category_source="ai",
     )
 
@@ -522,7 +492,12 @@ def teach_ai(request):
     # Base pool: only truly uncategorized, non-deleted, and OUT flow only
     base = (
         Transaction.objects
-        .filter(user=request.user, is_deleted=False, in_out=Transaction.OUT)
+        .filter(
+            user=request.user,
+            is_deleted=False,
+            is_internal_transfer=False,
+            in_out=Transaction.OUT,
+        )
         .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
     )
 
@@ -562,9 +537,6 @@ def teach_ai(request):
             batch_ids = []
             for t in qs_apply:
                 if _normalize_merchant(t.merchant or "") == norm:
-                    # Guard: never set Income on OUT
-                    if cat.name in category_names_for("income"):
-                        continue
                     batch_ids.append(t.id)
 
             if batch_ids:

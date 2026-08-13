@@ -22,7 +22,12 @@ def _pick_examples(user, limit=EXAMPLES_TOTAL_CAP):
     lookback_start = timezone.now().date() - timedelta(days=EXAMPLE_LOOKBACK_MONTHS * 30)
     qs = (
         Transaction.objects
-        .filter(user=user, date__gte=lookback_start, category_fk__isnull=False)
+        .filter(
+            user=user,
+            date__gte=lookback_start,
+            category_fk__isnull=False,
+            is_internal_transfer=False,
+        )
         .filter(category_source__in=["user","rule","ai"])
         .select_related("category_fk")
         .order_by("-date","-id")
@@ -167,7 +172,13 @@ def _call_openai_rows(user, rows, examples, cats):
 def _sample_transactions_for_period(user, start, end):
     qs = list(
         Transaction.objects
-        .filter(user=user, is_deleted=False, date__gte=start, date__lte=end)
+        .filter(
+            user=user,
+            is_deleted=False,
+            is_internal_transfer=False,
+            date__gte=start,
+            date__lte=end,
+        )
         .select_related("category_fk")
         .order_by("-date", "-id")
     )
@@ -284,7 +295,13 @@ def _get_user_report_language(user) -> str:
     return "en" if lang == "en" else "lt"
 
 def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
-    tx = Transaction.objects.filter(user=user, is_deleted=False, date__gte=start, date__lte=end)
+    tx = Transaction.objects.filter(
+        user=user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        date__gte=start,
+        date__lte=end,
+    )
     inc = tx.filter(in_out=Transaction.IN).aggregate(s=Sum("amount"))["s"] or Decimal("0")
     out = tx.filter(in_out=Transaction.OUT).aggregate(s=Sum("amount"))["s"] or Decimal("0")
     report_lang = _get_user_report_language(user)
@@ -350,7 +367,13 @@ def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
         prev_y, prev_m = (start.year, start.month-1) if start.month>1 else (start.year-1, 12)
         prev_s, prev_e = _date(prev_y, 1, 1).replace(month=prev_m), _date(prev_y, monthrange(prev_y, prev_m)[1], 1).replace(month=prev_m)
         prev_e = _date(prev_y, prev_m, monthrange(prev_y, prev_m)[1])
-        prev_tx = Transaction.objects.filter(user=user, is_deleted=False, date__gte=prev_s, date__lte=prev_e)
+        prev_tx = Transaction.objects.filter(
+            user=user,
+            is_deleted=False,
+            is_internal_transfer=False,
+            date__gte=prev_s,
+            date__lte=prev_e,
+        )
         prev_inc = prev_tx.filter(in_out=Transaction.IN).aggregate(s=Sum("amount"))["s"] or Decimal("0")
         prev_out = prev_tx.filter(in_out=Transaction.OUT).aggregate(s=Sum("amount"))["s"] or Decimal("0")
         mom_delta = float((inc - out) - (prev_inc - prev_out))

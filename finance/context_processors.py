@@ -57,7 +57,11 @@ def onboarding(request):
     # Heuristics for step gating
     has_tx = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
     has_balance = BalanceSnapshot.objects.filter(user=request.user).exists()
-    user_labels = Transaction.objects.filter(user=request.user, category_source="user").count()
+    user_labels = Transaction.objects.filter(
+        user=request.user,
+        category_source="user",
+        is_internal_transfer=False,
+    ).count()
 
     # --- 1) Categories (intentional gate until user clicks "I'm done")
     if not state.categories_done:

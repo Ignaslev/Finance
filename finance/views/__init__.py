@@ -36,3 +36,4 @@ from .ai import (
 )
 
 from .guide import guide
+from .tools import tools

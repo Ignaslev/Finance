@@ -47,6 +47,18 @@
         </div>
 
         <div style="grid-column: span 2;">
+          <label style="display:flex; gap:.6rem; align-items:flex-start; font-size:.9rem; color:var(--text-medium); cursor:pointer;">
+            <input type="checkbox" name="is_internal_transfer" value="1" style="margin-top:.15rem;">
+            <span>
+              <strong style="display:block; color:var(--text-dark);">
+                {% if LANGUAGE_CODE|slice:":2" == "lt" %}Vidinis pavedimas{% else %}Internal transfer{% endif %}
+              </strong>
+              {% if LANGUAGE_CODE|slice:":2" == "lt" %}Pažymėkite, kai perkeliate pinigus tarp savo sąskaitų. Operacija liks sąskaitos likutyje, bet nebus skaičiuojama kaip pajamos ar išlaidos.{% else %}Use this when moving money between your own accounts. It remains part of the account balance but is excluded from income and spending.{% endif %}
+            </span>
+          </label>
+        </div>
+
+        <div style="grid-column: span 2;">
           <label style="display:block; font-size:.9em; color:#555; margin-bottom:0.25rem;">
               {% trans "Merchant" %}
           </label>

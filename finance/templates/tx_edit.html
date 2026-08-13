@@ -41,6 +41,20 @@
         </div>
 
         <div class="row" style="margin:.75rem 0;">
+            <label style="display:flex; gap:.6rem; align-items:flex-start; width:100%; font-size:.9rem; cursor:pointer;">
+                <input type="checkbox" name="is_internal_transfer" value="1" {% if tx.is_internal_transfer %}checked{% endif %} style="margin-top:.15rem;">
+                <span>
+                    <strong style="display:block; color:var(--text-dark);">
+                        {% if LANGUAGE_CODE|slice:":2" == "lt" %}Vidinis pavedimas{% else %}Internal transfer{% endif %}
+                    </strong>
+                    <span style="color:var(--text-medium);">
+                        {% if LANGUAGE_CODE|slice:":2" == "lt" %}Neįtraukti į pajamų, išlaidų ir kategorijų statistiką. Sąskaitos likutis ir toliau bus apskaičiuojamas.{% else %}Exclude this transaction from income, spending, and category statistics. Account balances still include it.{% endif %}
+                    </span>
+                </span>
+            </label>
+        </div>
+
+        <div class="row" style="margin:.75rem 0;">
             <label style="display:block; width:100%; font-size:0.9rem;">
                 {% trans "User note" %}
                 <textarea name="user_note" rows="4" maxlength="500"

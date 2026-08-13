@@ -24,7 +24,7 @@ class StatisticsDisclosureTests(TestCase):
             type="bank",
             is_active=True,
         )
-        income = Category.objects.create(user=self.user, name="Income")
+        income = Category.objects.create(user=self.user, name="Individual activity")
         subscriptions = Category.objects.create(user=self.user, name="Subscriptions")
 
         Transaction.objects.create(
@@ -53,6 +53,20 @@ class StatisticsDisclosureTests(TestCase):
             category_source="user",
             fingerprint="statistics-subscription",
         )
+        Transaction.objects.create(
+            user=self.user,
+            money_source=source,
+            date=timezone.localdate() - timedelta(days=1),
+            merchant="Own account transfer",
+            amount=Decimal("900.00"),
+            currency="EUR",
+            in_out=Transaction.IN,
+            category=income.name,
+            category_fk=income,
+            category_source="user",
+            is_internal_transfer=True,
+            fingerprint="statistics-transfer",
+        )
         self.client.force_login(self.user)
 
     def test_statistics_tables_are_collapsed_and_weekday_chart_is_not_rendered(self):
@@ -65,6 +79,10 @@ class StatisticsDisclosureTests(TestCase):
         self.assertNotIn('<details class="statistics-disclosure" open', html)
         self.assertNotIn('id="weekdayChart"', html)
         self.assertNotIn("const wdLabels", html)
+        self.assertNotIn("Financial Runway", html)
+        self.assertNotIn('id="runwayModal"', html)
+        self.assertNotIn("runway_months", response.context)
+        self.assertIn("grid-template-columns: minmax(0, 1fr);", html)
         self.assertIn('id="spending-by-category"', html)
         self.assertIn('id="historyCatSelect"', html)
         self.assertIn('id="historyCatChartType"', html)
@@ -89,3 +107,6 @@ class StatisticsDisclosureTests(TestCase):
             top_transactions["Subscriptions"][month_key][0]["merchant"],
             "Streaming service",
         )
+        self.assertEqual(response.context["total_in"], 1500.0)
+        self.assertEqual(response.context["found_income_sources_count"], 1)
+        self.assertEqual(response.context["income_sources_summary"]["total_income"], Decimal("0"))

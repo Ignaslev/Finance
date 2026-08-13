@@ -29,7 +29,16 @@ class OverviewAnalyticsTests(TestCase):
         self.transfer_category = Category.objects.create(user=self.user, name="Internal transfer")
         self.client.force_login(self.user)
 
-    def _transaction(self, *, amount, in_out, category, fingerprint, transaction_date=None):
+    def _transaction(
+        self,
+        *,
+        amount,
+        in_out,
+        category,
+        fingerprint,
+        transaction_date=None,
+        is_internal_transfer=False,
+    ):
         return Transaction.objects.create(
             user=self.user,
             money_source=self.source,
@@ -42,6 +51,7 @@ class OverviewAnalyticsTests(TestCase):
             category_fk=category,
             category_source="user",
             fingerprint=fingerprint,
+            is_internal_transfer=is_internal_transfer,
         )
 
     def _monthly_transaction(self, *, year, month, amount, fingerprint):
@@ -77,12 +87,14 @@ class OverviewAnalyticsTests(TestCase):
             in_out=Transaction.OUT,
             category=self.transfer_category,
             fingerprint="transfer-out",
+            is_internal_transfer=True,
         )
         self._transaction(
             amount="500.00",
             in_out=Transaction.IN,
             category=self.transfer_category,
             fingerprint="transfer-in",
+            is_internal_transfer=True,
         )
 
         response = self.client.get(reverse("overview"))
@@ -93,7 +105,7 @@ class OverviewAnalyticsTests(TestCase):
         self.assertEqual(response.context["net_rows"], [{"month": "2026-07", "net": 800.0}])
         self.assertNotIn("Internal transfer", response.context["cat_names"])
 
-    def test_lithuanian_legacy_category_value_is_also_excluded(self):
+    def test_category_name_alone_does_not_control_transfer_behavior(self):
         transfer = Transaction.objects.create(
             user=self.user,
             money_source=self.source,
@@ -111,10 +123,27 @@ class OverviewAnalyticsTests(TestCase):
         response = self.client.get(reverse("overview"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.context["income_json"]), [])
-        self.assertEqual(json.loads(response.context["spending_json"]), [])
+        self.assertEqual(json.loads(response.context["income_json"]), [0.0])
+        self.assertEqual(json.loads(response.context["spending_json"]), [250.0])
         transfer.refresh_from_db()
         self.assertFalse(transfer.is_deleted)
+
+    def test_internal_transfer_still_changes_its_account_balance(self):
+        self._transaction(
+            amount="125.00",
+            in_out=Transaction.OUT,
+            category=self.transfer_category,
+            fingerprint="balance-transfer-out",
+            is_internal_transfer=True,
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertEqual(response.status_code, 200)
+        account = response.context["accounts_with_balances"][0]
+        self.assertEqual(account.effective_balance, Decimal("-125.00"))
+        self.assertEqual(json.loads(response.context["income_json"]), [])
+        self.assertEqual(json.loads(response.context["spending_json"]), [])
 
     def test_net_by_month_is_newest_first_and_paginated_by_eight(self):
         for month in range(1, 11):

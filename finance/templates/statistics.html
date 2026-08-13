@@ -90,7 +90,7 @@
         {% guide_icon "statistics_income" %}
       </div>
       <div class="text-medium" style="font-size:0.9rem; margin-top:0.35rem;">
-        {% trans "Based on incoming transactions categorized as Income." %}
+        {% if LANGUAGE_CODE|slice:":2" == "lt" %}Pagal visas gaunamas operacijas, neatsižvelgiant į jų kategoriją.{% else %}Based on all incoming transactions, regardless of category.{% endif %}
       </div>
     </div>
   </div>
@@ -402,47 +402,6 @@
 
 
 <div class="statistics-insight-grid">
-<div class="card statistics-runway-card" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid var(--primary-teal);">
-    <div class="flex justify-between items-start statistics-runway-content">
-        <div>
-            <div class="flex items-center gap-2">
-                <div class="text-medium title-with-guide" style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">
-                  <span>{% trans "Financial Runway" %}</span>
-                  {% guide_icon "statistics_runway" %}
-                </div>
-                {% if is_simulated %}
-                    <span style="background:#e6fffa; color:var(--primary-teal-dark); font-size:0.7rem; padding:1px 6px; border-radius:4px; font-weight:600;">{% trans "CUSTOM VIEW" %}</span>
-                {% endif %}
-            </div>
-
-            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-dark);">
-                {{ runway_months|floatformat:1 }} <span style="font-size: 1.2rem; font-weight: 500; color: var(--text-medium);">{% trans "Months" %}</span>
-            </div>
-
-            <div style="font-size: 0.9rem; color: var(--text-medium); margin-top: 0.5rem;">
-                {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} {% trans "EUR/month" %}</strong> ({% trans "last 3 months avg" %}).
-                <br>
-                <button onclick="openRunwayModal()" style="background:none; border:none; color:var(--primary-teal); padding:0; font-weight:600; cursor:pointer; margin-top:0.3rem;">
-                    ⚙ {% trans "Configure Scenario" %}
-                </button>
-            </div>
-        </div>
-
-        <div style="text-align: right; min-width: 150px;">
-            <div class="text-medium" style="font-size: 0.8rem;">{% trans "vs Last Month" %}</div>
-            <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.2rem;">
-                {% if mom_diff < 0 %}
-                    <span style="color: #38a169;">{{ mom_diff|floatformat:0 }} EUR</span>
-                    <div style="font-size: 0.8rem; color: #38a169;">({% trans "Spending Less" %})</div>
-                {% else %}
-                    <span style="color: #e53e3e;">+{{ mom_diff|floatformat:0 }} EUR</span>
-                    <div style="font-size: 0.8rem; color: #e53e3e;">({% trans "Spending More" %})</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="card statistics-category-card">
   <div class="flex justify-between items-center" style="flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
       <div class="card-title title-with-guide" style="margin:0;">
@@ -606,64 +565,10 @@
     </div>
 </div>
 
-<div id="runwayModal" class="modal-backdrop" style="display:none;">
-    <div class="modal-content card" style="max-width:600px;">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="card-title" style="margin:0;">{% trans "Runway Simulator" %}</h3>
-            <button onclick="closeRunwayModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-        </div>
-
-        <p style="font-size:0.9rem; color:#666; margin-bottom:1.5rem;">
-            {% trans "Select which assets (Net Worth) and which expenses (Burn Rate) to include in the calculation." %}
-        </p>
-
-        <form method="get">
-            <input type="hidden" name="runway_sim" value="1">
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem;">
-                <div>
-                    <strong style="display:block; margin-bottom:0.5rem; color:var(--text-dark);">{% trans "Include Assets" %}</strong>
-                    <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:8px;">
-                        {% for acc in all_sources_sim %}
-                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem;">
-                            <input type="checkbox" name="inc_src" value="{{ acc.id }}"
-                                   {% if acc.id in inc_src_ids %}checked{% endif %}>
-                            <span>{{ acc.name }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div>
-                    <strong style="display:block; margin-bottom:0.5rem; color:var(--text-dark);">{% trans "Include Spending" %}</strong>
-                    <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:8px;">
-                        {% for c in all_cats_sim %}
-                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem;">
-                            <input type="checkbox" name="inc_cat" value="{{ c.id }}"
-                                   {% if c.id in inc_cat_ids %}checked{% endif %}>
-                            <span>{{ c.name }}</span>
-                        </label>
-                        {% endfor %}
-                        <label style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; font-size:0.9rem; border-top:1px dashed #eee; margin-top:0.5rem; padding-top:0.5rem;">
-                            <input type="checkbox" name="inc_uncat" value="1" {% if inc_uncat %}checked{% endif %}>
-                            <span style="color:#666;">{% trans "Uncategorized" %}</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-4 mt-8" style="margin-top:2rem;">
-                <a href="{% url 'statistics' %}" class="btn" style="background:#edf2f7; color:#555; text-decoration:none;">{% trans "Reset" %}</a>
-                <button type="submit" class="btn btn-primary">{% trans "Recalculate" %}</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <style>
     .statistics-insight-grid {
         display: grid;
-        grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+        grid-template-columns: minmax(0, 1fr);
         align-items: start;
         gap: 1.5rem;
         margin-bottom: 1.5rem;
@@ -671,10 +576,6 @@
     .statistics-insight-grid > .card {
         min-width: 0;
         margin-bottom: 0;
-    }
-    .statistics-runway-content {
-        flex-wrap: wrap;
-        gap: 1.25rem;
     }
     .spending-history-top-controls {
         display: flex;
@@ -1208,9 +1109,6 @@
     });
   })();
 
-  // Modal Logic (Runway)
-  function openRunwayModal() { document.getElementById('runwayModal').style.display = 'flex'; }
-  function closeRunwayModal() { document.getElementById('runwayModal').style.display = 'none'; }
 </script>
 {% endif %}
 </div>

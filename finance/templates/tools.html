@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if LANGUAGE_CODE|slice:":2" == "lt" %}Įrankiai{% else %}Tools{% endif %} · MoneyCompass{% endblock %}
+
+{% block content %}
+<style>
+  .tools-page { padding: 1.75rem 0 2.5rem; }
+  .tools-category-picker { display:flex; align-items:flex-end; gap:.75rem; flex-wrap:wrap; }
+  .tools-category-picker label { display:flex; flex-direction:column; gap:.35rem; width:min(100%, 360px); color:var(--text-medium); font-size:.86rem; }
+  .tools-category-picker select { width:100%; padding:.72rem .8rem; border:1px solid #dbe4ee; border-radius:6px; background:#f8fafc; color:var(--text-dark); }
+  .tools-summary-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; margin:1rem 0; }
+  .tools-summary-card { padding:1.1rem 1.2rem; margin:0; }
+  .tools-summary-label { color:var(--text-medium); font-size:.82rem; margin-bottom:.35rem; }
+  .tools-summary-value { font-size:1.45rem; font-weight:800; color:var(--text-dark); }
+  .tools-positive { color:#079a76; }
+  .tools-negative { color:#dc3f45; }
+  .tools-chart-wrap { position:relative; min-height:330px; }
+  .tools-runway-content { flex-wrap:wrap; gap:1.25rem; }
+  @media (max-width: 720px) {
+    .tools-page { padding-top:1rem; }
+    .tools-summary-grid { grid-template-columns:1fr; gap:.65rem; }
+    .tools-chart-wrap { min-height:280px; }
+  }
+</style>
+
+<section class="tools-page">
+  <div class="card">
+    <form method="get" class="tools-category-picker">
+      <label>
+        <span>{% if LANGUAGE_CODE|slice:":2" == "lt" %}Pasirinkite kategoriją{% else %}Choose a category{% endif %}</span>
+        <select name="category" onchange="this.form.submit()" {% if not categories %}disabled{% endif %}>
+          {% for category in categories %}
+            <option value="{{ category.id }}" {% if selected_category and selected_category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+          {% empty %}
+            <option>{% if LANGUAGE_CODE|slice:":2" == "lt" %}Kategorijų nėra{% else %}No categories{% endif %}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <noscript><button class="btn btn-primary" type="submit">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Rodyti{% else %}Show{% endif %}</button></noscript>
+    </form>
+  </div>
+
+  {% if selected_category %}
+    <div class="tools-summary-grid">
+      <div class="card tools-summary-card">
+        <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Pajamos{% else %}Income{% endif %}</div>
+        <div class="tools-summary-value tools-positive">+{{ selected_summary.income|floatformat:2 }} EUR</div>
+      </div>
+      <div class="card tools-summary-card">
+        <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Išlaidos{% else %}Spending{% endif %}</div>
+        <div class="tools-summary-value tools-negative">−{{ selected_summary.spending|floatformat:2 }} EUR</div>
+      </div>
+      <div class="card tools-summary-card">
+        <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Balansas{% else %}Balance{% endif %}</div>
+        <div class="tools-summary-value {% if selected_summary.balance >= 0 %}tools-positive{% else %}tools-negative{% endif %}">
+          {{ selected_summary.balance|floatformat:2 }} EUR
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom:.35rem;">{{ selected_category.name }}</h3>
+      <p style="margin:0 0 1rem; color:var(--text-medium); font-size:.9rem;">
+        {% if LANGUAGE_CODE|slice:":2" == "lt" %}Pajamos, išlaidos ir balansas pagal mėnesį{% else %}Income, spending, and balance by month{% endif %}
+      </p>
+      {% if selected_summary.transaction_count %}
+        <div class="tools-chart-wrap"><canvas id="categoryCashFlowChart"></canvas></div>
+      {% else %}
+        <p style="margin:1rem 0 0; color:var(--text-medium);">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Šiai kategorijai dar nėra priskirtų operacijų.{% else %}No transactions have been assigned to this category yet.{% endif %}</p>
+      {% endif %}
+    </div>
+
+  {% endif %}
+
+  <div class="card" style="background:linear-gradient(135deg,#ffffff 0%,#f8fafc 100%); border-left:5px solid var(--primary-teal);">
+    <div class="flex justify-between items-start tools-runway-content">
+      <div>
+        <div class="flex items-center gap-2">
+          <div class="text-medium title-with-guide" style="text-transform:uppercase; font-size:.8rem; letter-spacing:.05em;">
+            <span>{% trans "Financial Runway" %}</span>
+            {% load guide_links %}{% guide_icon "statistics_runway" %}
+          </div>
+          {% if is_simulated %}<span style="background:#e6fffa; color:var(--primary-teal-dark); font-size:.7rem; padding:1px 6px; border-radius:4px; font-weight:600;">{% trans "CUSTOM VIEW" %}</span>{% endif %}
+        </div>
+        <div style="font-size:2.5rem; font-weight:800; color:var(--text-dark);">
+          {{ runway_months|floatformat:1 }} <span style="font-size:1.2rem; font-weight:500; color:var(--text-medium);">{% trans "Months" %}</span>
+        </div>
+        <div style="font-size:.9rem; color:var(--text-medium); margin-top:.5rem;">
+          {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} {% trans "EUR/month" %}</strong> ({% trans "last 3 months avg" %}).
+          <br>
+          <button type="button" onclick="openRunwayModal()" style="background:none; border:none; color:var(--primary-teal); padding:0; font-weight:600; cursor:pointer; margin-top:.3rem;">⚙ {% trans "Configure Scenario" %}</button>
+        </div>
+      </div>
+      <div style="text-align:right; min-width:150px;">
+        <div class="text-medium" style="font-size:.8rem;">{% trans "vs Last Month" %}</div>
+        <div style="font-size:1.5rem; font-weight:700; margin-top:.2rem;">
+          {% if mom_diff < 0 %}
+            <span style="color:#38a169;">{{ mom_diff|floatformat:0 }} EUR</span>
+            <div style="font-size:.8rem; color:#38a169;">({% trans "Spending Less" %})</div>
+          {% else %}
+            <span style="color:#e53e3e;">+{{ mom_diff|floatformat:0 }} EUR</span>
+            <div style="font-size:.8rem; color:#e53e3e;">({% trans "Spending More" %})</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="runwayModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-content card" style="max-width:600px;">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="card-title" style="margin:0;">{% trans "Runway Simulator" %}</h3>
+      <button type="button" onclick="closeRunwayModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+    </div>
+    <p style="font-size:.9rem; color:#666; margin-bottom:1.5rem;">{% trans "Select which assets (Net Worth) and which expenses (Burn Rate) to include in the calculation." %}</p>
+    <form method="get">
+      <input type="hidden" name="runway_sim" value="1">
+      {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category.id }}">{% endif %}
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:2rem;">
+        <div>
+          <strong style="display:block; margin-bottom:.5rem; color:var(--text-dark);">{% trans "Include Assets" %}</strong>
+          <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:.5rem; border-radius:8px;">
+            {% for account in all_sources_sim %}
+              <label style="display:flex; align-items:center; gap:.5rem; padding:.3rem 0; font-size:.9rem;"><input type="checkbox" name="inc_src" value="{{ account.id }}" {% if account.id in inc_src_ids %}checked{% endif %}><span>{{ account.name }}</span></label>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <strong style="display:block; margin-bottom:.5rem; color:var(--text-dark);">{% trans "Include Spending" %}</strong>
+          <div style="max-height:200px; overflow-y:auto; border:1px solid #eee; padding:.5rem; border-radius:8px;">
+            {% for category in all_cats_sim %}
+              <label style="display:flex; align-items:center; gap:.5rem; padding:.3rem 0; font-size:.9rem;"><input type="checkbox" name="inc_cat" value="{{ category.id }}" {% if category.id in inc_cat_ids %}checked{% endif %}><span>{{ category.name }}</span></label>
+            {% endfor %}
+            <label style="display:flex; align-items:center; gap:.5rem; padding:.5rem 0 .3rem; margin-top:.5rem; border-top:1px dashed #eee; font-size:.9rem;"><input type="checkbox" name="inc_uncat" value="1" {% if inc_uncat %}checked{% endif %}><span>{% trans "Uncategorized" %}</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-4" style="margin-top:2rem;">
+        <a href="{% url 'tools' %}{% if selected_category %}?category={{ selected_category.id }}{% endif %}" class="btn" style="background:#edf2f7; color:#555; text-decoration:none;">{% trans "Reset" %}</a>
+        <button type="submit" class="btn btn-primary">{% trans "Recalculate" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if selected_category and selected_summary.transaction_count %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (() => {
+    const labels = JSON.parse('{{ chart_labels_json|escapejs }}');
+    const income = JSON.parse('{{ chart_income_json|escapejs }}');
+    const spending = JSON.parse('{{ chart_spending_json|escapejs }}');
+    const balance = JSON.parse('{{ chart_balance_json|escapejs }}');
+    new Chart(document.getElementById('categoryCashFlowChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '{% if LANGUAGE_CODE|slice:":2" == "lt" %}Pajamos{% else %}Income{% endif %}', data: income, backgroundColor: '#10b98c', borderRadius: 4 },
+          { label: '{% if LANGUAGE_CODE|slice:":2" == "lt" %}Išlaidos{% else %}Spending{% endif %}', data: spending, backgroundColor: '#ef5b62', borderRadius: 4 },
+          { label: '{% if LANGUAGE_CODE|slice:":2" == "lt" %}Balansas{% else %}Balance{% endif %}', data: balance, type: 'line', borderColor: '#246fbe', backgroundColor: '#246fbe', tension: .25, pointRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+  })();
+</script>
+{% endif %}
+<script>
+  function openRunwayModal() { document.getElementById('runwayModal').style.display = 'flex'; }
+  function closeRunwayModal() { document.getElementById('runwayModal').style.display = 'none'; }
+  document.getElementById('runwayModal')?.addEventListener('click', (event) => {
+    if (event.target.id === 'runwayModal') closeRunwayModal();
+  });
+</script>
+{% endblock %}
