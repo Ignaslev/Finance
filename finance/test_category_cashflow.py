@@ -77,6 +77,8 @@ class CategoryCashFlowTests(TestCase):
         self.assertEqual(response.context["selected_summary"]["balance"], Decimal("600.00"))
         self.assertEqual(json.loads(response.context["chart_income_json"]), [1000.0])
         self.assertEqual(json.loads(response.context["chart_spending_json"]), [400.0])
+        self.assertNotIn("chart_balance_json", response.context)
+        self.assertNotContains(response, "type: 'line'")
         self.assertEqual(response.context["runway_months"], 22.5)
         self.assertNotContains(response, "Balance by category")
         self.assertNotContains(response, "Category transactions")
@@ -118,6 +120,18 @@ class CategoryCashFlowTests(TestCase):
         self.assertNotContains(response, "Other account")
 
     def test_tools_does_not_accept_another_users_category(self):
+        self._transaction(
+            amount="200.00",
+            in_out=Transaction.IN,
+            merchant="Customer",
+            fingerprint="own-category-income",
+        )
+        self._transaction(
+            amount="80.00",
+            in_out=Transaction.OUT,
+            merchant="Supplies",
+            fingerprint="own-category-spending",
+        )
         other_user = get_user_model().objects.create_user(
             username="other@example.test",
             email="other@example.test",
@@ -130,6 +144,41 @@ class CategoryCashFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["selected_category"], self.activity)
         self.assertNotContains(response, "Private business")
+
+    def test_category_selector_only_includes_categories_with_both_directions(self):
+        spending_only = Category.objects.create(user=self.user, name="Spending only")
+        self._transaction(
+            amount="500.00",
+            in_out=Transaction.IN,
+            merchant="Customer",
+            fingerprint="eligible-income",
+        )
+        self._transaction(
+            amount="120.00",
+            in_out=Transaction.OUT,
+            merchant="Materials",
+            fingerprint="eligible-spending",
+        )
+        Transaction.objects.create(
+            user=self.user,
+            money_source=self.source,
+            date=date(2026, 7, 15),
+            merchant="Expense",
+            amount=Decimal("25.00"),
+            currency="EUR",
+            in_out=Transaction.OUT,
+            category=spending_only.name,
+            category_fk=spending_only,
+            category_source="user",
+            fingerprint="spending-only",
+        )
+
+        response = self.client.get(reverse("tools"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["categories"]), [self.activity])
+        self.assertContains(response, "Individual activity")
+        self.assertNotContains(response, '<option value="{}"'.format(spending_only.id))
 
     def test_transaction_edit_can_mark_and_unmark_internal_transfer(self):
         transaction = self._transaction(

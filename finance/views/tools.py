@@ -14,13 +14,27 @@ from finance.models import Category, MoneySource, Transaction, UserProfile
 
 @login_required
 def tools(request):
-    categories = list(Category.objects.filter(user=request.user).order_by("name"))
+    all_categories = list(Category.objects.filter(user=request.user).order_by("name"))
     base = Transaction.objects.filter(
         user=request.user,
         is_deleted=False,
         is_internal_transfer=False,
         category_fk__isnull=False,
     )
+    eligible_category_ids = {
+        row["category_fk"]
+        for row in (
+            base.values("category_fk")
+            .annotate(
+                income_count=Count("id", filter=Q(in_out=Transaction.IN)),
+                spending_count=Count("id", filter=Q(in_out=Transaction.OUT)),
+            )
+            .filter(income_count__gt=0, spending_count__gt=0)
+        )
+    }
+    categories = [
+        category for category in all_categories if category.id in eligible_category_ids
+    ]
 
     requested_category = request.GET.get("category")
     selected_category = None
@@ -31,7 +45,8 @@ def tools(request):
         )
     if selected_category is None and categories:
         busiest_category = (
-            base.values("category_fk")
+            base.filter(category_fk_id__in=eligible_category_ids)
+            .values("category_fk")
             .annotate(transaction_count=Count("id"))
             .order_by("-transaction_count", "category_fk")
             .first()
@@ -51,7 +66,6 @@ def tools(request):
     month_labels = []
     month_income = []
     month_spending = []
-    month_balance = []
 
     if selected_category is not None:
         selected_base = base.filter(category_fk=selected_category)
@@ -92,7 +106,6 @@ def tools(request):
             month_labels.append(month.strftime("%Y-%m"))
             month_income.append(float(income))
             month_spending.append(float(spending))
-            month_balance.append(float(income - spending))
 
     # Financial runway: selected assets divided by the last 90 days' monthly burn rate.
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
@@ -111,7 +124,7 @@ def tools(request):
         include_uncategorized = request.GET.get("inc_uncat") == "1"
     else:
         included_source_ids = {source.id for source in runway_sources}
-        included_category_ids = {category.id for category in categories}
+        included_category_ids = {category.id for category in all_categories}
         include_uncategorized = True
 
     total_net_worth = Decimal("0")
@@ -131,7 +144,9 @@ def tools(request):
         in_out=Transaction.OUT,
         date__gte=today - timedelta(days=90),
     )
-    excluded_category_ids = {category.id for category in categories} - included_category_ids
+    excluded_category_ids = {
+        category.id for category in all_categories
+    } - included_category_ids
     spend_qs = spend_qs.exclude(category_fk_id__in=excluded_category_ids)
     if not include_uncategorized:
         spend_qs = spend_qs.exclude(category_fk__isnull=True)
@@ -172,12 +187,11 @@ def tools(request):
         "chart_labels_json": json.dumps(month_labels),
         "chart_income_json": json.dumps(month_income),
         "chart_spending_json": json.dumps(month_spending),
-        "chart_balance_json": json.dumps(month_balance),
         "runway_months": float(runway_months),
         "avg_monthly_burn": float(average_monthly_burn),
         "mom_diff": float(this_month_spend - last_month_spend),
         "all_sources_sim": runway_sources,
-        "all_cats_sim": categories,
+        "all_cats_sim": all_categories,
         "inc_src_ids": list(included_source_ids),
         "inc_cat_ids": list(included_category_ids),
         "inc_uncat": include_uncategorized,
