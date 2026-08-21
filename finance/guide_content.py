@@ -61,7 +61,7 @@ GUIDE_CONTENT = {
                         ["Dashboard", "View total net worth, income vs spending, category breakdown, savings goals, and monthly net balance."],
                         ["Statistics", "Review all-time totals, income sources, subscriptions, merchants, and categorization coverage."],
                         ["Tools", "Open category cash-flow analysis, Financial Runway, and other financial tools."],
-                        ["Reports", "Review balance anomaly history. Monthly and weekly AI reports are admin-only during beta."],
+                        ["Reports", "Review balance anomaly history. Monthly and weekly AI reports are currently available only to administrators."],
                         ["Portfolio", "Track crypto and stock / ETF holdings with live prices and total value."],
                         ["Transactions", "Upload bank statements, browse, filter, categorize, hide, and restore transactions."],
                         ["Profile / Settings", "Manage accounts, categories, savings goals, language preference, and data deletion."],
@@ -99,7 +99,7 @@ GUIDE_CONTENT = {
                     "en",
                     "registration.png",
                     "MoneyCompass registration page",
-                    "Create an account, choose your language, and enter the beta code.",
+                    "Create an account and choose your language.",
                 ),
                 {
                     "type": "list",
@@ -606,7 +606,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "During the beta, regular users see Balance Anomaly History on this page. Monthly and weekly AI reports are available only to administrators.",
+                    "text": "Regular users see Balance Anomaly History on this page. Monthly and weekly AI reports are currently available only to administrators.",
                 },
                 {
                     "type": "heading",
@@ -856,7 +856,7 @@ GUIDE_CONTENT = {
                         ["Apžvalga", "Matote bendrą grynąją vertę, pajamas ir išlaidas, kategorijų analizę, taupymo tikslus ir mėnesinį balansą."],
                         ["Statistika", "Peržiūrite viso laikotarpio sumas, pajamų šaltinius, prenumeratas, pardavėjus ir kategorizavimo aprėptį."],
                         ["Įrankiai", "Naudojate kategorijų pinigų srauto analizę, finansinio išgyvenimo skaičiuoklę ir kitus finansinius įrankius."],
-                        ["Ataskaitos", "Peržiūrite likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos beta metu skirtos tik administratoriams."],
+                        ["Ataskaitos", "Peržiūrite likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos šiuo metu skirtos tik administratoriams."],
                         ["Portfelis", "Sekate kripto ir akcijų / ETF pozicijas su realiomis kainomis ir bendra verte."],
                         ["Operacijos", "Įkeliate banko išrašus, naršote, filtruojate, kategorizuojate, paslepiate ir atkuriate operacijas."],
                         ["Profilis / Nustatymai", "Valdote sąskaitas, kategorijas, taupymo tikslus, kalbą ir duomenų ištrynimą."],
@@ -894,7 +894,7 @@ GUIDE_CONTENT = {
                     "lt",
                     "registration.png",
                     "MoneyCompass registracijos puslapis",
-                    "Sukurkite paskyrą, pasirinkite kalbą ir įveskite beta kodą.",
+                    "Sukurkite paskyrą ir pasirinkite kalbą.",
                 ),
                 {
                     "type": "list",
@@ -1401,7 +1401,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Beta versijoje įprasti naudotojai šiame puslapyje mato Likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos prieinamos tik administratoriams.",
+                    "text": "Įprasti naudotojai šiame puslapyje mato Likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos šiuo metu prieinamos tik administratoriams.",
                 },
                 {
                     "type": "heading",

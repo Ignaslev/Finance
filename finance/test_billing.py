@@ -40,6 +40,8 @@ def subscription(
 
 
 @override_settings(
+    BILLING_ENABLED=True,
+    FREE_ACCESS_MODE=False,
     STRIPE_SECRET_KEY="sk_test_fake",
     STRIPE_PUBLISHABLE_KEY="pk_test_fake",
     STRIPE_WEBHOOK_SECRET="whsec_fake",
@@ -387,3 +389,52 @@ class PaymentSecurityTests(TestCase):
         self.user.is_staff = True
         self.user.save(update_fields=["is_staff"])
         self.assertTrue(self.profile.has_active_access(now))
+
+
+@override_settings(
+    BILLING_ENABLED=False,
+    FREE_ACCESS_MODE=True,
+    ALLOWED_HOSTS=["testserver"],
+)
+class FreeAccessModeTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="free@example.test",
+            email="free@example.test",
+            password="StrongPass123!",
+        )
+        self.profile = UserProfile.objects.create(
+            user=self.user,
+            subscription_status=UserProfile.SUBSCRIPTION_EXPIRED,
+        )
+        self.client.force_login(self.user)
+
+    def test_expired_user_has_access_without_starting_trial(self):
+        from finance.subscriptions import access_context
+
+        context = access_context(self.user)
+
+        self.assertTrue(context["has_access"])
+        self.assertEqual(context["access_source"], "free")
+        self.assertFalse(context["billing_enabled"])
+        self.profile.refresh_from_db()
+        self.assertIsNone(self.profile.trial_started_at)
+        self.assertIsNone(self.profile.trial_ends_at)
+
+    def test_moneycompass_billing_ui_and_entry_points_are_hidden(self):
+        profile_response = self.client.get(reverse("profile"))
+        checkout_response = self.client.post(
+            reverse("billing_checkout", args=[UserProfile.PLAN_MONTHLY])
+        )
+        portal_response = self.client.get(reverse("billing_portal"))
+
+        self.assertNotContains(profile_response, "Manage billing")
+        self.assertNotContains(profile_response, "Payments are not configured yet")
+        self.assertEqual(checkout_response.status_code, 404)
+        self.assertEqual(portal_response.status_code, 404)
+
+    def test_free_user_can_create_category(self):
+        response = self.client.post(reverse("category_list"), {"name": "Available"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Category.objects.filter(user=self.user, name="Available").exists())

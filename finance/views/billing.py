@@ -3,7 +3,7 @@ from datetime import datetime, timezone as dt_timezone
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -26,6 +26,11 @@ def _stripe():
 
     stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
     return stripe
+
+
+def _require_billing_enabled():
+    if not getattr(settings, "BILLING_ENABLED", False):
+        raise Http404
 
 
 def _obj_get(obj, key, default=None):
@@ -212,6 +217,7 @@ def sync_checkout_session_for_user(user, session_id):
 @login_required
 @require_POST
 def checkout(request, interval):
+    _require_billing_enabled()
     if interval not in {UserProfile.PLAN_MONTHLY, UserProfile.PLAN_YEARLY}:
         messages.error(request, _("Unknown plan selected."))
         return redirect("profile")
@@ -273,6 +279,7 @@ def checkout(request, interval):
 @login_required
 @require_http_methods(["GET", "POST"])
 def portal(request):
+    _require_billing_enabled()
     if not getattr(settings, "STRIPE_SECRET_KEY", ""):
         messages.error(request, _("Payments are not configured yet. Please try again later."))
         return redirect("profile")

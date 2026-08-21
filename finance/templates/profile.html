@@ -12,6 +12,7 @@
 </div>
 
 
+{% if subscription_access.billing_enabled %}
 <div class="card profile-billing-card">
   <div class="card-title title-with-guide">
     <span>{% trans "Subscription" %}</span>
@@ -21,9 +22,9 @@
     <div style="flex:1 1 280px; min-width:0;">
       {% if subscription_access.has_access %}
         {% if subscription_access.access_source == "beta" %}
-          <div class="text-dark" style="font-weight:700;">{% trans "Beta access is active." %}</div>
+          <div class="text-dark" style="font-weight:700;">{% trans "Legacy access is active." %}</div>
           <p class="text-medium" style="margin:.35rem 0 0;">
-            {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your free beta year is active until {{ until }}.{% endblocktrans %}
+            {% blocktrans with until=subscription_access.access_until|date:"Y-m-d" %}Your legacy free access is active until {{ until }}.{% endblocktrans %}
           </p>
         {% elif subscription_access.access_source == "trial" %}
           <div class="text-dark" style="font-weight:700;">{% trans "Free trial is active." %}</div>
@@ -83,6 +84,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 
 <div class="card profile-accounts-card">

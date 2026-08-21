@@ -9,15 +9,12 @@
 <div class="auth-shell auth-shell-register">
   <section class="auth-visual">
     <div class="auth-visual-glow auth-visual-glow-bottom"></div>
-    <div class="auth-beta-pill">
-      {% if LANGUAGE_CODE == "lt" %}Atviras testavimas{% else %}Open beta{% endif %}
-    </div>
     <img src="{% static 'img/mascot.png' %}" alt="" class="auth-mascot">
     <div class="auth-visual-copy">
       {% if LANGUAGE_CODE == "lt" %}
-        Tapk vienu iš<br>pirmųjų 100
+        Visi finansai<br>vienoje vietoje
       {% else %}
-        Be one of the<br>first 100
+        All your finances<br>in one place
       {% endif %}
     </div>
   </section>
@@ -69,13 +66,6 @@
               {% endfor %}
             </select>
             {% if form and form.preferred_language.errors %}<div class="field-errors">{{ form.preferred_language.errors }}</div>{% endif %}
-          </div>
-
-          <div class="auth-field">
-            <label>{% trans "Beta code" %}</label>
-            <input type="text" name="beta_access_code" autocomplete="off" required class="beta-code-input"
-                   value="{% if form %}{{ form.beta_access_code.value|default_if_none:'' }}{% endif %}">
-            {% if form and form.beta_access_code.errors %}<div class="field-errors">{{ form.beta_access_code.errors }}</div>{% endif %}
           </div>
 
           <div class="auth-field">

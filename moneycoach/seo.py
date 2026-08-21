@@ -487,20 +487,6 @@ def landing_seo_context(language):
     )
 
 
-def beta_landing_seo_context():
-    return public_seo_context(
-        language="lt",
-        canonical_path="/beta/",
-        alternate_lt_path="/beta/",
-        alternate_en_path="/beta/",
-        title="MoneyCompass beta | Finansų valdymo programėlė",
-        description=(
-            "Išbandykite naršyklėje veikiančią MoneyCompass finansų valdymo programėlę 365 dienas "
-            "nemokamai. Importuokite CSV ar Excel išrašą – be banko prijungimo."
-        ),
-    )
-
-
 def public_page_seo_context(page, language):
     pages = {
         "privacy": {
@@ -558,7 +544,6 @@ def public_sitemap_paths():
     paths = [
         "/",
         "/en/",
-        "/beta/",
         "/privacy/",
         "/en/privacy/",
         "/terms/",

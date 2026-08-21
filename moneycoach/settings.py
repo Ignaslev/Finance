@@ -275,9 +275,11 @@ MAX_MONEY_SOURCES_PER_USER = int(os.getenv("MAX_MONEY_SOURCES_PER_USER", "25"))
 MAX_CATEGORIES_PER_USER = int(os.getenv("MAX_CATEGORIES_PER_USER", "25"))
 MAX_GOALS_PER_USER = int(os.getenv("MAX_GOALS_PER_USER", "50"))
 
-BETA_REGISTRATION_ENABLED = env_bool("BETA_REGISTRATION_ENABLED", True)
-BETA_USER_LIMIT = int(os.getenv("BETA_USER_LIMIT", "100"))
-BETA_ACCESS_CODE = env("BETA_ACCESS_CODE", "")
+PUBLIC_REGISTRATION_ENABLED = env_bool("PUBLIC_REGISTRATION_ENABLED", True)
+FREE_ACCESS_MODE = env_bool("FREE_ACCESS_MODE", True)
+BILLING_ENABLED = env_bool("BILLING_ENABLED", False)
+
+# Retained for archived access records and an eventual paid relaunch.
 BETA_FREE_DAYS = int(os.getenv("BETA_FREE_DAYS", "365"))
 TRIAL_FREE_DAYS = int(os.getenv("TRIAL_FREE_DAYS", "14"))
 

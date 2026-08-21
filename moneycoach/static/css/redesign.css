@@ -1189,21 +1189,6 @@ body.has-onboarding-intro {
     text-align: center;
 }
 
-.auth-beta-pill {
-    position: relative;
-    z-index: 1;
-    margin-bottom: 24px;
-    padding: 9px 20px;
-    border: 1px solid rgba(255,255,255,0.38);
-    border-radius: 999px;
-    color: #ffffff;
-    background: rgba(255,255,255,0.16);
-    font-size: 0.73rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .auth-form-panel {
     position: relative;
     min-width: 0;
@@ -1324,14 +1309,6 @@ body.has-onboarding-intro {
     padding: 13px 15px !important;
     border-radius: 12px !important;
     font-size: 0.95rem;
-}
-
-.auth-field .beta-code-input {
-    color: #00875a;
-    background: var(--mc-teal-pale) !important;
-    border-color: #9ad9c7 !important;
-    font-weight: 700;
-    letter-spacing: 0.06em;
 }
 
 .auth-submit {
@@ -1948,12 +1925,6 @@ body.has-onboarding-intro {
     .auth-register-page .auth-visual-copy {
         margin-top: 5px;
         font-size: 1.28rem;
-    }
-
-    .auth-beta-pill {
-        margin-bottom: 10px;
-        padding: 6px 13px;
-        font-size: 0.62rem;
     }
 
     .auth-form-panel {

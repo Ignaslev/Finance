@@ -4,16 +4,15 @@ from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone, translation
+from django.utils import translation
 from finance.models import UserProfile
 from finance.owner_notifications import notify_activation, notify_registration
-from finance.subscriptions import grant_beta_access
 from finance.utils import ensure_default_categories
 from moneycoach.attribution import SESSION_KEY as ATTRIBUTION_SESSION_KEY
 from django.contrib.auth import get_user_model
@@ -81,6 +80,9 @@ class ThrottledPasswordResetView(PasswordResetView):
 
 
 def register(request):
+    if not getattr(settings, "PUBLIC_REGISTRATION_ENABLED", True):
+        raise Http404
+
     language = public_language(request)
     with translation.override(language):
         if request.method == "POST":
@@ -138,7 +140,6 @@ def register(request):
                         setattr(prof, field, value)
                         attribution_fields.append(field)
                 prof.save(update_fields=["preferred_language", *attribution_fields])
-                grant_beta_access(prof, joined_at=timezone.now())
                 ensure_default_categories(user, language=prof.preferred_language)
 
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -181,7 +182,6 @@ def register(request):
             form = RegisterForm(
                 initial={
                     "preferred_language": language,
-                    "beta_access_code": (request.GET.get("beta_code") or "")[:100],
                 }
             )
 

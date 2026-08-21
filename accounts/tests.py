@@ -14,8 +14,7 @@ User = get_user_model()
 
 
 @override_settings(
-    BETA_ACCESS_CODE="Noriutestuoti",
-    BETA_USER_LIMIT=100,
+    PUBLIC_REGISTRATION_ENABLED=True,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     ADMINS=[("Owner", "owner@example.test")],
 )
@@ -26,28 +25,38 @@ class RegistrationAttributionTests(TestCase):
             "last_name": "User",
             "email": email,
             "preferred_language": "lt",
-            "beta_access_code": "Noriutestuoti",
             "password1": "A-strong-test-password-928!",
             "password2": "A-strong-test-password-928!",
             "lang": "lt",
         }
 
-    def test_beta_page_prefills_code_and_exposes_seo_copy(self):
+    def test_legacy_beta_page_permanently_redirects_to_landing(self):
         response = self.client.get(reverse("beta_landing"))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Pagaliau aišku, kur dingsta tavo pinigai")
-        self.assertContains(response, "beta_code=Noriutestuoti")
-        self.assertContains(response, "Tik analitika")
-        self.assertContains(response, 'rel="canonical" href="https://moneycompass.lt/beta/"')
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, reverse("landing"))
+
+    def test_registration_requires_no_access_code_or_trial(self):
+        response = self.client.get(reverse("register") + "?lang=en")
+
+        self.assertNotContains(response, "Beta code")
+        registration_response = self.client.post(
+            reverse("register"),
+            self._registration_data("public-registration@example.com"),
+        )
+        self.assertEqual(registration_response.status_code, 302)
+        profile = UserProfile.objects.get(user__email="public-registration@example.com")
+        self.assertFalse(profile.is_beta_tester)
+        self.assertIsNone(profile.trial_started_at)
+        self.assertIsNone(profile.trial_ends_at)
 
     def test_first_touch_utm_is_saved_on_successful_registration(self):
         self.client.get(
-            "/beta/",
+            "/",
             {
                 "utm_source": "instagram",
                 "utm_medium": "organic_social",
-                "utm_campaign": "beta_launch",
+                "utm_campaign": "public_launch",
                 "utm_content": "profile_bio",
             },
             HTTP_REFERER="https://www.instagram.com/moneycompassapp/",
@@ -60,7 +69,6 @@ class RegistrationAttributionTests(TestCase):
                 "last_name": "User",
                 "email": "attribution@example.com",
                 "preferred_language": "lt",
-                "beta_access_code": "Noriutestuoti",
                 "password1": "A-strong-test-password-928!",
                 "password2": "A-strong-test-password-928!",
                 "lang": "lt",
@@ -71,9 +79,9 @@ class RegistrationAttributionTests(TestCase):
         profile = UserProfile.objects.get(user__email="attribution@example.com")
         self.assertEqual(profile.acquisition_source, "instagram")
         self.assertEqual(profile.acquisition_medium, "organic_social")
-        self.assertEqual(profile.acquisition_campaign, "beta_launch")
+        self.assertEqual(profile.acquisition_campaign, "public_launch")
         self.assertEqual(profile.acquisition_content, "profile_bio")
-        self.assertEqual(profile.acquisition_landing_page, "/beta/")
+        self.assertEqual(profile.acquisition_landing_page, "/")
         self.assertEqual(profile.acquisition_referrer, "https://www.instagram.com/moneycompassapp/")
 
     def test_registration_and_first_activation_send_owner_alerts(self):
@@ -118,7 +126,6 @@ class RegistrationAttributionTests(TestCase):
                 "last_name": "Pending",
                 "email": "consent-pending@example.com",
                 "preferred_language": "lt",
-                "beta_access_code": "Noriutestuoti",
                 "password1": "A-strong-test-password-928!",
                 "password2": "A-strong-test-password-928!",
                 "lang": "lt",
@@ -145,7 +152,6 @@ class RegistrationAttributionTests(TestCase):
                 "last_name": "Granted",
                 "email": "consent-granted@example.com",
                 "preferred_language": "lt",
-                "beta_access_code": "Noriutestuoti",
                 "password1": "A-strong-test-password-928!",
                 "password2": "A-strong-test-password-928!",
                 "lang": "lt",
@@ -161,7 +167,7 @@ class RegistrationAttributionTests(TestCase):
 
     @override_settings(META_PIXEL_ID="123456789")
     def test_meta_pixel_is_present_but_loaded_only_after_marketing_consent(self):
-        response = self.client.get(reverse("beta_landing"))
+        response = self.client.get(reverse("landing"))
 
         self.assertContains(response, "connect.facebook.net/en_US/fbevents.js")
         self.assertContains(response, "moneyCompassLoadMetaPixel")

@@ -87,9 +87,9 @@
         <section class="landing-hero">
             <div class="landing-hero-inner">
                 <div class="landing-hero-copy">
-                    <div class="landing-beta-pill">
+                    <div class="landing-status-pill">
                         <span aria-hidden="true">●</span>
-                        {% if LANGUAGE_CODE == "lt" %}Atvira beta · pirmieji 100 vartotojų{% else %}Open beta · first 100 users{% endif %}
+                        {% if LANGUAGE_CODE == "lt" %}Šiuo metu galite naudoti nemokamai{% else %}Currently free to use{% endif %}
                     </div>
 
                     <h1>
@@ -147,7 +147,7 @@
                 </div>
                 <div class="landing-metric">
                     <strong>0 €</strong>
-                    <span>{% if LANGUAGE_CODE == "lt" %}Beta kaina{% else %}Beta price{% endif %}</span>
+                    <span>{% if LANGUAGE_CODE == "lt" %}Kaina šiuo metu{% else %}Current price{% endif %}</span>
                 </div>
             </div>
         </section>
@@ -260,20 +260,20 @@
         <section class="landing-final-cta">
             <div class="landing-final-inner">
                 <img src="{% static 'img/mascot.png' %}" alt="">
-                <h2>{% if LANGUAGE_CODE == "lt" %}Tapk vienu iš pirmųjų 100{% else %}Be one of the first 100{% endif %}</h2>
+                <h2>{% if LANGUAGE_CODE == "lt" %}Pradėkite aiškiau valdyti savo pinigus{% else %}Start managing your money with clarity{% endif %}</h2>
                 <p>
                     {% if LANGUAGE_CODE == "lt" %}
-                        Išbandyk MoneyCompass nemokamai ir padėk mums jį tobulinti.
+                        MoneyCompass šiuo metu galite naudoti nemokamai.
                     {% else %}
-                        Try MoneyCompass free and help us improve it.
+                        MoneyCompass is currently free to use.
                     {% endif %}
                 </p>
                 <div class="landing-final-actions">
                     <a href="{% url 'register' %}?lang={{ LANGUAGE_CODE }}" class="landing-button landing-button-light">
                         {% if LANGUAGE_CODE == "lt" %}Registruotis nemokamai{% else %}Register free{% endif %}
                     </a>
-                    <span class="landing-beta-code">
-                        {% if LANGUAGE_CODE == "lt" %}Beta kodas:{% else %}Beta code:{% endif %} <strong>Noriutestuoti</strong>
+                    <span class="landing-free-note">
+                        {% if LANGUAGE_CODE == "lt" %}Be laiko apribojimo{% else %}No time limit{% endif %}
                     </span>
                 </div>
             </div>

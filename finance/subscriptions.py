@@ -86,16 +86,30 @@ def stripe_is_configured():
 
 
 def access_context(user):
+    billing_enabled = getattr(settings, "BILLING_ENABLED", False)
     if not user.is_authenticated:
         return {
             "profile": None,
             "has_access": False,
             "access_source": "",
             "access_until": None,
-            "stripe_configured": stripe_is_configured(),
+            "billing_enabled": billing_enabled,
+            "stripe_configured": billing_enabled and stripe_is_configured(),
         }
 
     profile = get_profile(user)
+    if getattr(settings, "FREE_ACCESS_MODE", True):
+        return {
+            "profile": profile,
+            "has_access": True,
+            "access_source": "free",
+            "access_until": None,
+            "billing_enabled": billing_enabled,
+            "stripe_configured": billing_enabled and stripe_is_configured(),
+            "monthly_price_id": getattr(settings, "STRIPE_PRICE_MONTHLY", ""),
+            "yearly_price_id": getattr(settings, "STRIPE_PRICE_YEARLY", ""),
+        }
+
     if not profile.is_beta_tester:
         ensure_trial_access(profile)
 
@@ -104,7 +118,8 @@ def access_context(user):
         "has_access": profile.has_active_access(),
         "access_source": profile.access_source,
         "access_until": profile.access_until,
-        "stripe_configured": stripe_is_configured(),
+        "billing_enabled": billing_enabled,
+        "stripe_configured": billing_enabled and stripe_is_configured(),
         "monthly_price_id": getattr(settings, "STRIPE_PRICE_MONTHLY", ""),
         "yearly_price_id": getattr(settings, "STRIPE_PRICE_YEARLY", ""),
     }

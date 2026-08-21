@@ -286,7 +286,7 @@ input {
     text-align: left;
 }
 
-.landing-beta-pill {
+.landing-status-pill {
     margin-bottom: 28px;
     padding: 9px 18px;
     display: inline-flex;
@@ -300,7 +300,7 @@ input {
     font-weight: 700;
 }
 
-.landing-beta-pill span {
+.landing-status-pill span {
     font-size: 12px;
 }
 
@@ -653,7 +653,7 @@ input {
     gap: 18px;
 }
 
-.landing-beta-code {
+.landing-free-note {
     min-height: 66px;
     padding: 22px 40px;
     display: inline-flex;
@@ -667,7 +667,7 @@ input {
     font-weight: 700;
 }
 
-.landing-beta-code strong {
+.landing-free-note strong {
     font-weight: 800;
 }
 
@@ -933,7 +933,7 @@ input {
         text-align: center;
     }
 
-    .landing-beta-pill {
+    .landing-status-pill {
         margin-bottom: 18px;
         padding: 7px 14px;
         gap: 8px;
@@ -1143,7 +1143,7 @@ input {
         gap: 12px;
     }
 
-    .landing-beta-code {
+    .landing-free-note {
         width: 100%;
         min-height: 49px;
         padding: 15px 16px;

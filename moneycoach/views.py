@@ -5,7 +5,6 @@ from django.utils import translation
 from finance.guide_content import GUIDE_CONTENT
 
 from .seo import (
-    beta_landing_seo_context,
     finance_apps_comparison_seo_context,
     financial_app_seo_context,
     landing_seo_context,
@@ -29,18 +28,7 @@ def landing(request, language="lt"):
 
 
 def beta_landing(request):
-    if request.user.is_authenticated:
-        return redirect("/overview/")
-
-    context = {
-        "landing_language": "lt",
-        "register_url": "/accounts/register/?lang=lt&beta_code=Noriutestuoti",
-        **beta_landing_seo_context(),
-    }
-    with translation.override("lt"):
-        response = render(request, "beta_landing.html", context)
-    response["Content-Language"] = "lt"
-    return response
+    return redirect("landing", permanent=True)
 
 
 def financial_app(request):

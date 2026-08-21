@@ -415,7 +415,11 @@ def profile(request):
     # ---------- GET ----------
     prof, _created = UserProfile.objects.get_or_create(user=request.user)
 
-    if request.GET.get("billing") == "success" and request.GET.get("session_id"):
+    if (
+        getattr(settings, "BILLING_ENABLED", False)
+        and request.GET.get("billing") == "success"
+        and request.GET.get("session_id")
+    ):
         from finance.views.billing import sync_checkout_session_for_user
 
         ok, message = sync_checkout_session_for_user(request.user, request.GET.get("session_id"))
@@ -425,7 +429,7 @@ def profile(request):
             messages.warning(request, message)
         return redirect("profile")
 
-    if request.GET.get("billing") == "cancelled":
+    if getattr(settings, "BILLING_ENABLED", False) and request.GET.get("billing") == "cancelled":
         messages.info(request, _("Payment was cancelled. You can choose a plan whenever you're ready."))
         return redirect("profile")
 
