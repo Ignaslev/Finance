@@ -58,7 +58,7 @@
             {% if form and form.email.errors %}<div class="field-errors">{{ form.email.errors }}</div>{% endif %}
           </div>
 
-          <div class="auth-field">
+          <div class="auth-field auth-field-wide">
             <label>{% trans "Language" %}</label>
             <select name="preferred_language" required>
               {% for value,label in form.preferred_language.field.choices %}
@@ -68,13 +68,13 @@
             {% if form and form.preferred_language.errors %}<div class="field-errors">{{ form.preferred_language.errors }}</div>{% endif %}
           </div>
 
-          <div class="auth-field">
+          <div class="auth-field auth-field-wide">
             <label>{% trans "Password" %}</label>
             <input type="password" name="password1" autocomplete="new-password" required>
             {% if form and form.password1.errors %}<div class="field-errors">{{ form.password1.errors }}</div>{% endif %}
           </div>
 
-          <div class="auth-field">
+          <div class="auth-field auth-field-wide">
             <label>{% trans "Confirm password" %}</label>
             <input type="password" name="password2" autocomplete="new-password" required>
             {% if form and form.password2.errors %}<div class="field-errors">{{ form.password2.errors }}</div>{% endif %}

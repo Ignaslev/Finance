@@ -10,6 +10,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from finance.models import Category, MoneySource, Transaction, UserProfile
+from finance.investments import current_investment_balance
 
 
 @login_required
@@ -111,7 +112,9 @@ def tools(request):
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
     tax_factor = Decimal("0.85") if profile.exclude_investment_tax else Decimal("1.0")
     runway_sources = list(
-        MoneySource.objects.filter(user=request.user, is_active=True).order_by("type", "name")
+        MoneySource.objects.filter(user=request.user, is_active=True)
+        .prefetch_related("holdings__asset")
+        .order_by("type", "name")
     )
     is_simulated = request.GET.get("runway_sim") == "1"
     if is_simulated:
@@ -131,7 +134,10 @@ def tools(request):
     for source in runway_sources:
         if source.id not in included_source_ids:
             continue
-        balance = source.manual_balance if source.manual_balance is not None else Decimal("0")
+        if source.type == "investment":
+            balance = current_investment_balance(source)
+        else:
+            balance = source.manual_balance if source.manual_balance is not None else Decimal("0")
         if profile.exclude_investment_tax and source.type == "investment" and balance > 0:
             balance *= tax_factor
         total_net_worth += balance

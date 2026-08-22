@@ -7,7 +7,15 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from finance.models import Category, MoneySource, Transaction
+from finance.models import (
+    Asset,
+    AssetHolding,
+    BalanceSnapshot,
+    Category,
+    MoneySource,
+    PortfolioSnapshot,
+    Transaction,
+)
 
 
 @override_settings(ALLOWED_HOSTS=["testserver"])
@@ -249,3 +257,66 @@ class OverviewAnalyticsTests(TestCase):
         self.assertEqual([row["amount"] for row in grocery_rows], [12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0])
         self.assertEqual(grocery_rows[0]["merchant"], "Merchant 12")
         self.assertEqual(grocery_rows[0]["account"], "Main account")
+
+    def test_dashboard_uses_live_holdings_for_renamed_investment_source(self):
+        self.source.manual_balance = Decimal("50.00")
+        self.source.balance_updated_at = timezone.now()
+        self.source.save(update_fields=["manual_balance", "balance_updated_at"])
+        investment = MoneySource.objects.create(
+            user=self.user,
+            name="My renamed portfolio",
+            type="investment",
+            is_active=True,
+            manual_balance=Decimal("100.00"),
+        )
+        asset = Asset.objects.create(
+            symbol="BTC",
+            lookup_key="dashboard-live-btc",
+            name="Bitcoin",
+            asset_type="crypto",
+            current_price_eur=Decimal("150.00"),
+        )
+        holding = AssetHolding.objects.create(
+            user=self.user,
+            asset=asset,
+            money_source=investment,
+            quantity=Decimal("2.00"),
+        )
+        BalanceSnapshot.objects.create(
+            user=self.user,
+            amount=Decimal("50.00"),
+            timestamp=timezone.now(),
+        )
+        PortfolioSnapshot.objects.create(
+            user=self.user,
+            crypto_total=Decimal("100.00"),
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_net_worth"], 350.0)
+        investment_row = next(
+            row for row in response.context["accounts_with_balances"]
+            if row.id == investment.id
+        )
+        self.assertEqual(investment_row.effective_balance, Decimal("300.0000000000000000"))
+        self.assertEqual(json.loads(response.context["balance_values_json"])[-1], 350.0)
+
+        holding.quantity = Decimal("3.00")
+        holding.save(update_fields=["quantity"])
+        edit_response = self.client.post(
+            reverse("asset_edit", args=[holding.id]),
+            {"quantity": "3"},
+        )
+        self.assertEqual(edit_response.status_code, 302)
+        investment.refresh_from_db()
+        self.assertEqual(investment.manual_balance, Decimal("450.00"))
+
+        delete_response = self.client.post(
+            reverse("asset_edit", args=[holding.id]),
+            {"delete": "1"},
+        )
+        self.assertEqual(delete_response.status_code, 302)
+        investment.refresh_from_db()
+        self.assertEqual(investment.manual_balance, Decimal("0.00"))

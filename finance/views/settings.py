@@ -12,6 +12,7 @@ from calendar import monthrange
 from collections import defaultdict
 from django.core.mail import mail_admins
 from finance.models import Category, MoneySource, Transaction, SavingsGoal, BalanceSnapshot, OnboardingState, UserProfile, FeedbackTicket
+from finance.investments import current_investment_balance
 from finance.utils import (
     category_names_for,
     default_category_name,
@@ -433,7 +434,7 @@ def profile(request):
         messages.info(request, _("Payment was cancelled. You can choose a plan whenever you're ready."))
         return redirect("profile")
 
-    accounts = MoneySource.objects.filter(user=request.user).order_by("type", "name")
+    accounts = MoneySource.objects.filter(user=request.user).prefetch_related("holdings__asset").order_by("type", "name")
 
     tx_sums = (
         Transaction.objects
@@ -454,7 +455,10 @@ def profile(request):
     acc_by_id = {}
     for acc in accounts:
         ledger_val = ledger_map.get(acc.id, Decimal("0"))
-        effective = acc.manual_balance if acc.manual_balance is not None else ledger_val
+        if acc.type == "investment":
+            effective = current_investment_balance(acc)
+        else:
+            effective = acc.manual_balance if acc.manual_balance is not None else ledger_val
         acc.effective_balance = effective
         acc_by_id[acc.id] = acc
         total_effective += effective if acc.is_active else Decimal("0")

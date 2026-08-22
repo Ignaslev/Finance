@@ -173,3 +173,34 @@ class RegistrationAttributionTests(TestCase):
         self.assertContains(response, "moneyCompassLoadMetaPixel")
         self.assertContains(response, "moneycompass_analytics_consent=marketing")
         self.assertNotContains(response, "<noscript>")
+
+
+@override_settings(FREE_ACCESS_MODE=True, ALLOWED_HOSTS=["testserver"])
+class LoginFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="login-check@example.test",
+            email="login-check@example.test",
+            password="StrongPass123!",
+            is_active=True,
+        )
+
+    def test_valid_email_login_reaches_overview(self):
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": "login-check@example.test",
+                "password": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, reverse("overview"), fetch_redirect_response=False)
+
+    def test_empty_password_returns_validation_instead_of_server_error(self):
+        response = self.client.post(
+            reverse("login"),
+            {"username": "login-check@example.test", "password": ""},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].errors.get("password"))

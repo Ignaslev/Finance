@@ -8,6 +8,7 @@ from django.db.models import Sum
 from openai import OpenAI
 from django.utils import timezone
 from .models import Transaction, Category, SavingsGoal, MoneySource
+from .investments import current_investment_balance
 from .utils import _normalize_merchant, default_category_name
 
 EXAMPLES_TOTAL_CAP = 60
@@ -349,8 +350,11 @@ def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
         ms = r["money_source_id"]; amt = r["total"] or Decimal("0")
         ledger_map[ms] = (ledger_map.get(ms, Decimal("0")) + (amt if r["in_out"] == Transaction.IN else -amt))
     eff_map = {}
-    for acc in MoneySource.objects.filter(user=user):
-        eff_map[acc.id] = acc.manual_balance if acc.manual_balance is not None else ledger_map.get(acc.id, Decimal("0"))
+    for acc in MoneySource.objects.filter(user=user).prefetch_related("holdings__asset"):
+        if acc.type == "investment":
+            eff_map[acc.id] = current_investment_balance(acc)
+        else:
+            eff_map[acc.id] = acc.manual_balance if acc.manual_balance is not None else ledger_map.get(acc.id, Decimal("0"))
     goals = []
     for g in SavingsGoal.objects.filter(user=user, is_active=True).prefetch_related("accounts"):
         sel = [a for a in g.accounts.all() if a.is_active]

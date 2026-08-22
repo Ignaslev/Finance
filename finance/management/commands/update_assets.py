@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from finance.models import Asset, AssetHolding, MoneySource, PortfolioSnapshot
+from finance.investments import sync_investment_source_balance
 
 
 class Command(BaseCommand):
@@ -142,11 +143,19 @@ class Command(BaseCommand):
                 else:
                     s_total += val
 
-            # Update Live Accounts
-            MoneySource.objects.filter(user=user, name="Crypto Assets").update(
-                manual_balance=c_total, balance_updated_at=timezone.now())
-            MoneySource.objects.filter(user=user, name="Stock Assets").update(
-                manual_balance=s_total, balance_updated_at=timezone.now())
+            # Update every linked investment source, including renamed and
+            # localized accounts. Display names are not stable identifiers.
+            linked_sources = (
+                MoneySource.objects.filter(
+                    user=user,
+                    type="investment",
+                    holdings__isnull=False,
+                )
+                .prefetch_related("holdings__asset")
+                .distinct()
+            )
+            for source in linked_sources:
+                sync_investment_source_balance(source)
 
             # Save Snapshot
             PortfolioSnapshot.objects.create(

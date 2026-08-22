@@ -11,6 +11,7 @@ import json
 from collections import OrderedDict
 
 from finance.models import Asset, AssetHolding, MoneySource, PortfolioSnapshot
+from finance.investments import sync_investment_source_balance
 
 
 @login_required
@@ -196,13 +197,7 @@ def asset_add(request):
         holding.quantity = (holding.quantity or Decimal("0")) + qty
         holding.save()
 
-        total_val = sum(
-            (h.value_eur for h in source.holdings.select_related('asset').all()),
-            Decimal("0")
-        )
-        source.manual_balance = total_val
-        source.balance_updated_at = timezone.now()
-        source.save()
+        sync_investment_source_balance(source)
 
         messages.success(request, _("Added %(qty)s %(sym)s.") % {"qty": qty, "sym": asset.symbol})
 
@@ -218,7 +213,10 @@ def asset_edit(request, pk):
 
     if request.method == "POST":
         if 'delete' in request.POST:
+            source = holding.money_source
             holding.delete()
+            if source is not None:
+                sync_investment_source_balance(source, empty_value=Decimal("0"))
             messages.success(request, "Asset removed.")
             return redirect('assets_dashboard')
 
@@ -226,6 +224,8 @@ def asset_edit(request, pk):
         try:
             holding.quantity = Decimal(qty_raw)
             holding.save()
+            if holding.money_source is not None:
+                sync_investment_source_balance(holding.money_source)
             messages.success(request, "Quantity updated.")
             return redirect('assets_dashboard')
         except:

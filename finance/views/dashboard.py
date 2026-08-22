@@ -10,6 +10,7 @@ from datetime import timedelta, datetime, timezone as dt_timezone
 from decimal import Decimal
 import json, os
 from finance.category_analytics import build_spending_category_analytics
+from finance.investments import current_investment_balance
 from django.contrib.admin.views.decorators import staff_member_required
 from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, SavingsGoal, UserProfile
 
@@ -31,7 +32,11 @@ def overview(request):
     tax_factor = Decimal("0.85") if tax_on else Decimal("1.0")
 
     # 1. ACCOUNTS & COMPOSITION
-    accounts = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("type", "name"))
+    accounts = list(
+        MoneySource.objects.filter(user=request.user, is_active=True)
+        .prefetch_related("holdings__asset")
+        .order_by("type", "name")
+    )
 
     comp_totals = defaultdict(Decimal)
     total_net_worth = Decimal("0")
@@ -47,7 +52,7 @@ def overview(request):
 
         # 2. Calculate Live Balance
         if acc.type == 'investment':
-            live_balance = anchor_val
+            live_balance = current_investment_balance(acc)
         else:
             delta_qs = Transaction.objects.filter(
                 user=request.user,
@@ -156,6 +161,10 @@ def overview(request):
     if not graph_values:
         graph_dates = ["Now"]
         graph_values = [float(total_net_worth)]
+    else:
+        # Historical snapshots can lag behind current transactions or prices.
+        # Today's endpoint must always agree with the headline net worth.
+        graph_values[-1] = float(total_net_worth)
 
     # 3. INCOME VS SPENDING
     tx_base = Transaction.objects.filter(
