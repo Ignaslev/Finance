@@ -46,7 +46,7 @@ def _safe_next_url(request, raw_url, fallback):
     return fallback
 
 
-CATEGORY_NAME_MAX = 40
+CATEGORY_NAME_MAX = Category._meta.get_field("name").max_length
 ACCOUNT_NAME_MAX = 100
 GOAL_NAME_MAX = 100
 COLOR_MAX = 7
@@ -77,7 +77,10 @@ def category_list(request):
         return redirect("category_list")
 
     cats = Category.objects.filter(user=request.user).order_by("name")
-    return render(request, "categories.html", {"categories": cats})
+    return render(request, "categories.html", {
+        "categories": cats,
+        "category_name_max": CATEGORY_NAME_MAX,
+    })
 
 @login_required
 def category_edit(request, pk):
@@ -101,7 +104,10 @@ def category_edit(request, pk):
             cat.color = color
             cat.save()
         return redirect("category_list")
-    return render(request, "category_edit.html", {"cat": cat})
+    return render(request, "category_edit.html", {
+        "cat": cat,
+        "category_name_max": CATEGORY_NAME_MAX,
+    })
 
 @login_required
 def category_delete(request, pk):
@@ -535,6 +541,7 @@ def profile(request):
 
         # Categories for the Profile categories card
         "categories": cats,
+        "category_name_max": CATEGORY_NAME_MAX,
     }
     return render(request, "profile.html", ctx)
 

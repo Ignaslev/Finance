@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 # ----- Existing choices -----
 # ----- Category choices come from settings -----
 CATEGORY_CHOICES = [(c, c) for c in getattr(settings, "DEFAULT_CATEGORIES", [])]
+CATEGORY_NAME_MAX_LENGTH = 100
 
 SOURCE_CHOICES = [
     ("unknown", _("Unknown")),
@@ -20,7 +21,7 @@ SOURCE_CHOICES = [
 
 class Category(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=40)
+    name = models.CharField(max_length=CATEGORY_NAME_MAX_LENGTH)
     color = models.CharField(max_length=7, blank=True, default="")  # optional hex color
     monthly_cap = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
@@ -83,7 +84,7 @@ class Transaction(models.Model):
     ai_reason = models.TextField(blank=True, default="")
 
     # ---- Categorization ----
-    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES, null=True, blank=True)
+    category = models.CharField(max_length=CATEGORY_NAME_MAX_LENGTH, choices=CATEGORY_CHOICES, null=True, blank=True)
     category_source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default="unknown")
     user_note = models.TextField(blank=True, default="")
     category_fk = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL)
