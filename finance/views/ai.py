@@ -52,6 +52,18 @@ from finance.services import _pick_examples, _call_openai_rows
 
 BATCH_SIZE = 50
 AUTO_CHANGE_THRESHOLD = 0.90
+AI_SYNC_LIMIT = 80  # bigger manual runs go to the background job so the request can't time out
+
+
+def _queue_in_background(request, *, kind, mode, n):
+    from django.utils.translation import get_language
+    from finance.models import AiRun
+    if not AiRun.objects.filter(user=request.user, status__in=["queued", "running"]).exists():
+        AiRun.objects.create(user=request.user, kind=kind, mode=mode, status="queued")
+    lt = (get_language() or "").startswith("lt")
+    messages.info(request, f"AI tvarko {n} operacijų fone. Rezultatus pamatysi po kelių minučių." if lt
+                  else f"The AI is sorting {n} transactions in the background. Check back in a few minutes.")
+    return redirect("upload")
 
 
 @login_required
@@ -108,6 +120,13 @@ def ai_full_categorize(request):
     if mode == "uncat":
         base = (candidate_base
                 .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
+                .exclude(category_source="user"))
+    elif mode == "new":
+        # Automatic runs: only rows the AI has never looked at, so parked low-confidence
+        # rows are not re-sent (and paid for) on every upload.
+        base = (candidate_base
+                .filter(Q(category_fk__isnull=True) | Q(category__isnull=True) | Q(category=""))
+                .filter(ai_suggested_fk__isnull=True)
                 .exclude(category_source="user"))
     elif mode == "ai":
         base = candidate_base.filter(category_source="ai")
@@ -288,6 +307,8 @@ def ai_run_uncategorized(request):
     if n == 0:
         messages.info(request, _("No eligible uncategorized transactions to categorize."))
         return redirect("upload")
+    if n > AI_SYNC_LIMIT:
+        return _queue_in_background(request, kind="autocategorize", mode="uncat", n=n)
     request.session["last_ai_pre"] = {
         "kind": "uncategorized",
         "considered": n,
@@ -337,6 +358,9 @@ def ai_recheck_all(request):
         if n == 0:
             messages.info(request, _("No AI-labeled transactions to recheck."))
             return redirect("upload")
+
+    if n > AI_SYNC_LIMIT:
+        return _queue_in_background(request, kind="recheck", mode=mode, n=n)
 
     # PRG card + last run timestamp
     request.session["last_ai_pre"] = {

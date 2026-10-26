@@ -1,10 +1,11 @@
 import json
 import os
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -36,7 +37,7 @@ class CategoryCashFlowTests(TestCase):
         return Transaction.objects.create(
             user=self.user,
             money_source=self.source,
-            date=date(2026, 7, 15),
+            date=timezone.localdate() - timedelta(days=10),  # inside the 90-day runway window
             merchant=merchant,
             amount=Decimal(amount),
             currency="EUR",

@@ -4,7 +4,7 @@ from django.test import RequestFactory, SimpleTestCase, override_settings
 from moneycoach.middleware import CanonicalHostRedirectMiddleware
 
 
-@override_settings(SITE_URL="https://moneycompass.lt")
+@override_settings(SITE_URL="https://moneycompass.lt", ALLOWED_HOSTS=["moneycompass.lt", "www.moneycompass.lt"])
 class CanonicalHostRedirectMiddlewareTests(SimpleTestCase):
     def setUp(self):
         self.middleware = CanonicalHostRedirectMiddleware(

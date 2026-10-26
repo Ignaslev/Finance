@@ -24,7 +24,7 @@
       <p class="seo-hero-lead">
         MoneyCompass yra lietuviška, naršyklėje veikianti asmeninių finansų valdymo programėlė,
         padedanti vienoje vietoje matyti pajamas, išlaidas, biudžetą, turtą, investicijas ir tikslus. Banko išrašą
-        importuojate patys iš CSV arba Excel failo – be tiesioginio banko paskyros prijungimo.
+        įkeliate patys iš PDF arba CSV banko išrašo – be tiesioginio banko paskyros prijungimo, o kategorijas priskiriame automatiškai.
       </p>
       <div class="seo-hero-actions">
         <a href="{% url 'register' %}?lang=lt" class="seo-button seo-button-primary">
@@ -36,7 +36,7 @@
       </div>
       <ul class="seo-trust-list" aria-label="Svarbiausi MoneyCompass principai">
         <li><i class="ph ph-check-circle" aria-hidden="true"></i> Be banko slaptažodžio</li>
-        <li><i class="ph ph-check-circle" aria-hidden="true"></i> CSV ir Excel importas</li>
+        <li><i class="ph ph-check-circle" aria-hidden="true"></i> PDF ir CSV išrašų importas</li>
         <li><i class="ph ph-check-circle" aria-hidden="true"></i> Lietuviška sąsaja</li>
       </ul>
     </div>
@@ -72,7 +72,7 @@
       <li>
         <span class="seo-step-number">1</span>
         <h3>Eksportuojate išrašą</h3>
-        <p>Iš savo banko atsisiunčiate operacijas CSV arba Excel formatu.</p>
+        <p>Iš savo banko atsisiunčiate išrašą PDF arba CSV formatu.</p>
       </li>
       <li>
         <span class="seo-step-number">2</span>
@@ -154,7 +154,7 @@
         <tbody>
           <tr>
             <th>Duomenų įvedimas</th>
-            <td>Rankinis CSV / Excel importas</td>
+            <td>PDF / CSV išrašo įkėlimas</td>
             <td>Dažniausiai automatiškai to banko viduje</td>
             <td>Rankinis įvedimas arba failų tvarkymas</td>
           </tr>

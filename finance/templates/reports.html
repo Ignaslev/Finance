@@ -8,7 +8,6 @@
     <h2 class="text-dark" style="margin:0;">{% trans "Reports" %}</h2>
 </div>
 
-{% if user.is_staff or user.is_superuser %}
 <div class="card">
   <div class="flex items-center gap-4" style="flex-wrap:wrap;">
     <strong class="text-dark">{% trans "Select Period:" %}</strong>
@@ -25,6 +24,113 @@
   </div>
 </div>
 
+{% with o=month_overview %}
+<div class="card" id="month-overview">
+  <div class="card-title">{% if is_lt %}Mėnesio apžvalga{% else %}Monthly overview{% endif %} · {{ month_label }}</div>
+
+  {% if o.spent %}
+    <p class="text-dark" style="font-size:1.1rem; font-weight:600; margin:0 0 0.4rem;">{{ o.headline }}</p>
+    {% if is_current_month %}
+      <p class="text-medium" style="font-size:0.9rem; margin:0 0 1rem;">
+        {% if is_lt %}Mėnuo dar nesibaigė – kai baigsis, palyginsime su ankstesniu mėnesiu.
+        {% else %}The month isn't over yet – once it is, we'll compare it with the month before.{% endif %}
+      </p>
+    {% elif not o.complete %}
+      <p class="text-medium" style="font-size:0.9rem; margin:0 0 1rem;">
+        {% if is_lt %}Duomenys kol kas iki {{ o.data_until|date:"Y-m-d" }} – kai įkelsi likusią mėnesio dalį, palyginsime su ankstesniu mėnesiu.
+        {% else %}Data so far runs to {{ o.data_until|date:"Y-m-d" }} – once the rest of the month is uploaded, we'll compare it with the month before.{% endif %}
+      </p>
+    {% endif %}
+
+    <div style="margin:1rem 0 1.25rem; display:flex; gap:0.6rem;">
+      <div style="flex:1 1 0; min-width:0; background:white; padding:0.8rem 0.9rem; border-radius:8px; border:1px solid #edf2f7;">
+        <div class="text-medium" style="font-size:0.85rem;">{% if is_lt %}Išleista{% else %}Spent{% endif %}</div>
+        <div class="text-dark font-bold" style="font-size:1.15rem; white-space:nowrap;">{{ o.spent_text }}</div>
+      </div>
+      <div style="flex:1 1 0; min-width:0; background:white; padding:0.8rem 0.9rem; border-radius:8px; border:1px solid #edf2f7;">
+        <div class="text-medium" style="font-size:0.85rem;">{% if is_lt %}Gauta{% else %}Received{% endif %}</div>
+        <div class="text-dark font-bold" style="font-size:1.15rem; white-space:nowrap;">{{ o.income_text }}</div>
+      </div>
+      <div style="flex:1 1 0; min-width:0; background:white; padding:0.8rem 0.9rem; border-radius:8px; border:1px solid #edf2f7;">
+        <div class="text-medium" style="font-size:0.85rem;">{% if is_lt %}Liko{% else %}Left over{% endif %}</div>
+        <div class="font-bold" style="font-size:1.15rem; white-space:nowrap; color:{% if o.net < 0 %}#e53e3e{% else %}var(--primary-teal){% endif %};">{{ o.net_text }}</div>
+      </div>
+    </div>
+
+    <div class="text-dark" style="font-weight:600; margin-bottom:0.5rem;">{% if is_lt %}Kur keliavo pinigai{% else %}Where the money went{% endif %}</div>
+    {% for c in o.categories %}
+      <div style="padding:0.45rem 0; border-bottom:1px solid #edf2f7;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:1rem; margin-bottom:0.3rem;">
+          <span class="text-dark" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.name }}</span>
+          <span class="text-dark" style="font-weight:600; white-space:nowrap;">
+            {{ c.total_text }}
+            {% if c.change_text %}
+              <span style="font-size:0.8rem; font-weight:500; margin-left:0.35rem; color:{% if c.change > 0 %}#e53e3e{% else %}var(--primary-teal){% endif %};">{{ c.change_text }}</span>
+            {% endif %}
+          </span>
+        </div>
+        <div style="height:6px; background:#edf2f7; border-radius:3px; overflow:hidden;">
+          <div style="height:100%; width:{{ c.share|stringformat:'.1f' }}%; background:var(--primary-teal);"></div>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if o.tips %}
+      <div style="margin-top:1.25rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1rem 1.25rem;">
+        <div class="text-dark" style="font-weight:600; margin-bottom:0.5rem;"><i class="ph ph-lightbulb" style="color:var(--primary-teal);"></i> {% if is_lt %}Pastebėjimai{% else %}Worth knowing{% endif %}</div>
+        <ul style="margin:0; padding-left:1.1rem; color:var(--text-dark); line-height:1.6;">
+          {% for tip in o.tips %}<li>{{ tip }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  {% else %}
+    <div style="padding:2rem; text-align:center; opacity:0.7;">
+      {% if is_lt %}Šį mėnesį išlaidų dar nematome.{% else %}No spending for this month yet.{% endif %}
+      <a href="{% url 'upload' %}">{% if is_lt %}Įkelti išrašą{% else %}Upload a statement{% endif %}</a>
+    </div>
+  {% endif %}
+</div>
+{% endwith %}
+
+<div class="card" id="week-overview">
+  <div class="card-title">{% if is_lt %}Savaitės apžvalga{% else %}Weekly overview{% endif %}</div>
+
+  <div style="margin-bottom:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+    {% for wr in week_ranges %}
+      <a href="/reports/?m={{ sel_m }}&wstart={{ wr.start }}#week-overview"
+         class="btn"
+         style="padding:0.3rem 0.7rem; font-size:0.85rem; border:1px solid #e2e8f0;
+                {% if wr.start == sel_w_start %}background:var(--primary-teal); color:white; border-color:var(--primary-teal);{% else %}background:white; color:var(--text-medium);{% endif %}">
+        {{ wr.start }} → {{ wr.end }}
+      </a>
+    {% endfor %}
+  </div>
+
+  {% with w=week_overview %}
+  {% if w and w.spent %}
+    <p class="text-dark" style="font-size:1.05rem; font-weight:600; margin:0 0 0.75rem;">
+      {% if is_lt %}Išleista {{ w.spent_text }}{% else %}Spent {{ w.spent_text }}{% endif %}{% if w.change_text %} – {{ w.change_text }}{% endif %}.
+    </p>
+    {% for c in w.categories|slice:":4" %}
+      <div style="display:flex; justify-content:space-between; gap:1rem; padding:0.4rem 0; border-bottom:1px solid #edf2f7;">
+        <span class="text-dark">{{ c.name }}</span>
+        <span class="text-dark" style="font-weight:600;">{{ c.total_text }}</span>
+      </div>
+    {% endfor %}
+    {% if w.tips %}
+      <ul style="margin:1rem 0 0; padding-left:1.1rem; color:var(--text-dark); line-height:1.6;">
+        {% for tip in w.tips %}<li>{{ tip }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  {% else %}
+    <div style="padding:1.5rem; text-align:center; opacity:0.7; border:1px dashed #e2e8f0; border-radius:12px;">
+      {% if is_lt %}Šią savaitę išlaidų nematome.{% else %}No spending this week.{% endif %}
+    </div>
+  {% endif %}
+  {% endwith %}
+</div>
+
+{% if user.is_staff or user.is_superuser %}
 <div class="card">
   <div class="card-title">{% trans "Monthly Report:" %} {{ sel_m }}</div>
 
@@ -53,20 +159,7 @@
 </div>
 
 <div class="card">
-  <div class="card-title">{% trans "Weekly Reports" %} ({{ sel_m }})</div>
-
-  <div style="margin-bottom:1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-    {% for wr in week_ranges %}
-      <a href="/reports/?m={{ sel_m }}&wstart={{ wr.start }}"
-         class="btn"
-         style="padding:0.3rem 0.7rem; font-size:0.85rem; border:1px solid #e2e8f0;
-                {% if wr.start == sel_w_start %}background:var(--primary-teal); color:white; border-color:var(--primary-teal);{% else %}background:white; color:var(--text-medium);{% endif %}">
-        {{ wr.start }} → {{ wr.end }}
-      </a>
-    {% empty %}
-      <span style="opacity:0.6;">{% trans "No weeks calculated for this month." %}</span>
-    {% endfor %}
-  </div>
+  <div class="card-title">{% trans "Weekly Reports" %} ({{ sel_w_start }})</div>
 
   {% if weekly_report and weekly_report.response %}
       {% with r=weekly_report.response %}

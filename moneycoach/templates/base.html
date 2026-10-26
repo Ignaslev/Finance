@@ -75,6 +75,7 @@
                        rel="noopener noreferrer"
                        class="dropdown-item">{% if LANGUAGE_CODE == "lt" %}Bendruomenė{% else %}Community{% endif %}</a>
                     <a href="{% url 'feedback' %}" class="dropdown-item">{% trans "Feedback" %}</a>
+                    {% if user.is_superuser %}<a href="{% url 'staff_funnel' %}" class="dropdown-item">Piltuvas</a>{% endif %}
                     <form action="{% url 'logout' %}" method="post" style="margin:0;">
                       {% csrf_token %}
                       <button type="submit" class="dropdown-item dropdown-button">{% trans "Log Out" %}</button>
@@ -168,7 +169,23 @@
 
    {% include "includes/pending_delete_banner.html" %}
 
-   {% if onboarding and not hide_onboarding_banner %}
+   {% if has_sample_data %}
+    <div style="background:#fff9e9; border-bottom:1px solid #f2dfa5;">
+        <div class="container" style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; padding:0.75rem 1.25rem;">
+            <span style="flex:1 1 260px; color:#695115; font-weight:600; font-size:0.92rem;">
+                <i class="ph ph-flask" aria-hidden="true"></i>
+                {% if LANGUAGE_CODE == "lt" %}Dabar matai pavyzdinius duomenis, ne savo.{% else %}You're looking at sample data, not your own.{% endif %}
+            </span>
+            <a href="{% url 'upload' %}#upload-statement" class="btn btn-primary" style="padding:0.45rem 0.9rem; font-size:0.85rem;">{% if LANGUAGE_CODE == "lt" %}Įkelti savo išrašą{% else %}Upload my statement{% endif %}</a>
+            <form action="{% url 'sample_data_remove' %}" method="post" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="padding:0.45rem 0.9rem; font-size:0.85rem; background:#ffffff; color:#695115; border:1px solid #f2dfa5;">{% if LANGUAGE_CODE == "lt" %}Pašalinti pavyzdinius duomenis{% else %}Remove sample data{% endif %}</button>
+            </form>
+        </div>
+    </div>
+   {% endif %}
+
+   {% if onboarding and not hide_onboarding_banner and not has_sample_data %}
     <div class="onboarding-banner">
         <div class="container">
             <div class="onboarding-banner-copy">

@@ -59,7 +59,7 @@ class Command(BaseCommand):
             recent = AiRun.objects.filter(user=run.user).exclude(pk=run.pk).order_by("-started_at").first()
             if recent and (recent.status == "running" or (recent.finished_at and recent.finished_at > cooldown_ago)):
                 continue
-            run_ai_for_user(run.user, kind="autocategorize", mode="uncat", run=run)
+            run_ai_for_user(run.user, kind=run.kind, mode=run.mode, run=run)
             processed += 1
 
         # 2) ALSO pro-actively run for eligible users (no queued record yet)
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             if not _eligible_for_autocategorize(user):
                 continue
 
-            run_ai_for_user(user, kind="autocategorize", mode="uncat")
+            run_ai_for_user(user, kind="autocategorize", mode="new")
             processed += 1
 
         return processed

@@ -194,7 +194,8 @@ def profile(request):
         if action == "pref_tax":
             prof, _created = UserProfile.objects.get_or_create(user=request.user)
             prof.exclude_investment_tax = bool(request.POST.get("exclude_investment_tax"))
-            prof.save(update_fields=["exclude_investment_tax"])
+            prof.reminder_emails = bool(request.POST.get("reminder_emails"))
+            prof.save(update_fields=["exclude_investment_tax", "reminder_emails"])
             messages.success(request, _("Preferences saved."))
             return redirect("profile")
 
@@ -525,6 +526,7 @@ def profile(request):
 
     ctx = {
         "exclude_investment_tax": prof.exclude_investment_tax,
+        "reminder_emails": prof.reminder_emails,
         "preferred_language": prof.preferred_language,
         "language_choices": UserProfile.LANGUAGE_CHOICES,
         "accounts": accounts,

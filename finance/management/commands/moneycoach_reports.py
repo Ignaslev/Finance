@@ -1,9 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from datetime import timedelta, date as _date
 
-from finance.models import AdvisorReport
+from finance.models import AdvisorReport, Transaction
+from finance.sample_data import real_transactions
 # FIXED IMPORT:
 from finance.services import _advisor_build_payload, _advisor_call_model
 
@@ -37,8 +39,8 @@ class Command(BaseCommand):
 
     def _run_batch(self, rtype, start, end):
         count = 0
-        # Only users who finished onboarding (check logic/model existence first)
-        users = User.objects.all()
+        # AI reports are staff-only for now (everyone else gets the free overview on the Reports page).
+        users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True), is_active=True)
 
         for user in users:
             # Skip if onboarding not done (if model exists)
@@ -46,6 +48,11 @@ class Command(BaseCommand):
                 continue
 
             if AdvisorReport.objects.filter(user=user, type=rtype, period_start=start, period_end=end).exists():
+                continue
+
+            # Each report is a paid model call: skip periods with no real spending data.
+            if not real_transactions(Transaction.objects.filter(
+                    user=user, is_deleted=False, date__gte=start, date__lte=end)).exists():
                 continue
 
             try:

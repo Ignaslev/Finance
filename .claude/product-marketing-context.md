@@ -1,12 +1,12 @@
 # Product Marketing Context
 
-*Last updated: 2026-07-19*
+*Last updated: 2026-10-26*
 
 ## Product Overview
 
 **One-liner:** MoneyCompass is a Lithuanian-first personal finance web app that turns manually uploaded bank statements into a clear view of spending, balances, net worth, investments and goals without connecting a bank account.
 
-**What it does:** Users export a CSV or Excel statement from their bank, upload it themselves, review and categorize transactions, then use dashboards and reports to understand their finances. The product also supports budgets, savings goals, assets and portfolio tracking.
+**What it does:** Users download a PDF or CSV statement from their bank and upload it themselves; AI categorizes the transactions automatically (no manual labelling; user corrections are remembered per merchant), then dashboards and reports show their finances. The product also supports budgets, savings goals, assets and portfolio tracking.
 
 **Product category:** Personal finance management software / expense tracker.
 
@@ -52,7 +52,7 @@ The consumer is the user, champion and decision maker.
 3. **One financial view:** Spending, balances, assets, investments and goals can be reviewed together.
 4. **Lithuanian-first:** Product and educational content are designed first for Lithuanian users, with English support.
 
-**Product capabilities verified in the application:** CSV/Excel statement import, transaction categorization, spending statistics, budget limits, goals, asset/net-worth views, portfolio tracking, Lithuanian and English interfaces.
+**Product capabilities verified in the application:** PDF statement import (AI-read, balance-checked, previewed before import; tested on synthetic statements), CSV/Excel import (Swedbank, SEB, Revolut), automatic AI categorization from the first upload, spending statistics, budget limits, goals, asset/net-worth views, portfolio tracking, Lithuanian and English interfaces.
 
 **Differentiation:** User-controlled statement import and broad personal-finance visibility. Competitor names and comparative performance claims require separate research before publication.
 
@@ -85,7 +85,7 @@ The consumer is the user, champion and decision maker.
 
 **Primary conversion:** Completed account registration (`sign_up` in GA4 and `CompleteRegistration` in Meta when consent permits).
 
-**Activation path:** Visit focused beta page → register → activate account by email → import first statement → review categorized transactions/dashboard.
+**Activation path:** Visit page → register → activate account by email → first-run upload screen → upload PDF/CSV statement → AI categorizes automatically → dashboard. Measured on the admin-only page /staff/funnel/; GA4 event `first_statement_imported`.
 
 **Channels in scope:** Lithuanian organic search, Instagram, Facebook, TikTok, Meta paid social and later TikTok paid/organic expansion.
 

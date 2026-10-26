@@ -144,7 +144,7 @@ def _merchant_key(raw):
     return " ".join(tokens[:4]), brand
 
 
-def _merchant_history(user, rows):
+def _merchant_history(user, rows, exclude_ids=()):
     """Past categories for the merchants in `rows`, user corrections first.
 
     Returns {row merchant: ("same" | "similar", [(category, source, count), ...])}.
@@ -167,6 +167,7 @@ def _merchant_history(user, rows):
         Transaction.objects
         .filter(user=user, is_deleted=False, is_internal_transfer=False, category_fk__isnull=False)
         .filter(category_source__in=["user", "rule", "ai"])
+        .exclude(id__in=list(exclude_ids))  # evaluation: never let a row see its own label
         .order_by("-date", "-id")
         .values_list("merchant", "category_fk__name", "category_source")[:MERCHANT_HISTORY_LOOKBACK]
     )
@@ -191,7 +192,7 @@ def _merchant_history(user, rows):
     return out
 
 
-def _call_openai_rows(user, rows, examples, cats):
+def _call_openai_rows(user, rows, examples, cats, exclude_ids=()):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
@@ -227,7 +228,7 @@ def _call_openai_rows(user, rows, examples, cats):
         for name in cats
     )
 
-    history = _merchant_history(user, rows)
+    history = _merchant_history(user, rows, exclude_ids=exclude_ids)
     example_lines = [
         f"- {e['text'].split(' | ')[0]} ({e['in_out']}, {e['amount']:.2f}) => {e['category']}"
         + (" [set by the user]" if e.get("source") == "user" else "")
@@ -510,7 +511,7 @@ def _advisor_build_payload(user, ptype: str, start: _date, end: _date):
     mom_delta = None
     if ptype == "monthly":
         prev_y, prev_m = (start.year, start.month-1) if start.month>1 else (start.year-1, 12)
-        prev_s, prev_e = _date(prev_y, 1, 1).replace(month=prev_m), _date(prev_y, monthrange(prev_y, prev_m)[1], 1).replace(month=prev_m)
+        prev_s = _date(prev_y, prev_m, 1)
         prev_e = _date(prev_y, prev_m, monthrange(prev_y, prev_m)[1])
         prev_tx = Transaction.objects.filter(
             user=user,

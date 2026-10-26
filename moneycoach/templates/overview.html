@@ -25,6 +25,14 @@
   .firstrun-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .firstrun-card .onboarding-intro-privacy { max-width: 560px; margin: 1.25rem auto 0; text-align: left; }
   .firstrun-help { align-self: start; }
+  .firstrun-mobile { display: none; max-width: 560px; margin: 0 auto 1.25rem; padding: 1rem 1.1rem; border-radius: 14px;
+    background: #f7fafc; border: 1px solid #e2e8f0; text-align: left; }
+  .firstrun-mobile-head { display: flex; gap: 0.6rem; align-items: flex-start; color: var(--text-dark); font-weight: 700; font-size: 0.95rem; }
+  .firstrun-mobile-head i { font-size: 1.3rem; color: var(--primary-teal-dark); }
+  .firstrun-mobile p { margin: 0.4rem 0 0.8rem; color: var(--text-medium); font-size: 0.88rem; line-height: 1.5; }
+  .firstrun-mobile form { margin: 0; }
+  .firstrun-mobile .btn { width: 100%; background: #ffffff; color: var(--text-dark); border: 1px solid #cbd5e0; }
+  @media (max-width: 640px) { .firstrun-mobile { display: block; } }
   .export-tabs { margin-bottom: 1.1rem; }
   .export-tabs button { font-size: 0.82rem; padding: 7px 14px; }
   .export-steps.onboarding-intro-steps { margin: 0; }
@@ -50,6 +58,16 @@
     <h1 class="firstrun-title">{% if is_lt %}Pažiūrėkime, kur dingsta tavo pinigai{% else %}Let's see where your money goes{% endif %}</h1>
     <p class="firstrun-lead">{% if is_lt %}Įkelk banko išrašą ir iš karto pamatysi savo išlaidas, pajamas ir turtą vienoje vietoje.{% else %}Upload a bank statement and you'll see your spending, income and net worth in one place.{% endif %}</p>
 
+    <div class="firstrun-mobile">
+        <div class="firstrun-mobile-head"><i class="ph ph-desktop" aria-hidden="true"></i>
+            <span>{% if is_lt %}Telefone? Išrašą lengviausia atsisiųsti kompiuteryje.{% else %}On your phone? Statements are easiest to download on a computer.{% endif %}</span></div>
+        <p>{% if is_lt %}Atsiųsime nuorodą el. paštu, kad galėtum tęsti kompiuteryje. Arba banko programėlėje atsisiųsk išrašą PDF formatu ir įkelk jį čia.{% else %}We'll email you a link to continue on your computer. Or download the statement as a PDF in your bank's app and upload it here.{% endif %}</p>
+        <form method="post" action="{% url 'email_upload_link' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn"><i class="ph ph-envelope-simple" aria-hidden="true"></i> {% if is_lt %}Atsiųsti nuorodą el. paštu{% else %}Email me a link{% endif %}</button>
+        </form>
+    </div>
+
     <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" class="firstrun-form" id="firstrun-upload">
         {% csrf_token %}
         <input type="hidden" name="next" value="{% url 'overview' %}">
@@ -62,6 +80,14 @@
         </label>
         <button type="submit" class="btn btn-primary firstrun-submit" id="firstrun-submit" disabled>
             {% if is_lt %}Įkelti ir peržiūrėti{% else %}Upload and see my money{% endif %}
+        </button>
+    </form>
+
+    <form method="post" action="{% url 'sample_data_add' %}" style="margin:1rem auto 0;">
+        {% csrf_token %}
+        <button type="submit" class="btn" style="background:#edf2f7; color:var(--text-dark);">
+            <i class="ph ph-flask" aria-hidden="true"></i>
+            {% if is_lt %}Neturi išrašo po ranka? Išbandyk su pavyzdiniais duomenimis{% else %}No statement at hand? Try it with sample data{% endif %}
         </button>
     </form>
 

@@ -17,12 +17,13 @@ from finance.models import (
     SubscriptionDecision, IncomeSourceDecision
 )
 from finance.services import _advisor_build_payload, _advisor_call_model
+from finance.insights import headline, month_name, monthly_summary, weekly_summary
 from finance.category_analytics import build_spending_category_analytics
 # Move _reconcile_global to utils or keep here if private
 from finance.utils import _reconcile_global, _normalize_merchant, category_names_for, looks_like_self_transfer
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
-from django.utils.translation import gettext as _, ngettext
+from django.utils.translation import get_language, gettext as _, ngettext
 
 SUBSCRIPTIONS_CATEGORY_NAMES = category_names_for("subscriptions")
 SUBSCRIPTION_IGNORE_TERMS = (
@@ -996,16 +997,11 @@ def reports(request):
     3. Weekly Report (select a week WITHIN that month).
     """
     user = request.user
-    # 1. Determine date range (From Join Date -> Today)
-    join_date = user.date_joined.date()
-    start_date = join_date.replace(day=1)  # Start from the 1st of their join month
-
-    # Get all transaction dates to ensure we have data, but clip to join_date
+    # 1. Every month with data. Uploaded statements often go back before the sign-up date.
     base = Transaction.objects.filter(
         user=user,
         is_deleted=False,
         is_internal_transfer=False,
-        date__gte=start_date,
     )
 
     # Build list of available months
@@ -1070,10 +1066,11 @@ def reports(request):
         except Exception:
             pass
 
-    # Default: If no week selected, don't auto-load one, or load the first one?
-    # Let's auto-load the first week of that month to avoid empty state
+    # Default to the newest week of the month that has data, so the overview isn't empty.
     if not sel_w_start and week_ranges:
-        sel_w_start, sel_w_end = week_ranges[0]
+        latest = base.filter(date__gte=m_start, date__lte=m_end).order_by("-date").values_list("date", flat=True).first()
+        with_data = [w for w in week_ranges if latest and w[0] <= latest]
+        sel_w_start, sel_w_end = with_data[-1] if with_data else week_ranges[0]
 
     weekly_report = None
     if sel_w_start:
@@ -1085,7 +1082,18 @@ def reports(request):
     # Persistent anomalies history
     anomaly_history = _reconcile_global(user)
 
+    # Free, data-only overview for everyone (the AI reports below stay staff-only).
+    is_lt = (get_language() or "").startswith("lt")
+    month_overview = monthly_summary(user, m_start, lt=is_lt, include_sample=True)
+    month_overview["headline"] = headline(month_overview, is_lt)
+    week_overview = weekly_summary(user, sel_w_start, lt=is_lt, include_sample=True) if sel_w_start else None
+
     ctx = {
+        "is_lt": is_lt,
+        "month_overview": month_overview,
+        "week_overview": week_overview,
+        "month_label": f"{month_name(m_start, is_lt).capitalize()} {m_start.year}",
+        "is_current_month": m_start <= timezone.localdate() <= m_end,
         "month_keys": month_keys,
         "sel_m": sel_m,
         "monthly_report": monthly_report,
@@ -1107,6 +1115,9 @@ def reports_generate(request):
       - type = 'monthly' or 'weekly'
       - start = YYYY-MM-01 (monthly) or YYYY-MM-DD (weekly start)
     """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect("reports")  # AI reports are staff-only (paid model call)
+
     rtype = (request.POST.get("type") or "").strip()
     start_str = (request.POST.get("start") or "").strip()
 

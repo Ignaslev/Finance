@@ -10,6 +10,11 @@ def analytics(_request):
     if google_pending == "sign_up" and consent in {"accepted", "analytics", "marketing"}:
         google_event = _request.session.pop("google_analytics_pending_event")
 
+    # Product events queued by finance.tracking (uploads); only sent with analytics consent.
+    upload_events = []
+    if consent in {"accepted", "analytics", "marketing"} and _request.session.get("ga_pending_events"):
+        upload_events = _request.session.pop("ga_pending_events")
+
     meta_event = None
     if meta_pending == "CompleteRegistration" and consent == "marketing":
         meta_event = _request.session.pop("meta_analytics_pending_event")
@@ -18,6 +23,7 @@ def analytics(_request):
         "google_analytics_measurement_id": settings.GOOGLE_ANALYTICS_MEASUREMENT_ID,
         "meta_pixel_id": settings.META_PIXEL_ID,
         "google_analytics_pending_event": google_event,
+        "google_analytics_upload_events": upload_events,
         "meta_analytics_pending_event": meta_event,
         "analytics_event_waiting": bool(
             google_pending == "sign_up" or meta_pending == "CompleteRegistration"

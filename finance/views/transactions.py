@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
 import io, csv, json
+from collections import Counter
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 from datetime import date as date_cls
@@ -34,6 +35,7 @@ from finance.utils import (
     parse_decimal_filter, default_money_source_name
 )
 from finance.subscriptions import access_context, require_paid_access
+from finance.tracking import track_upload
 from django.db import transaction as db_transaction
 
 
@@ -573,6 +575,14 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
 
     Shared by CSV/Excel uploads and confirmed PDF imports. Returns the number of rows added.
     """
+    # Real data replaces the sample: never mix the two.
+    from finance.sample_data import has_sample_data, remove_sample_data
+    if rows and has_sample_data(request.user):
+        remove_sample_data(request.user)
+        lt = (get_language() or "").startswith("lt")
+        messages.info(request, "Pavyzdiniai duomenys pašalinti – dabar matai savo operacijas." if lt
+                      else "Sample data removed – you're now seeing your own transactions.")
+
     # ---------------- DB-only dedupe using fingerprint v2 ----------------
     existing_fps = set(
         Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
@@ -582,6 +592,11 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
     blocked_deleted = 0
     to_create = []
 
+    # Two identical rows in one file (two coffees on the same day, no time column) are two real
+    # purchases. Count repeats so neither check below collapses them into one.
+    fp_repeats = Counter()
+    sig_repeats = Counter()
+
     for r in rows:
         try:
             date_iso = r["date"].strftime("%Y-%m-%d")
@@ -589,27 +604,39 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
             skipped_count += 1
             continue
 
-        fp = build_fingerprint_v2(
-            date_iso=date_iso,
-            time_str=(r.get("time") or "").strip(),
-            merchant=r.get("merchant") or "",
-            amount=r.get("amount"),
-            currency=(r.get("currency") or "EUR").strip() or "EUR",
-            in_out=r.get("in_out"),
-            money_source_id=import_src.id,
-            description=r.get("description") or r.get("notes") or r.get("merchant") or "",
-        )
+        base_time = (r.get("time") or "").strip()
+
+        def fingerprint(time_str):
+            return build_fingerprint_v2(
+                date_iso=date_iso,
+                time_str=time_str,
+                merchant=r.get("merchant") or "",
+                amount=r.get("amount"),
+                currency=(r.get("currency") or "EUR").strip() or "EUR",
+                in_out=r.get("in_out"),
+                money_source_id=import_src.id,
+                description=r.get("description") or r.get("notes") or r.get("merchant") or "",
+            )
+
+        fp = fingerprint(base_time)
+        fp_repeats[fp] += 1
+        if fp_repeats[fp] > 1:
+            # Deterministic per file order, so re-importing the same statement still dedupes.
+            fp = fingerprint(f"{base_time}#{fp_repeats[fp]}")
+
+        merchant_norm = (r.get("merchant") or "").strip()
+        cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
+        sig_key = (r["date"], r["amount"], cur_norm, r.get("in_out"), merchant_norm.lower())
+        sig_repeats[sig_key] += 1  # counted before the fingerprint check: it counts this file's rows
 
         # 1) Fingerprint-based dedupe
         if fp in existing_fps:
             db_dups += 1
             continue
 
-        # 2) Signature-based safety dedupe
-        merchant_norm = (r.get("merchant") or "").strip()
-        cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
-
-        sig_exists = Transaction.objects.filter(
+        # 2) Signature-based safety dedupe: skip only while the account already holds at least as
+        #    many matching rows as this file has seen so far (an older import may have kept just one).
+        sig_count = Transaction.objects.filter(
             user=request.user,
             money_source=import_src,
             date=r["date"],
@@ -618,9 +645,9 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
             in_out=r.get("in_out"),
             merchant__iexact=merchant_norm,
             is_deleted=False,
-        ).exists()
+        ).count()
 
-        if sig_exists:
+        if sig_count >= sig_repeats[sig_key]:
             db_dups += 1
             continue
 
@@ -708,14 +735,18 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
     ).exists()
     already_queued = AiRun.objects.filter(user=request.user, status="queued").exists()
     if added > 0 and has_uncat and not already_queued:
-        AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
+        AiRun.objects.create(user=request.user, kind="autocategorize", mode="new", status="queued")
 
     return added
 
 
 @login_required
 def upload(request):
-    sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
+    from finance.sample_data import sample_source_ids
+    sources = list(
+        MoneySource.objects.filter(user=request.user, is_active=True)
+        .exclude(id__in=sample_source_ids(request.user)).order_by("name")
+    )
     if not sources:
         primary_src = MoneySource.objects.create(
             user=request.user,
@@ -798,6 +829,7 @@ def upload(request):
                 request,
                 _("Daily import limit reached (%(limit)s). Try again tomorrow.") % {"limit": MAX_IMPORTS_PER_DAY},
             )
+            track_upload(request, "daily_limit", filename=request.FILES["file"].name)
             return redirect(fail_url)
 
         import_src_id = request.POST.get("import_src")
@@ -821,6 +853,7 @@ def upload(request):
             MAX_UPLOAD_BYTES = getattr(settings, "MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
             if len(raw) > MAX_UPLOAD_BYTES:
                 messages.error(request, _("File is too large to import."))
+                track_upload(request, "too_large", filename=filename)
                 return redirect(fail_url)
 
             # ---- PDF statements: read by the AI in the background, previewed before import ----
@@ -847,11 +880,13 @@ def upload(request):
                                 "we can read PDF statements from any bank."
                             )
                         messages.error(request, detect_msg)
+                        track_upload(request, "unrecognised", filename=filename, bank="auto")
                         return redirect(fail_url)
                 else:
                     importer = IMPORTERS.get(bank)
                     if not importer:
                         messages.error(request, _("Unknown bank format selected."))
+                        track_upload(request, "wrong_bank", filename=filename, bank=bank)
                         return redirect(fail_url)
 
                     sniff = importer.sniff(raw=raw, filename=filename)
@@ -870,8 +905,11 @@ def upload(request):
                                 _("This file does not look like %(bank)s. Please choose the correct bank and try again.")
                                 % {"bank": importer.label},
                             )
+                        track_upload(request, "wrong_bank", filename=filename, bank=bank,
+                                     detail=f"looks like {suggestion or 'unknown'}")
                         return redirect(fail_url)
 
+                detected_bank = importer.key
                 parsed = importer.parse_raw(raw=raw, filename=filename)
 
                 # Defensive: allow either rows or (rows, meta)
@@ -884,6 +922,7 @@ def upload(request):
 
             # ---- Excel import (keep your generic mapping) ----
             else:
+                detected_bank = "excel"
                 import pandas as pd
 
                 df = pd.read_excel(io.BytesIO(raw))
@@ -944,12 +983,15 @@ def upload(request):
                     _("This file has %(count)s rows, which exceeds the per-import limit (%(limit)s).")
                     % {"count": len(rows), "limit": MAX_ROWS_PER_IMPORT},
                 )
+                track_upload(request, "too_many_rows", filename=filename, bank=detected_bank, detail=str(len(rows)))
                 return redirect(fail_url)
 
-            _save_import_rows(
+            added = _save_import_rows(
                 request, rows=rows, import_src=import_src, filename=filename,
                 bank_key=bank, skipped_count=skipped_count,
             )
+            track_upload(request, "imported" if added else "nothing_new", filename=filename,
+                         bank=detected_bank, rows_added=added)
 
             # The first-run upload on the overview sends people back there to see their numbers.
             next_url = _safe_next_url(request, request.POST.get("next"), None)
@@ -970,6 +1012,7 @@ def upload(request):
 
         except Exception as e:
             messages.error(request, _("Failed to import file: %(error)s") % {"error": e})
+            track_upload(request, "error", filename=filename, bank=bank, detail=f"{type(e).__name__}: {e}")
             return redirect(fail_url)
 
     # -------------------- LIST (GET) --------------------

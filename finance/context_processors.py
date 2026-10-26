@@ -44,7 +44,8 @@ def onboarding(request):
     # Load persisted state (or create)
     state, _created = OnboardingState.objects.get_or_create(user=request.user)
 
-    shared_context = {}
+    from .sample_data import has_sample_data
+    shared_context = {"has_sample_data": has_sample_data(request.user)}
 
     # If the user dismissed the final step, never show again
     if state.ready_dismissed:

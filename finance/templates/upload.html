@@ -73,12 +73,12 @@
   </div>
 
   <div class="upload-field upload-file-field">
-    <label>{% trans "File (CSV/Excel)" %}</label>
+    <label>{% if LANGUAGE_CODE == "lt" %}Failas (PDF arba CSV){% else %}File (PDF or CSV){% endif %}</label>
     <label class="upload-dropzone">
       <span class="upload-dropzone-icon"><i class="ph ph-file-arrow-up"></i></span>
-      <strong>{% trans "File (CSV/Excel)" %}</strong>
-      <span>Revolut · SEB · Swedbank · {% if LANGUAGE_CODE == "lt" %}PDF iš bet kurio banko{% else %}PDF from any bank{% endif %}</span>
-      <input type="file" name="file" required class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %} />
+      <strong>{% if LANGUAGE_CODE == "lt" %}Failas (PDF arba CSV){% else %}File (PDF or CSV){% endif %}</strong>
+      <span>{% if LANGUAGE_CODE == "lt" %}PDF iš bet kurio banko · CSV iš Swedbank, SEB, Revolut{% else %}PDF from any bank · CSV from Swedbank, SEB, Revolut{% endif %}</span>
+      <input type="file" name="file" accept=".pdf,.csv,.xlsx,.xls" required class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %} />
     </label>
   </div>
 
@@ -92,11 +92,11 @@
 {% if last_batch and last_batch_count > 0 %}
   <form method="post"
         action="{% url 'undo_last_import' %}"
-        onsubmit="return confirm('Undo last import? This will permanently delete {{ last_batch_count }} transactions imported on {{ last_batch.created_at|date:'Y-m-d H:i' }} ({{ last_batch.filename|escapejs }}). Continue?');"
+        onsubmit="return confirm('{% if LANGUAGE_CODE == "lt" %}Atšaukti paskutinį įkėlimą? Bus negrįžtamai ištrinta operacijų: {{ last_batch_count }} (įkelta {{ last_batch.created_at|date:'Y-m-d H:i' }}, {{ last_batch.filename|escapejs }}). Tęsti?{% else %}Undo last import? This will permanently delete {{ last_batch_count }} transactions imported on {{ last_batch.created_at|date:'Y-m-d H:i' }} ({{ last_batch.filename|escapejs }}). Continue?{% endif %}');"
         style="margin-top: 10px;">
     {% csrf_token %}
     <button type="submit" class="btn btn-danger btn-sm">
-      Undo last upload
+      {% if LANGUAGE_CODE == "lt" %}Atšaukti paskutinį įkėlimą{% else %}Undo last upload{% endif %}
     </button>
   </form>
 {% endif %}

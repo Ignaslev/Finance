@@ -19,3 +19,13 @@
     }());
 </script>
 {% endif %}
+{% if google_analytics_upload_events %}
+{{ google_analytics_upload_events|json_script:"mc-ga-upload-events" }}
+<script>
+    (function () {
+        if (typeof window.gtag !== "function") { return; }
+        JSON.parse(document.getElementById("mc-ga-upload-events").textContent)
+            .forEach(function (e) { window.gtag("event", e.name, e.params); });
+    }());
+</script>
+{% endif %}

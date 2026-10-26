@@ -4,6 +4,9 @@ from .views import transactions
 from .views import settings as settings_views
 from .views import billing
 from .views import pdf_import
+from .views import funnel as funnel_views
+from .views import reminders as reminder_views
+from .views import sample as sample_views
 
 urlpatterns = [
     path("app/", f.upload, name="upload"),
@@ -20,6 +23,11 @@ urlpatterns = [
     path("undo-last-import/", transactions.undo_last_import, name="undo_last_import"),
     path("import/pdf/<int:job_id>/", pdf_import.pdf_import_status, name="pdf_import_status"),
     path("import/pdf/<int:job_id>/preview/", pdf_import.pdf_import_preview, name="pdf_import_preview"),
+    path("staff/funnel/", funnel_views.staff_funnel, name="staff_funnel"),
+    path("import/email-link/", pdf_import.email_upload_link, name="email_upload_link"),
+    path("reminders/unsubscribe/<str:token>/", reminder_views.reminder_unsubscribe, name="reminder_unsubscribe"),
+    path("sample-data/add/", sample_views.sample_data_add, name="sample_data_add"),
+    path("sample-data/remove/", sample_views.sample_data_remove, name="sample_data_remove"),
     path("data/delete-transactions/", transactions.data_delete_transactions, name="data_delete_transactions"),
     path("data/cancel-delete-transactions/", transactions.cancel_data_delete_transactions,
          name="cancel_data_delete_transactions"),

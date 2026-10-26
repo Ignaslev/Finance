@@ -94,7 +94,7 @@ def public_seo_context(*, language, canonical_path, alternate_lt_path, alternate
                 "publisher": {"@id": f"{_site_url()}/#organization"},
                 "isPartOf": {"@id": f"{_site_url()}/#website"},
                 "featureList": [
-                    "Manual CSV and Excel statement import",
+                    "PDF and CSV bank statement import with automatic categories",
                     "Expense categorization and spending analysis",
                     "Personal dashboard and net-worth tracking",
                     "Portfolio and financial-goal tracking",
@@ -131,13 +131,13 @@ def financial_app_seo_context():
     title = "Finansų valdymo programėlė | MoneyCompass"
     description = (
         "Lietuviška, naršyklėje veikianti finansų valdymo programėlė išlaidoms, biudžetui, "
-        "turtui ir tikslams. Importuokite CSV ar Excel išrašą – be banko prijungimo."
+        "turtui ir tikslams. Įkelkite PDF arba CSV banko išrašą – operacijos suskirstomos automatiškai, be banko prijungimo."
     )
     faqs = [
         {
             "question": "Ar MoneyCompass jungiasi prie banko sąskaitos?",
             "answer": (
-                "Ne. Banko išrašą CSV arba Excel formatu eksportuojate patys ir rankiniu būdu "
+                "Ne. Banko išrašą PDF arba CSV formatu atsisiunčiate patys ir "
                 "įkeliate į MoneyCompass. Programa neprašo banko prisijungimo duomenų."
             ),
         },
@@ -183,7 +183,7 @@ def financial_app_seo_context():
                 "inLanguage": "lt",
                 "publisher": {"@id": f"{_site_url()}/#organization"},
                 "featureList": [
-                    "Rankinis CSV ir Excel banko išrašų importas",
+                    "PDF ir CSV banko išrašų importas su automatiniu kategorizavimu",
                     "Išlaidų kategorijos ir analizė",
                     "Asmeninio biudžeto peržiūra",
                     "Turto, investicijų ir finansinių tikslų stebėjimas",
@@ -316,7 +316,7 @@ def finance_apps_comparison_seo_context():
             "question": "Kuri finansų valdymo programėlė yra geriausia?",
             "answer": (
                 "Vienos geriausios programėlės visiems nėra. Pasirinkimas priklauso nuo to, "
-                "ar norite automatinio banko ryšio, rankinio operacijų įvedimo, CSV ar Excel "
+                "ar norite automatinio banko ryšio, rankinio operacijų įvedimo, PDF ar CSV "
                 "importo, lietuviškos sąsajos ir turto bei tikslų stebėjimo."
             ),
         },
@@ -470,7 +470,7 @@ def landing_seo_context(language):
             title="MoneyCompass | Private personal finance tracking",
             description=(
                 "Track spending, net worth, investments and goals in one private personal finance app. "
-                "Import CSV or Excel statements manually - no bank connection required."
+                "Upload PDF or CSV bank statements and get your transactions categorized automatically - no bank connection required."
             ),
         )
 
@@ -481,8 +481,8 @@ def landing_seo_context(language):
         alternate_en_path="/en/",
         title="MoneyCompass – asmeninių finansų valdymo programėlė",
         description=(
-            "Lietuviška naršyklėje veikianti finansų valdymo programėlė: importuokite CSV ar "
-            "Excel banko išrašus, stebėkite išlaidas, turtą ir tikslus. Be banko prijungimo."
+            "Lietuviška naršyklėje veikianti finansų valdymo programėlė: įkelkite PDF ar CSV "
+            "banko išrašus, stebėkite išlaidas, turtą ir tikslus. Be banko prijungimo."
         ),
     )
 

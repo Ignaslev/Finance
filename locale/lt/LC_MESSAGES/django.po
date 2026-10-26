@@ -2327,9 +2327,6 @@ msgstr "Nėra duomenų."
 #~ msgid "You haven't set any caps yet."
 #~ msgstr "Nėra nustatytų limitų."
 
-#~ msgid "Investment"
-#~ msgstr "Investicinė"
-
 msgid "Beta code"
 msgstr "Beta kodas"
 

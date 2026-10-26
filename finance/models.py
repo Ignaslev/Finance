@@ -257,6 +257,7 @@ class AiRun(models.Model):
         ("uncat", "Uncategorized only"),
         ("ai", "AI-labeled"),
         ("all", "All (excl. user)"),
+        ("new", "Never seen by AI"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_runs")
@@ -481,6 +482,11 @@ class UserProfile(models.Model):
         default=LANG_LT,
     )
 
+    # Reminder emails (monthly "upload this month's statement" + one nudge after sign-up).
+    reminder_emails = models.BooleanField(default=True)
+    last_monthly_reminder_at = models.DateTimeField(null=True, blank=True)
+    first_upload_nudge_at = models.DateTimeField(null=True, blank=True)
+
     default_import_source = models.ForeignKey(
         "finance.MoneySource",
         null=True,
@@ -594,6 +600,7 @@ class PdfImportJob(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pdf_import_jobs")
     money_source = models.ForeignKey("MoneySource", on_delete=models.CASCADE, related_name="pdf_import_jobs")
     filename = models.CharField(max_length=255, blank=True)
+    file_sha256 = models.CharField(max_length=64, blank=True, db_index=True)  # same file twice -> no second read
     next_url = models.CharField(max_length=255, blank=True)
     model_name = models.CharField(max_length=64, blank=True)
     response_id = models.CharField(max_length=128, blank=True)
@@ -608,6 +615,38 @@ class PdfImportJob(models.Model):
 
     def __str__(self):
         return f"PdfImportJob<{self.user_id}:{self.filename}:{self.status}>"
+
+
+class UploadAttempt(models.Model):
+    """One statement upload and how it ended, for the staff funnel (where do new users drop off?)."""
+    OUTCOME_CHOICES = [
+        ("imported", "Imported"),
+        ("nothing_new", "Nothing new"),
+        ("unrecognised", "Unrecognised file"),
+        ("wrong_bank", "Chosen bank does not match"),
+        ("too_large", "File too large"),
+        ("too_many_rows", "Too many rows"),
+        ("daily_limit", "Daily limit"),
+        ("error", "Error"),
+        ("pdf_started", "PDF read started"),
+        ("pdf_unavailable", "PDF reading unavailable"),
+    ]
+    SOURCE_CHOICES = [("first_run", "First-run screen"), ("upload_page", "Transactions page")]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="upload_attempts")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default="upload_page")
+    file_type = models.CharField(max_length=8, blank=True)  # pdf / csv / xlsx / xls / other
+    bank = models.CharField(max_length=32, blank=True)      # detected or chosen importer key
+    outcome = models.CharField(max_length=20, choices=OUTCOME_CHOICES)
+    rows_added = models.PositiveIntegerField(default=0)
+    detail = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "created_at"]), models.Index(fields=["outcome", "created_at"])]
+
+    def __str__(self):
+        return f"UploadAttempt<{self.user_id}:{self.file_type}:{self.outcome}>"
 
 
 class PendingDataDeletion(models.Model):

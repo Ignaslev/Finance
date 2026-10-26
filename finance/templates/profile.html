@@ -472,6 +472,16 @@
       </div>
     </label>
 
+    <label style="display:flex; align-items:flex-start; gap:.75rem; cursor:pointer; margin-top:1rem;">
+      <input type="checkbox" name="reminder_emails" value="1" {% if reminder_emails %}checked{% endif %} style="margin-top:.2rem;">
+      <div>
+        <div class="text-dark" style="font-weight:700;">{% if LANGUAGE_CODE == "lt" %}Priminimai el. paštu{% else %}Email reminders{% endif %}</div>
+        <div class="text-medium" style="margin-top:.25rem; font-size:0.9rem;">
+          {% if LANGUAGE_CODE == "lt" %}Kartą per mėnesį atsiųsime trumpą mėnesio suvestinę ir priminimą įkelti naują išrašą.{% else %}Once a month we'll send a short monthly summary and a reminder to upload your new statement.{% endif %}
+        </div>
+      </div>
+    </label>
+
     <div class="flex justify-end" style="margin-top:1rem;">
       <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
     </div>
