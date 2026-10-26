@@ -36,6 +36,11 @@
       <form method="post" novalidate class="auth-form">
         {% csrf_token %}
         <input type="hidden" name="lang" value="{{ public_language|default:LANGUAGE_CODE }}">
+        <input type="hidden" name="form_started" value="{{ form_started }}">
+        {# Bot trap: hidden from people and screen readers; bots that fill every field give themselves away. #}
+        <div aria-hidden="true" style="position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden;">
+          <label>Leave this empty <input type="text" name="website" value="" tabindex="-1" autocomplete="off"></label>
+        </div>
         <div class="auth-grid">
           <div class="auth-field">
             <label>{% trans "First name" %}</label>

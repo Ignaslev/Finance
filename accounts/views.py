@@ -16,10 +16,14 @@ from finance.owner_notifications import notify_activation, notify_registration
 from finance.utils import ensure_default_categories
 from moneycoach.attribution import SESSION_KEY as ATTRIBUTION_SESSION_KEY
 from django.contrib.auth import get_user_model
+import logging
+
+from . import bot_guard
 from .forms import RegisterForm
 from .throttling import client_ip, is_limited, record_attempt
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 PUBLIC_LANGUAGES = {"lt", "en"}
 
 
@@ -96,7 +100,7 @@ def register(request):
                 return render(
                     request,
                     "accounts/register.html",
-                    {"form": form, "public_language": language},
+                    {"form": form, "public_language": language, "form_started": bot_guard.stamp()},
                     status=429,
                 )
 
@@ -107,9 +111,25 @@ def register(request):
                 return render(
                     request,
                     "accounts/register.html",
-                    {"form": form, "public_language": language},
+                    {"form": form, "public_language": language, "form_started": bot_guard.stamp()},
                     status=429,
                 )
+
+            bot = bot_guard.check(request.POST)
+            if bot:
+                record_attempt("register-ip", ip, window_seconds=60 * 60)
+                logger.info("Registration blocked (%s) from %s", bot, ip)
+            if bot == "honeypot":
+                # Look exactly like a success so the bot has nothing to adapt to; nothing is created or sent.
+                messages.success(request, _("Registration successful. Check your email to activate your account."))
+                return redirect(f"{reverse('login')}?lang={language}")
+            if bot == "too_fast":
+                form = RegisterForm(request.POST)
+                form.add_error(None, "Nepavyko išsiųsti formos – pabandyk dar kartą." if language == "lt"
+                               else "Something went wrong – please submit the form again.")
+                return render(request, "accounts/register.html",
+                              {"form": form, "public_language": language, "form_started": bot_guard.stamp()},
+                              status=400)
 
             form = RegisterForm(request.POST)
             if form.is_valid():
@@ -185,7 +205,8 @@ def register(request):
                 }
             )
 
-        return render(request, "accounts/register.html", {"form": form, "public_language": language})
+        return render(request, "accounts/register.html",
+                      {"form": form, "public_language": language, "form_started": bot_guard.stamp()})
 
 
 def activate(request, uidb64, token):

@@ -1,12 +1,18 @@
+import time
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.encoding import force_bytes
+from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode
 from unittest.mock import patch
 
+from accounts import bot_guard
+from finance.management.commands.moneycoach_process_account_deletions import delete_unactivated_accounts
 from finance.models import UserProfile
 
 
@@ -17,6 +23,7 @@ User = get_user_model()
     PUBLIC_REGISTRATION_ENABLED=True,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     ADMINS=[("Owner", "owner@example.test")],
+    REGISTRATION_MIN_FILL_SECONDS=0,  # these tests post instantly; bot checks are tested below
 )
 class RegistrationAttributionTests(TestCase):
     def _registration_data(self, email):
@@ -173,6 +180,75 @@ class RegistrationAttributionTests(TestCase):
         self.assertContains(response, "moneyCompassLoadMetaPixel")
         self.assertContains(response, "moneycompass_analytics_consent=marketing")
         self.assertNotContains(response, "<noscript>")
+
+
+@override_settings(
+    PUBLIC_REGISTRATION_ENABLED=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    ADMINS=[("Owner", "owner@example.test")],
+    REGISTRATION_MIN_FILL_SECONDS=3,
+)
+class RegistrationBotGuardTests(TestCase):
+    def _data(self, email, **extra):
+        return {
+            "first_name": "Test", "last_name": "User", "email": email, "preferred_language": "lt",
+            "password1": "A-strong-test-password-928!", "password2": "A-strong-test-password-928!", "lang": "lt",
+            **extra,
+        }
+
+    def _stamp(self, seconds_ago):
+        with patch("accounts.bot_guard.time.time", return_value=time.time() - seconds_ago):
+            return bot_guard.stamp()
+
+    def test_human_paced_registration_goes_through(self):
+        response = self.client.post(reverse("register"), self._data("human@example.com", form_started=self._stamp(20)))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(email="human@example.com").exists())
+
+    def test_honeypot_looks_like_success_but_creates_and_sends_nothing(self):
+        response = self.client.post(reverse("register"), self._data(
+            "bot@example.com", form_started=self._stamp(20), website="http://spam.example"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(User.objects.filter(email="bot@example.com").exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_instant_or_unstamped_submit_is_asked_to_retry(self):
+        for stamp in (self._stamp(0), "", "forged"):
+            response = self.client.post(reverse("register"), self._data("fast@example.com", form_started=stamp))
+            self.assertEqual(response.status_code, 400)
+            self.assertContains(response, "pabandyk dar kartą", status_code=400)
+        self.assertFalse(User.objects.filter(email="fast@example.com").exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_form_carries_the_stamp_and_hidden_trap(self):
+        page = self.client.get(reverse("register"))
+        self.assertContains(page, 'name="form_started" value="')
+        self.assertContains(page, 'name="website"')
+
+
+class UnactivatedCleanupTests(TestCase):
+    def _user(self, email, days_ago, **fields):
+        user = User.objects.create_user(username=email, email=email, password="StrongPass123!", **fields)
+        User.objects.filter(pk=user.pk).update(date_joined=timezone.now() - timedelta(days=days_ago))
+        return user
+
+    def test_only_stale_never_activated_accounts_are_removed(self):
+        self._user("stale-bot@example.com", 8, is_active=False)
+        self._user("fresh@example.com", 2, is_active=False)
+        self._user("active@example.com", 30, is_active=True)
+        deactivated = self._user("deactivated@example.com", 30, is_active=False)
+        User.objects.filter(pk=deactivated.pk).update(last_login=timezone.now() - timedelta(days=20))
+        self._user("staff@example.com", 30, is_active=False, is_staff=True)
+
+        removed = delete_unactivated_accounts()
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(
+            set(User.objects.values_list("email", flat=True)),
+            {"fresh@example.com", "active@example.com", "deactivated@example.com", "staff@example.com"},
+        )
 
 
 @override_settings(FREE_ACCESS_MODE=True, ALLOWED_HOSTS=["testserver"])

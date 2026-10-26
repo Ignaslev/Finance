@@ -13,6 +13,12 @@
             {% endblocktrans %}
         </p>
 
+        {% get_current_language as LANG %}
+        <p style="margin:0.75rem 0 0; font-size:0.9rem; color:var(--text-medium);">
+            {% if LANG == "lt" %}Pakeisk kategoriją arba pažymėk ✓, jei AI pasiūlymas tinka. Išsaugomos tik pažymėtos eilutės – kitos lieka peržiūrai.
+            {% else %}Change the category, or tick ✓ if the AI suggestion is right. Only ticked rows are saved – the rest stay here for review.{% endif %}
+        </p>
+
         <form method="post" action="/review/low/apply/" id="lowConfForm" style="margin-top:1rem;">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -21,6 +27,11 @@
             <div style="overflow-x:auto;">
                 <table>
                     <tr>
+                        <th style="width:2rem;">
+                            <input type="checkbox" id="pickAll"
+                                   title="{% if LANG == 'lt' %}Pažymėti visus šiame puslapyje{% else %}Tick all on this page{% endif %}"
+                                   aria-label="{% if LANG == 'lt' %}Pažymėti visus šiame puslapyje{% else %}Tick all on this page{% endif %}">
+                        </th>
                         <th>{% trans "date" %}</th>
                         <th>{% trans "merchant" %}</th>
                         <th>{% trans "amount" %}</th>
@@ -33,6 +44,8 @@
                     </tr>
                     {% for t in page_obj.object_list %}
                         <tr data-row="{{ t.id }}">
+                            <td><input type="checkbox" class="row-pick" data-tx="{{ t.id }}"
+                                       aria-label="{% if LANG == 'lt' %}Išsaugoti šią eilutę{% else %}Save this row{% endif %}"></td>
                             <td>{{ t.date|date:"Y-m-d" }}</td>
                             <td>{{ t.merchant }}</td>
                             <td>{{ t.amount }} {{ t.currency }}</td>
@@ -104,13 +117,9 @@
                 z-index:100;
                 box-shadow:0 -2px 5px rgba(0,0,0,0.04);
             ">
-                <strong>
-                    <span id="changedCount">0</span> {% trans "changed" %} /
-                    <span id="pendingCount">0</span> {% trans "ready" %}
-                </strong>
-                <button id="applyBtn"
+                <button id="applyBtn" disabled
                         style="background:#2e7d32; color:white; border:none; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
-                    {% trans "Apply All Saved" %}
+                    {% if LANG == "lt" %}Išsaugoti pažymėtus{% else %}Save ticked{% endif %} (<span id="pickedCount">0</span>)
                 </button>
                 <button type="button" id="clearBtn"
                         style="background:#eee; color:#333; border:1px solid #ccc; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
@@ -120,112 +129,97 @@
         </form>
 
         <script>
-            // Unique key for this user so we don't mix up data if testing multiple users
-            const userKey = 'mc_low_conf_u{{ request.user.id }}';
+            // Only rows the user explicitly picked (changed the category or ticked ✓) are stored and saved.
+            // Picks survive paging and a trip to create a new category. "v2": ignore the old key, which
+            // auto-accepted every AI suggestion on the page.
+            const userKey = 'mc_low_conf_v2_u{{ request.user.id }}';
+            try { localStorage.removeItem('mc_low_conf_u{{ request.user.id }}'); } catch (e) {}
 
-            function loadChanges() {
+            function loadPicks() {
                 try { return JSON.parse(localStorage.getItem(userKey) || '{}'); }
                 catch (e) { return {}; }
             }
 
-            function saveChanges(obj) {
-                localStorage.setItem(userKey, JSON.stringify(obj));
+            function savePicks(obj) {
+                try { localStorage.setItem(userKey, JSON.stringify(obj)); } catch (e) {}
+            }
+
+            function rowParts(tid) {
+                return {
+                    sel: document.querySelector('.cat-select[data-tx="' + tid + '"]'),
+                    box: document.querySelector('.row-pick[data-tx="' + tid + '"]'),
+                };
+            }
+
+            function setPick(tid, catId) {
+                const picks = loadPicks();
+                if (catId) { picks[tid] = catId; } else { delete picks[tid]; }
+                savePicks(picks);
+                refreshUI();
             }
 
             function refreshUI() {
-                let changes = loadChanges();
-                let updated = false;
-
-                // Record AI suggestion (or current selection) as "accepted" by default
-                // for every row on this page, unless we've explicitly changed/cleared it before.
-                document.querySelectorAll('.cat-select').forEach(sel => {
-                    const tid = sel.dataset.tx;
-                    if (!changes[tid] && sel.value) {
-                        changes[tid] = sel.value;
-                        updated = true;
-                    }
+                const picks = loadPicks();
+                const boxes = document.querySelectorAll('.row-pick');
+                let tickedHere = 0;
+                boxes.forEach(box => {
+                    const tid = box.dataset.tx;
+                    const { sel } = rowParts(tid);
+                    if (picks[tid]) { sel.value = picks[tid]; }
+                    box.checked = !!picks[tid];
+                    box.closest('tr').style.background = picks[tid] ? '#f0f8ff' : '';
+                    if (box.checked) tickedHere++;
                 });
-
-                if (updated) {
-                    saveChanges(changes);
-                }
-
-                const pendingEl = document.getElementById('pendingCount');
-                const changedEl = document.getElementById('changedCount');
-
-                let total = Object.keys(changes).length;
-                let changed = 0;
-
-                // Apply stored values, count changed, and highlight only changed ones
-                document.querySelectorAll('.cat-select').forEach(sel => {
-                    const tid = sel.dataset.tx;
-                    const def = sel.dataset.default || "";
-                    const val = changes[tid] || "";
-
-                    if (val) {
-                        sel.value = val;
-                    }
-
-                    if (val && val !== def) {
-                        // user-changed vs AI default -> highlight
-                        sel.closest('tr').style.background = '#f0f8ff';
-                        changed++;
-                    } else {
-                        sel.closest('tr').style.background = '';
-                    }
-                });
-
-                if (pendingEl) pendingEl.textContent = total;
-                if (changedEl) changedEl.textContent = changed;
+                const n = Object.keys(picks).length;
+                document.getElementById('pickedCount').textContent = n;
+                document.getElementById('applyBtn').disabled = n === 0;
+                document.getElementById('applyBtn').style.opacity = n === 0 ? '0.5' : '1';
+                document.getElementById('pickAll').checked = boxes.length > 0 && tickedHere === boxes.length;
             }
 
-            // Event Listeners for every dropdown
+            // Changing a category = "save this row with that category".
             document.querySelectorAll('.cat-select').forEach(sel => {
-                sel.addEventListener('change', () => {
-                    const changes = loadChanges();
-                    if (sel.value) {
-                        changes[sel.dataset.tx] = sel.value;
-                    } else {
-                        // If user selects blank, remove from pending
-                        delete changes[sel.dataset.tx];
+                sel.addEventListener('change', () => setPick(sel.dataset.tx, sel.value));
+            });
+
+            // Ticking = "the category shown is right, save it".
+            document.querySelectorAll('.row-pick').forEach(box => {
+                box.addEventListener('change', () => {
+                    const { sel } = rowParts(box.dataset.tx);
+                    if (box.checked && !sel.value) {
+                        box.checked = false;
+                        sel.focus();
+                        return;
                     }
-                    saveChanges(changes);
-                    refreshUI();
+                    setPick(box.dataset.tx, box.checked ? sel.value : '');
                 });
             });
 
-            // Form Submit Handler
-            document.getElementById('lowConfForm').addEventListener('submit', (e) => {
-                let changes = loadChanges();
-
-                // Make sure latest state of THIS page is reflected:
-                // - if select has a value -> include it
-                // - if select is blank -> remove it (leave as low-confidence)
-                document.querySelectorAll('.cat-select').forEach(sel => {
-                    const tid = sel.dataset.tx;
-                    if (sel.value) {
-                        changes[tid] = sel.value;
-                    } else {
-                        delete changes[tid];
-                    }
+            document.getElementById('pickAll').addEventListener('change', (e) => {
+                const picks = loadPicks();
+                document.querySelectorAll('.row-pick').forEach(box => {
+                    const { sel } = rowParts(box.dataset.tx);
+                    if (e.target.checked && sel.value) { picks[box.dataset.tx] = sel.value; }
+                    if (!e.target.checked) { delete picks[box.dataset.tx]; }
                 });
+                savePicks(picks);
+                refreshUI();
+            });
 
-                if (Object.keys(changes).length === 0) {
+            document.getElementById('lowConfForm').addEventListener('submit', (e) => {
+                const picks = loadPicks();
+                if (Object.keys(picks).length === 0) {
                     e.preventDefault();
-                    alert("{% trans 'No changes selected.' %}");
                     return;
                 }
-
-                document.getElementById('changes_json').value = JSON.stringify(changes);
-
-                // Clear storage so it doesn't persist after a successful apply
-                localStorage.removeItem(userKey);
+                document.getElementById('changes_json').value = JSON.stringify(picks);
+                try { localStorage.removeItem(userKey); } catch (err) {}
             });
 
             // Clear Button Handler
             document.getElementById('clearBtn').addEventListener('click', () => {
                 if (confirm("{% trans 'Clear all saved selections?' %}")) {
-                    localStorage.removeItem(userKey);
+                    try { localStorage.removeItem(userKey); } catch (e) {}
                     location.reload();
                 }
             });
