@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Sum
 from django.conf import settings
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, get_language
 
 from .models import (
     Transaction,
@@ -13,8 +13,6 @@ from .models import (
 )
 from .utils import ensure_default_categories
 
-# You can tweak this here if you like, or set it in settings and read from there.
-MIN_USER_LABELS = getattr(settings, "MIN_USER_LABELS", 30)
 
 
 def onboarding(request):
@@ -23,11 +21,14 @@ def onboarding(request):
       { text, cta_text, cta_href, code }
 
     Steps (first matching wins):
-      1) categories   – shown until user presses “I’m done”
-      2) upload       – shown until any transactions exist
-      3) balance      – shown until any BalanceSnapshot exists
-      4) teach_ai     – shown until user labels reach MIN_USER_LABELS
-      5) ready        – shows final message + “I’m done”, then never show again
+      1) upload       – shown until any transactions exist (the overview shows
+                        a full first-run screen instead of this banner)
+      2) balance      – shown until any BalanceSnapshot exists
+      3) ready        – shows final message + “I’m done”, then never show again
+                        (no hand-labelling step: the AI categorizes from the first upload)
+
+    Reviewing categories is optional and no longer blocks anything: once a user
+    has transactions, `categories_done` is switched on so auto-categorization works.
 
     Persistent behavior:
       - Uses OnboardingState to persist across logins.
@@ -43,12 +44,7 @@ def onboarding(request):
     # Load persisted state (or create)
     state, _created = OnboardingState.objects.get_or_create(user=request.user)
 
-    shared_context = {
-        "show_onboarding_intro": (
-            state.intro_acknowledged_at is None and not state.ready_dismissed
-        ),
-        "onboarding_min_user_labels": MIN_USER_LABELS,
-    }
+    shared_context = {}
 
     # If the user dismissed the final step, never show again
     if state.ready_dismissed:
@@ -57,80 +53,59 @@ def onboarding(request):
     # Heuristics for step gating
     has_tx = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
     has_balance = BalanceSnapshot.objects.filter(user=request.user).exists()
-    user_labels = Transaction.objects.filter(
-        user=request.user,
-        category_source="user",
-        is_internal_transfer=False,
-    ).count()
+    is_lt = (get_language() or "").startswith("lt")
 
-    # --- 1) Categories (intentional gate until user clicks "I'm done")
-    if not state.categories_done:
-        return {
-            "onboarding": {
-                "text": _("Welcome! Let’s get you set up. First, check your categories, edit or add what you need."),
-                "cta_text": _("Open Categories"),
-                "cta_href": reverse("category_list"),
-                "code": "categories",
-                "step_number": 1,
-                "step_total": 4,
-            },
-            **shared_context,
-        }
+    if has_tx and not state.categories_done:
+        state.categories_done = True
+        state.save(update_fields=["categories_done", "updated_at"])
 
-    # --- 2) Upload (until any transactions exist)
+    # --- 1) Upload (until any transactions exist)
     if not has_tx:
         return {
             "onboarding": {
-                "text": _("Next: Upload a CSV file from your bank of your transactions to begin."),
-                "cta_text": _("Go to Upload"),
-                "cta_href": reverse("upload"),
+                "text": (
+                    "Įkelk banko išrašą ir pamatyk, kur dingsta pinigai."
+                    if is_lt else "Upload a bank statement to see where your money goes."
+                ),
+                "cta_text": "Įkelti išrašą" if is_lt else "Upload statement",
+                "cta_href": reverse("overview"),
                 "code": "upload",
-                "step_number": 2,
-                "step_total": 4,
+                "step_number": 1,
+                "step_total": 2,
             },
             **shared_context,
         }
 
-    # --- 3) Balance (until any snapshot exists)
+    # --- 2) Balance (until any snapshot exists)
     if not has_balance:
         return {
             "onboarding": {
-                "text": _("Now enter the current balance in your account so the app can perform calculations."),
+                "text": (
+                    "Įvesk šiandienos sąskaitos likutį, kad sumos sutaptų su banku."
+                    if is_lt else "Enter today's account balance so totals match your bank."
+                ),
                 "cta_text": _("Set a Balance"),
                 "cta_href": reverse("profile"),
                 "code": "balance",
-                "step_number": 3,
-                "step_total": 4,
+                "step_number": 2,
+                "step_total": 2,
             },
             **shared_context,
         }
 
-    # --- 4) Teach AI (until enough user labels exist)
-    if user_labels < MIN_USER_LABELS:
-        return {
-            "onboarding": {
-                "text": _(
-                    "Almost there! Please label at least %(min)s transactions so AI can learn your habits. "
-                    "You’ve labeled %(count)s so far."
-                ) % {"min": MIN_USER_LABELS, "count": user_labels},
-                "cta_text": _("Teach AI"),
-                "cta_href": reverse("teach_ai"),
-                "code": "teach_ai",
-                "step_number": 4,
-                "step_total": 4,
-            },
-            **shared_context,
-        }
-
-    # --- 5) Ready (shows until dismissed)
+    # --- 3) Ready (shows until dismissed). The AI categorizes on its own; corrections teach it.
     return {
         "onboarding": {
-            "text": _("You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"),
+            "text": (
+                "Viskas paruošta. Operacijas suskirstome automatiškai; jei kas neteisinga, pataisyk ir AI įsimins."
+                if is_lt else
+                "You're all set. We categorize transactions automatically; fix anything that's wrong and the AI will remember."
+            ),
             "cta_text": None,
             "cta_href": None,
             "code": "ready",
-            "step_number": 4,
-            "step_total": 4,
+            "step_number": 2,
+            "step_total": 2,
         },
         **shared_context,
     }

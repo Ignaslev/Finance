@@ -5,6 +5,7 @@ from django.db.models import Sum, Q
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.translation import get_language
 from collections import defaultdict
 from datetime import timedelta, datetime, timezone as dt_timezone
 from decimal import Decimal
@@ -82,11 +83,14 @@ def overview(request):
 
     # Composition Bar
     composition_bar = []
-    if total_net_worth > 0:
+    # Segments only contain positive balances, so their shares must be of the positive total;
+    # dividing by net worth (which subtracts negative balances) produced shares above 100%.
+    positive_total = sum(comp_totals.values(), Decimal("0"))
+    if total_net_worth > 0 and positive_total > 0:
         type_colors = {'bank': '#3182ce', 'savings': '#2b6cb0', 'cash': '#38a169', 'investment': '#805ad5'}
         type_labels = dict(MoneySource.TYPE_CHOICES)
         for k, val in comp_totals.items():
-            pct = (val / total_net_worth) * 100
+            pct = (val / positive_total) * 100
             composition_bar.append({
                 'type': k,
                 'label': type_labels.get(k, k.title()),
@@ -211,6 +215,8 @@ def overview(request):
 
     category_analytics = build_spending_category_analytics(request.user, tx_base)
 
+    has_transactions = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
+
     # Savings goals
     eff_map = {acc.id: acc.effective_balance for acc in accounts}
     goals = []
@@ -248,6 +254,11 @@ def overview(request):
         "month_category_top_transactions_json": json.dumps(category_analytics["top_transactions"]),
 
         "goals": goals,
+
+        # Empty accounts get the first-run upload screen instead of empty charts.
+        "is_lt": (get_language() or "").startswith("lt"),
+        "has_transactions": has_transactions,
+        "hide_onboarding_banner": not has_transactions,
 
         "now_val": timezone.now(),
     }

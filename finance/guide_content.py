@@ -118,16 +118,14 @@ GUIDE_CONTENT = {
                     "type": "table",
                     "headers": ["Step", "What to do"],
                     "rows": [
-                        ["1. Categories", "Review the default categories. Add the ones you need and remove the ones you do not use."],
-                        ["2. Upload", "Upload your first CSV or XLSX bank statement."],
-                        ["3. Set Balance", "Go to Profile and set the current balance for each financial account."],
-                        ["4. Teach AI", "Manually assign categories to at least 30 transactions so the AI can learn your spending habits."],
-                        ["5. Ready", "AI auto-categorization becomes active after onboarding is complete."],
+                        ["1. Upload", "Upload your first bank statement (Swedbank, SEB or Revolut)."],
+                        ["2. Set Balance", "Go to Profile and set the current balance for each financial account."],
+                        ["3. Ready", "AI categorizes your transactions automatically. Fix anything that is wrong and it learns from your corrections."],
                     ],
                 },
                 {
                     "type": "note",
-                    "text": "AI auto-categorization activates only after you manually categorize at least 30 transactions.",
+                    "text": "No manual labelling is needed. Categories can be edited any time, and the AI follows the categories you set.",
                 },
                 {
                     "type": "heading",
@@ -391,7 +389,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "The onboarding banner stays active until at least 30 transactions have been categorized manually. User-set categories are always protected from automatic changes.",
+                    "text": "AI starts categorizing right after your first upload. When you change a category, the AI uses your choice for that merchant next time. User-set categories are always protected from automatic changes.",
                 },
                 {
                     "type": "table",
@@ -913,16 +911,14 @@ GUIDE_CONTENT = {
                     "type": "table",
                     "headers": ["Žingsnis", "Ką daryti"],
                     "rows": [
-                        ["1. Kategorijos", "Peržiūrėkite numatytąsias kategorijas. Pridėkite reikalingas ir pašalinkite nenaudojamas."],
-                        ["2. Įkėlimas", "Įkelkite pirmą CSV arba XLSX banko išrašą."],
-                        ["3. Nustatyti likutį", "Eikite į Profilį ir nustatykite dabartinį kiekvienos finansinės sąskaitos likutį."],
-                        ["4. Apmokyti DI", "Rankiniu būdu priskirkite kategorijas bent 30 operacijų, kad DI išmoktų jūsų įpročius."],
-                        ["5. Paruošta", "DI automatinis kategorizavimas tampa aktyvus, kai pradinis nustatymas baigtas."],
+                        ["1. Įkėlimas", "Įkelkite pirmą banko išrašą (Swedbank, SEB arba Revolut)."],
+                        ["2. Nustatyti likutį", "Eikite į Profilį ir nustatykite dabartinį kiekvienos finansinės sąskaitos likutį."],
+                        ["3. Paruošta", "DI automatiškai suskirsto operacijas. Pataisykite, jei kas neteisinga, ir DI mokysis iš jūsų pataisymų."],
                     ],
                 },
                 {
                     "type": "note",
-                    "text": "DI automatinis kategorizavimas įsijungia tik tada, kai rankiniu būdu sukategorizuojate bent 30 operacijų.",
+                    "text": "Rankiniu būdu nieko žymėti nereikia. Kategorijas galite keisti bet kada, o DI vadovaujasi jūsų nustatytomis kategorijomis.",
                 },
                 {
                     "type": "heading",
@@ -1186,7 +1182,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "Pradinio nustatymo juosta lieka aktyvi, kol rankiniu būdu sukategorizuojate bent 30 operacijų. Vartotojo nustatytų kategorijų DI niekada automatiškai nekeičia.",
+                    "text": "DI pradeda skirstyti operacijas iškart po pirmo įkėlimo. Kai pakeičiate kategoriją, kitą kartą tam pačiam prekybininkui DI naudoja jūsų pasirinkimą. Vartotojo nustatytų kategorijų DI niekada automatiškai nekeičia.",
                 },
                 {
                     "type": "table",

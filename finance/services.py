@@ -1,12 +1,13 @@
 # finance/services.py
-import os, json
+import os, json, re
 from decimal import Decimal
 from datetime import date as _date
 from collections import defaultdict
 from calendar import monthrange
 from django.db.models import Sum
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 from django.utils import timezone
+from django.conf import settings
 from .models import Transaction, Category, SavingsGoal, MoneySource
 from .investments import current_investment_balance
 from .utils import _normalize_merchant, default_category_name
@@ -85,6 +86,111 @@ def _pick_examples(user, limit=EXAMPLES_TOTAL_CAP):
 
     return examples
 
+# What each default category means, so the model does not have to guess from a bare name.
+# Custom categories the user adds are sent by name only.
+CATEGORY_GUIDE = {
+    "Atlyginimas": "salary and wages from an employer (incoming). Not interest, refunds, tax returns or transfers from friends.",
+    "Salary": "salary and wages from an employer (incoming). Not interest, refunds, tax returns or transfers from friends.",
+    "Individuali veikla": "self-employment: client payments for freelance work, platform payouts (Upwork, Fiverr), and business taxes paid for it (VMI GPM, Sodra VSD/PSD as self-employed).",
+    "Individual activity": "self-employment: client payments for freelance work, platform payouts (Upwork, Fiverr), and business taxes paid for it.",
+    "Grynieji": "cash withdrawals and deposits at ATMs (bankomatas, ATM, grynųjų išėmimas).",
+    "Cash": "cash withdrawals and deposits at ATMs.",
+    "Kavinės ir restoranai": "cafes, restaurants, fast food, bars and food delivery (Wolt, Bolt Food).",
+    "Dining": "cafes, restaurants, fast food, bars and food delivery (Wolt, Bolt Food).",
+    "Sportas ir sveikata": "gyms and sport, pharmacies (Eurovaistinė, Camelia, Benu, Apotheka), doctors, clinics, dentists.",
+    "Fitness & Health": "gyms and sport, pharmacies (Eurovaistinė, Camelia, Benu, Apotheka), doctors, clinics, dentists.",
+    "Maisto prekės": "grocery stores and supermarkets (Maxima, Rimi, Lidl, Iki, Norfa).",
+    "Groceries": "grocery stores and supermarkets (Maxima, Rimi, Lidl, Iki, Norfa).",
+    "Pirkiniai": "shopping for goods: clothes, electronics, home and DIY (Senukai, IKEA), online shops (Pigu, AliExpress, Vinted), cosmetics, games bought once.",
+    "Shopping": "shopping for goods: clothes, electronics, home and DIY, online shops, cosmetics, games bought once.",
+    "Kripto": "buying or selling crypto (Binance, Coinbase, Kraken).",
+    "Crypto": "buying or selling crypto (Binance, Coinbase, Kraken).",
+    "Komunaliniai": "home bills: electricity, gas, water, heating, internet and phone plans (Ignitis, Elektrum, Telia, Bitė, Tele2).",
+    "Utilities": "home bills: electricity, gas, water, heating, internet and phone plans.",
+    "Prenumeratos": "recurring digital subscriptions (Spotify, Netflix, YouTube Premium, ChatGPT, Apple/Google services).",
+    "Subscriptions": "recurring digital subscriptions (Spotify, Netflix, YouTube Premium, ChatGPT, Apple/Google services).",
+    "Transportas": "fuel, taxis and ride hailing (Bolt rides), car sharing, public transport, trains, parking.",
+    "Transportation": "fuel, taxis and ride hailing (Bolt rides), car sharing, public transport, trains, parking.",
+    "Kita": "anything that fits nowhere else: transfers to or from people, rent paid to a person, bank fees, insurance, interest, tax refunds, top-ups between own accounts.",
+    "Other": "anything that fits nowhere else: transfers to or from people, rent paid to a person, bank fees, insurance, interest, tax refunds, top-ups between own accounts.",
+}
+
+MERCHANT_HISTORY_LOOKBACK = 3000  # most recent categorized rows scanned for same-merchant history
+
+_NOISE_PREFIX = re.compile(
+    r"^(KORTELĖS OPERACIJA|KORTELES OPERACIJA|PIRKINYS|MOKĖJIMAS|MOKEJIMAS|CARD PAYMENT|POS|PAYPAL \*)[:\s]*"
+)
+_CARD_MASK = re.compile(r"\d{0,6}\*{2,}\d*")
+_DATE = re.compile(r"\b\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}\b|\b\d{1,2}[.\-/]\d{1,2}[.\-/]\d{4}\b|\b\d{1,2}:\d{2}(:\d{2})?\b")
+_LEGAL = {"UAB", "AB", "MB", "IĮ", "II", "VŠĮ", "VSI", "LT", "LIETUVA", "LIETUVOS", "SIA", "AS", "OU", "LTD", "INC"}
+
+
+def _merchant_key(raw):
+    """Matching key for the AI's memory of past categories.
+
+    Strips what changes between rows of the same merchant in bank exports (card masks,
+    dates, 'PIRKINYS' prefixes, terminal numbers, legal forms). Returns (full key, brand word).
+    Deliberately separate from utils._normalize_merchant, which feeds import fingerprints.
+    """
+    s = (raw or "").upper()
+    s = _NOISE_PREFIX.sub("", s.strip())
+    s = _CARD_MASK.sub(" ", s)
+    s = _DATE.sub(" ", s)
+    s = re.sub(r"[^\wĄČĘĖĮŠŲŪŽ]+", " ", s)
+    tokens = [t for t in s.split() if not t.isdigit() and t not in _LEGAL]
+    if not tokens:
+        return "", ""
+    brand = next((t for t in tokens if len(t) >= 3), tokens[0])
+    return " ".join(tokens[:4]), brand
+
+
+def _merchant_history(user, rows):
+    """Past categories for the merchants in `rows`, user corrections first.
+
+    Returns {row merchant: ("same" | "similar", [(category, source, count), ...])}.
+    "same" = same merchant after cleaning; "similar" = only the brand word matches (a weaker hint).
+    """
+    wanted = {}
+    for r in rows:
+        merchant = r.get("merchant") or (r.get("text") or "").split(" | ")[0]
+        full, brand = _merchant_key(merchant)
+        if full:
+            wanted[merchant] = (full, brand)
+    if not wanted:
+        return {}
+    fulls = {full for full, _ in wanted.values()}
+    brands = {brand for _, brand in wanted.values()}
+
+    by_full = defaultdict(lambda: defaultdict(int))
+    by_brand = defaultdict(lambda: defaultdict(int))
+    qs = (
+        Transaction.objects
+        .filter(user=user, is_deleted=False, is_internal_transfer=False, category_fk__isnull=False)
+        .filter(category_source__in=["user", "rule", "ai"])
+        .order_by("-date", "-id")
+        .values_list("merchant", "category_fk__name", "category_source")[:MERCHANT_HISTORY_LOOKBACK]
+    )
+    for merchant, category, source in qs:
+        full, brand = _merchant_key(merchant)
+        if full in fulls:
+            by_full[full][(category, source)] += 1
+        if brand in brands:
+            by_brand[brand][(category, source)] += 1
+
+    source_rank = {"user": 0, "rule": 1, "ai": 2}
+
+    def ranked(counts):
+        return sorted(((cat, src, n) for (cat, src), n in counts.items()), key=lambda x: (source_rank[x[1]], -x[2]))[:3]
+
+    out = {}
+    for merchant, (full, brand) in wanted.items():
+        if full in by_full:
+            out[merchant] = ("same", ranked(by_full[full]))
+        elif brand in by_brand:
+            out[merchant] = ("similar", ranked(by_brand[brand]))
+    return out
+
+
 def _call_openai_rows(user, rows, examples, cats):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -95,77 +201,112 @@ def _call_openai_rows(user, rows, examples, cats):
         fallback_category = "Other" if "Other" in cats else (cats[0] if cats else "Other")
 
     schema = {
-        "type":"object",
-        "properties":{
-            "results":{
-                "type":"array",
-                "items":{
-                    "type":"object",
-                    "properties":{
-                        "id":{"type":"integer"},
-                        "category":{"type":"string","enum":cats},
-                        "confidence":{"type":"number","minimum":0,"maximum":1},
-                        "reason":{"type":"string"}
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "results": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "category": {"type": "string", "enum": cats},
+                        "confidence": {"type": "number"},
+                        "reason": {"type": "string"},
                     },
-                    "required":["id","category","confidence"]
-                }
+                    "required": ["id", "category", "confidence", "reason"],
+                },
             }
         },
-        "required":["results"]
+        "required": ["results"],
     }
 
-    user_locked = [e for e in examples if e.get("source") == "user"][:EXAMPLES_MIN_USER]
-    example_lines = []
-    if user_locked:
-        e = user_locked[0]
-        example_lines.append(
-            f"- (LOCKED) text='{e['text']}', amount={e['amount']}, in_out={e['in_out']} => {e['category']} (source=user)"
-        )
-    for e in examples:
-        example_lines.append(
-            f"- text='{e['text']}', amount={e['amount']}, in_out={e['in_out']} => {e['category']} (source={e.get('source','')})"
-        )
+    category_lines = "\n".join(
+        f"- {name}: {CATEGORY_GUIDE[name]}" if name in CATEGORY_GUIDE else f"- {name}: (the user's own category; use the name as the guide)"
+        for name in cats
+    )
 
-    msg = (
-        "You are a strict finance transaction categorizer.\n"
+    history = _merchant_history(user, rows)
+    example_lines = [
+        f"- {e['text'].split(' | ')[0]} ({e['in_out']}, {e['amount']:.2f}) => {e['category']}"
+        + (" [set by the user]" if e.get("source") == "user" else "")
+        for e in examples[:30]
+    ]
+
+    instructions = (
+        "You sort personal bank transactions from Lithuanian banks (Swedbank, SEB, Luminor, Revolut) into the user's "
+        "categories. Descriptions may be in Lithuanian or English and may contain card numbers, dates, terminal ids or "
+        "'Kortelės operacija' / 'PIRKINYS' prefixes; ignore that noise and identify the merchant or counterparty.\n"
         "Rules:\n"
-        "1) Choose exactly ONE category from the provided list. Do NOT invent categories.\n"
-        "2) If current_category_source == 'user', RETURN THE SAME category (do NOT change it).\n"
-        "3) Use amount/in_out and text cues (merchant | notes | user_note). Prefer precision.\n"
-        f"4) If unsure, pick the broad bucket '{fallback_category}'.\n\n"
-        f"Allowed categories: {', '.join(cats)}\n\n"
-        "Ground-truth examples (respect '(LOCKED)'):\n" + "\n".join(example_lines)
+        "1) Pick exactly one category from the list. Never invent one.\n"
+        "2) If the row lists 'user history' for this merchant, the user's own choice wins unless the amount or direction "
+        "clearly makes it a different kind of transaction. 'similar merchant history' only shares the brand word "
+        "(e.g. Bolt vs Bolt Food), so treat it as a hint, not a rule.\n"
+        "3) Use the direction: 'in' is money received, 'out' is money spent. Salary is only employer wages; interest, "
+        "refunds, tax returns and money from people are not salary.\n"
+        f"4) When nothing fits, use '{fallback_category}'.\n"
+        "5) confidence is your honest probability of being right: 0.9+ only for well-known merchants that clearly match "
+        "a category description, 0.6-0.8 for a reasonable guess, below 0.6 when unsure. Wrong answers above 0.7 are "
+        "applied automatically, so do not inflate it.\n"
+        "6) reason: at most 10 words."
     )
 
-    rows_text = "\n".join([
-        f"- id={r['id']}, text='{(r.get('text') or '')[:240]}', amount={r.get('amount',0)}, "
-        f"in_out='{r.get('in_out','')}', current_category='{r.get('current_category','')}', "
-        f"current_category_source='{r.get('current_source','')}'"
-        for r in rows
-    ])
+    row_lines = []
+    for r in rows:
+        merchant = r.get("merchant") or (r.get("text") or "").split(" | ")[0]
+        line = {
+            "id": r["id"],
+            "description": (r.get("text") or merchant)[:240],
+            "direction": r.get("in_out", ""),
+            "amount": round(float(r.get("amount") or 0), 2),
+        }
+        match = history.get(merchant)
+        if match:
+            kind, past = match
+            label = "user history" if kind == "same" else "similar merchant history"
+            line[label] = [f"{cat} ({'set by user' if src == 'user' else src}, {n}x)" for cat, src, n in past]
+        row_lines.append(json.dumps(line, ensure_ascii=False))
 
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        response_format={"type":"json_schema","json_schema":{"name":"tx_categorizer","schema":schema}},
-        temperature=0,
-        messages=[
-            {"role":"system","content":"JSON-only finance categorizer. Reply with VALID JSON matching the schema, nothing else."},
-            {"role":"user","content": msg + "\n\nRows:\n" + rows_text},
+    prompt = (
+        f"Categories:\n{category_lines}\n\n"
+        + ("Examples from this user's history:\n" + "\n".join(example_lines) + "\n\n" if example_lines else "")
+        + "Transactions (one JSON object per line):\n" + "\n".join(row_lines)
+    )
+
+    request = {
+        "model": getattr(settings, "OPENAI_CATEGORIZE_MODEL", "gpt-6.1-sol"),
+        "response_format": {"type": "json_schema", "json_schema": {"name": "tx_categorizer", "strict": True, "schema": schema}},
+        "messages": [
+            {"role": "system", "content": instructions},
+            {"role": "user", "content": prompt},
         ],
-    )
+    }
+    effort = getattr(settings, "OPENAI_CATEGORIZE_REASONING_EFFORT", "")
+    if effort:
+        request["reasoning_effort"] = effort
+    try:
+        resp = client.chat.completions.create(**request)
+    except BadRequestError as exc:
+        # Non-reasoning models (e.g. if OPENAI_CATEGORIZE_MODEL is switched back to gpt-4o-mini)
+        # reject reasoning_effort; retry once without it instead of failing the whole run.
+        if "reasoning_effort" not in request or "reasoning" not in str(exc).lower():
+            raise
+        request.pop("reasoning_effort")
+        resp = client.chat.completions.create(**request)
 
     try:
         data = json.loads(resp.choices[0].message.content)
     except Exception:
-        txt = resp.choices[0].message.content
+        txt = resp.choices[0].message.content or ""
         start = txt.find("{"); end = txt.rfind("}")
-        data = json.loads(txt[start:end+1]) if start>=0 and end>=0 else {"results":[]}
+        data = json.loads(txt[start:end+1]) if start >= 0 and end >= 0 else {"results": []}
 
     out = {}
     for r in data.get("results", []):
         out[int(r.get("id"))] = {
             "category": r.get("category") or fallback_category,
-            "confidence": float(r.get("confidence") or 0),
+            "confidence": max(0.0, min(1.0, float(r.get("confidence") or 0))),
             "reason": (r.get("reason") or "")[:500]
         }
     return out

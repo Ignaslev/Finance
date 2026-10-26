@@ -168,7 +168,7 @@
 
    {% include "includes/pending_delete_banner.html" %}
 
-   {% if onboarding %}
+   {% if onboarding and not hide_onboarding_banner %}
     <div class="onboarding-banner">
         <div class="container">
             <div class="onboarding-banner-copy">

@@ -4,14 +4,15 @@ from django.conf import settings
 from datetime import timedelta
 import time
 
-from finance.models import OnboardingState, Transaction, AiRun
+from django.contrib.auth import get_user_model
+
+from finance.models import Transaction, AiRun
 from finance.ai_jobs import run_ai_for_user, _eligible_for_autocategorize
 
-TEACH_AI_UNLOCK = getattr(settings, "TEACH_AI_UNLOCK", 20)
 AI_AUTOCAT_COOLDOWN_MIN = getattr(settings, "AI_AUTOCAT_COOLDOWN_MIN", 10)
 
 class Command(BaseCommand):
-    help = "Auto-categorize users who finished onboarding and have uncategorized transactions."
+    help = "Auto-categorize users who have uncategorized transactions."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -50,16 +51,21 @@ class Command(BaseCommand):
                   .order_by("started_at")[:50])  # small batch
         for run in queued:
             # skip if user has a running or very recent finished run
-            recent = AiRun.objects.filter(user=run.user).order_by("-started_at").first()
+            recent = AiRun.objects.filter(user=run.user).exclude(pk=run.pk).order_by("-started_at").first()
             if recent and (recent.status == "running" or (recent.finished_at and recent.finished_at > cooldown_ago)):
                 continue
-            run_ai_for_user(run.user, kind="autocategorize", mode="uncat")
+            run_ai_for_user(run.user, kind="autocategorize", mode="uncat", run=run)
             processed += 1
 
         # 2) ALSO pro-actively run for eligible users (no queued record yet)
-        states = OnboardingState.objects.filter(categories_done=True).select_related("user")
-        for st in states:
-            user = st.user
+        user_ids = (Transaction.objects
+                    # only rows the AI has not looked at yet, so parked low-confidence rows
+                    # are not re-sent to OpenAI on every cycle
+                    .filter(is_deleted=False, is_internal_transfer=False, category_fk__isnull=True,
+                            ai_suggested_fk__isnull=True)
+                    .exclude(category_source="user")
+                    .values_list("user_id", flat=True).distinct())
+        for user in get_user_model().objects.filter(id__in=user_ids):
 
             # cooldown / lock
             recent = AiRun.objects.filter(user=user).order_by("-started_at").first()
@@ -70,7 +76,7 @@ class Command(BaseCommand):
             if AiRun.objects.filter(user=user, status="queued").exists():
                 continue
 
-            if not _eligible_for_autocategorize(user, TEACH_AI_UNLOCK):
+            if not _eligible_for_autocategorize(user):
                 continue
 
             run_ai_for_user(user, kind="autocategorize", mode="uncat")

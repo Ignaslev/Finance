@@ -85,3 +85,5 @@ yarn-error.log
 *.swp
 *.swo
 *~
+demo.sqlite3
+demo.sqlite3-journal

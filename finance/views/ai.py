@@ -153,6 +153,7 @@ def ai_full_categorize(request):
 
     rows = [{
         "id": t.id,
+        "merchant": t.merchant or "",
         "text": f"{t.merchant} | {t.notes or ''} | {t.user_note or ''}",
         "amount": float(t.amount or 0),
         "in_out": t.in_out or "",
@@ -163,9 +164,9 @@ def ai_full_categorize(request):
     applied = 0
     parked = 0
 
+    examples = _pick_examples(request.user, limit=30)
     for i in range(0, len(rows), BATCH_SIZE):
         batch = rows[i:i+BATCH_SIZE]
-        examples = _pick_examples(request.user, limit=12)
 
         try:
             results = _call_openai_rows(request.user, batch, examples, cats_list)

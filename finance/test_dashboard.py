@@ -204,6 +204,22 @@ class OverviewAnalyticsTests(TestCase):
         self.assertNotContains(response, 'id="catMonthButtons"')
         self.assertNotContains(response, 'class="cat-btn"')
 
+    def test_composition_shares_never_exceed_one_hundred_percent(self):
+        self.source.manual_balance = Decimal("100.00")
+        self.source.balance_updated_at = timezone.now()
+        self.source.save(update_fields=["manual_balance", "balance_updated_at"])
+        MoneySource.objects.create(
+            user=self.user, name="Overdrawn card", type="bank", is_active=True,
+            manual_balance=Decimal("-40.00"), balance_updated_at=timezone.now(),
+        )
+
+        response = self.client.get(reverse("overview"))
+
+        self.assertEqual(response.context["total_net_worth"], 60.0)
+        shares = [seg["pct"] for seg in response.context["composition_bar"]]
+        self.assertAlmostEqual(sum(shares), 100.0)
+        self.assertTrue(all(pct <= 100.0 for pct in shares))
+
     def test_overview_current_month_chart_contains_all_spending_categories(self):
         transport = Category.objects.create(user=self.user, name="Transport")
         self._transaction(

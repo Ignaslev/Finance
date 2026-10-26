@@ -1,8 +1,160 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
+{% load i18n static guide_links %}
 {% block title %}{% trans "Overview" %} · MoneyCoach{% endblock %}
 {% block content %}
 {% get_current_language as LANGUAGE_CODE %}
+{% if not has_transactions %}
+{# First run: no data yet, so show one clear upload step instead of empty charts. #}
+<style>
+  .firstrun-card { padding: 2.75rem 2rem 2.25rem; text-align: center; }
+  .firstrun-mascot { width: 96px; height: auto; margin: 0 auto 1rem; display: block; }
+  .firstrun-label { color: var(--text-medium); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+  .firstrun-title { margin: 0 auto; max-width: 20ch; color: var(--text-dark); font-size: 2.3rem; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; }
+  .firstrun-lead { margin: 0.9rem auto 1.75rem; max-width: 46ch; color: var(--text-medium); font-size: 1.02rem; line-height: 1.55; }
+  .firstrun-form { max-width: 560px; margin: 0 auto; display: grid; gap: 1rem; }
+  .firstrun-drop { position: relative; display: grid; justify-items: center; gap: 0.3rem; padding: 2rem 1.25rem;
+    border: 2px dashed #b8eee3; border-radius: 16px; background: var(--mc-teal-pale); cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease; }
+  .firstrun-drop:hover, .firstrun-drop.is-dragging, .firstrun-drop.has-file { border-color: var(--primary-teal); background: var(--mc-teal-soft); }
+  .firstrun-drop:focus-within { outline: 2px solid var(--primary-teal); outline-offset: 2px; }
+  .firstrun-drop i { font-size: 2.2rem; color: var(--primary-teal-dark); }
+  .firstrun-drop-title { color: var(--text-dark); font-weight: 700; word-break: break-all; }
+  .firstrun-drop-hint { color: var(--text-light); font-size: 0.85rem; }
+  .firstrun-drop input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .firstrun-submit { min-height: 48px; font-size: 0.95rem; }
+  .firstrun-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .firstrun-card .onboarding-intro-privacy { max-width: 560px; margin: 1.25rem auto 0; text-align: left; }
+  .firstrun-help { align-self: start; }
+  .export-tabs { margin-bottom: 1.1rem; }
+  .export-tabs button { font-size: 0.82rem; padding: 7px 14px; }
+  .export-steps.onboarding-intro-steps { margin: 0; }
+  .export-panel[hidden] { display: none; }
+  .export-note { margin: 0 0 0.6rem; color: var(--text-medium); font-size: 0.9rem; line-height: 1.5; }
+  @media (max-width: 640px) {
+    .firstrun-card { padding: 1.75rem 1.1rem 1.5rem; }
+    .firstrun-mascot { width: 72px; }
+    .firstrun-title { font-size: 1.75rem; }
+    .export-tabs { display: flex; overflow-x: auto; }
+  }
+</style>
+<div class="dashboard-page">
+
+<div class="page-title-row dashboard-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
+    <h2 class="text-dark" style="margin:0;">{% trans "Dashboard" %}</h2>
+    <div class="text-medium" style="font-size:0.9rem;">{{ now_val|date:"l, F j" }}</div>
+</div>
+
+<div class="card firstrun-card">
+    <img src="{% static 'img/mascot.png' %}" alt="" class="firstrun-mascot" width="96" height="96">
+    <div class="firstrun-label">{% if is_lt %}Pradėkime{% else %}Let's start{% endif %}</div>
+    <h1 class="firstrun-title">{% if is_lt %}Pažiūrėkime, kur dingsta tavo pinigai{% else %}Let's see where your money goes{% endif %}</h1>
+    <p class="firstrun-lead">{% if is_lt %}Įkelk banko išrašą ir iš karto pamatysi savo išlaidas, pajamas ir turtą vienoje vietoje.{% else %}Upload a bank statement and you'll see your spending, income and net worth in one place.{% endif %}</p>
+
+    <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" class="firstrun-form" id="firstrun-upload">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'overview' %}">
+        <input type="hidden" name="bank" value="auto">
+        <label class="firstrun-drop" for="firstrun-file">
+            <i class="ph ph-file-arrow-up" aria-hidden="true"></i>
+            <span class="firstrun-drop-title" data-empty="{% if is_lt %}Pasirink išrašo failą{% else %}Choose your statement file{% endif %}">{% if is_lt %}Pasirink išrašo failą{% else %}Choose your statement file{% endif %}</span>
+            <span class="firstrun-drop-hint">{% if is_lt %}arba nutempk jį čia · Swedbank, SEB, Revolut{% else %}or drop it here · Swedbank, SEB, Revolut{% endif %}</span>
+            <input id="firstrun-file" name="file" type="file" accept=".csv,.xlsx,.xls" required>
+        </label>
+        <button type="submit" class="btn btn-primary firstrun-submit" id="firstrun-submit" disabled>
+            {% if is_lt %}Įkelti ir peržiūrėti{% else %}Upload and see my money{% endif %}
+        </button>
+    </form>
+
+    <div class="onboarding-intro-privacy">
+        <i class="ph ph-shield-check" aria-hidden="true"></i>
+        <span>{% if is_lt %}MoneyCompass nesijungia prie tavo banko ir neprašo prisijungimo duomenų. Išrašą įkeli pats ir gali bet kada jį ištrinti.{% else %}MoneyCompass never connects to your bank or asks for your login. You upload the statement yourself and can delete it any time.{% endif %}</span>
+    </div>
+</div>
+
+<div class="card firstrun-help">
+    <div class="card-title">{% if is_lt %}Kaip gauti banko išrašą{% else %}How to get your bank statement{% endif %}</div>
+
+    <div class="language-switch export-tabs" role="tablist" aria-label="{% if is_lt %}Bankas{% else %}Bank{% endif %}">
+        <button type="button" role="tab" class="active" aria-selected="true" aria-controls="export-swedbank" id="tab-swedbank">Swedbank</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="export-seb" id="tab-seb" tabindex="-1">SEB</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="export-revolut" id="tab-revolut" tabindex="-1">Revolut</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="export-other" id="tab-other" tabindex="-1">{% if is_lt %}Kitas bankas{% else %}Other bank{% endif %}</button>
+    </div>
+
+    <div class="export-panel" role="tabpanel" id="export-swedbank" aria-labelledby="tab-swedbank">
+        <ol class="onboarding-intro-steps export-steps">
+            <li><strong>{% if is_lt %}Prisijunk prie Swedbank interneto banko{% else %}Log in to Swedbank internet banking{% endif %}</strong><span>{% if is_lt %}Patogiausia kompiuteryje.{% else %}Easiest on a computer.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atidaryk sąskaitos išrašą{% else %}Open the account statement{% endif %}</strong><span>{% if is_lt %}Pasirink laikotarpį, pvz. paskutinius 3 mėnesius.{% else %}Pick a period, for example the last 3 months.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk CSV formatu{% else %}Download it as CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+        </ol>
+    </div>
+    <div class="export-panel" role="tabpanel" id="export-seb" aria-labelledby="tab-seb" hidden>
+        <ol class="onboarding-intro-steps export-steps">
+            <li><strong>{% if is_lt %}Prisijunk prie SEB interneto banko{% else %}Log in to SEB internet banking{% endif %}</strong><span>{% if is_lt %}Patogiausia kompiuteryje.{% else %}Easiest on a computer.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atidaryk sąskaitos išrašą{% else %}Open the account statement{% endif %}</strong><span>{% if is_lt %}Pasirink laikotarpį, pvz. paskutinius 3 mėnesius.{% else %}Pick a period, for example the last 3 months.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk CSV formatu{% else %}Download it as CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+        </ol>
+    </div>
+    <div class="export-panel" role="tabpanel" id="export-revolut" aria-labelledby="tab-revolut" hidden>
+        <ol class="onboarding-intro-steps export-steps">
+            <li><strong>{% if is_lt %}Atidaryk Revolut programėlę{% else %}Open the Revolut app{% endif %}</strong><span>{% if is_lt %}Pasirink sąskaitą, kurios išrašo reikia.{% else %}Choose the account you want.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Pasirink „Išrašas“ (Statement){% else %}Choose “Statement”{% endif %}</strong><span>{% if is_lt %}Nustatyk laikotarpį.{% else %}Set the period.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk išrašą (ne PDF){% else %}Download the statement (not PDF){% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+        </ol>
+    </div>
+    <div class="export-panel" role="tabpanel" id="export-other" aria-labelledby="tab-other" hidden>
+        <p class="export-note">{% if is_lt %}Kol kas atpažįstame Swedbank, SEB ir Revolut išrašus. Netrukus pridėsime daugiau bankų.{% else %}Right now we recognise Swedbank, SEB and Revolut statements. More banks are coming soon.{% endif %}</p>
+        <p class="export-note">{% if is_lt %}<a href="{% url 'feedback' %}" class="text-teal">Parašyk, kokį banką naudoji</a>, ir pirmiausia pridėsime jį.{% else %}<a href="{% url 'feedback' %}" class="text-teal">Tell us which bank you use</a> and we'll add it first.{% endif %}</p>
+    </div>
+</div>
+
+</div>
+<script>
+  (function () {
+    const form = document.getElementById('firstrun-upload');
+    const input = document.getElementById('firstrun-file');
+    const submit = document.getElementById('firstrun-submit');
+    const zone = form.querySelector('.firstrun-drop');
+    const title = form.querySelector('.firstrun-drop-title');
+    function sync() {
+      const file = input.files && input.files[0];
+      title.textContent = file ? file.name : title.dataset.empty;
+      zone.classList.toggle('has-file', Boolean(file));
+      submit.disabled = !file;
+    }
+    input.addEventListener('change', sync);
+    ['dragenter', 'dragover'].forEach(evt => zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('is-dragging'); }));
+    ['dragleave', 'drop'].forEach(evt => zone.addEventListener(evt, () => zone.classList.remove('is-dragging')));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; sync(); }
+    });
+    form.addEventListener('submit', () => {
+      submit.disabled = true;
+      submit.textContent = '{% if is_lt %}Įkeliama…{% else %}Uploading…{% endif %}';
+    });
+
+    const tabs = Array.from(document.querySelectorAll('.export-tabs [role="tab"]'));
+    function select(tab) {
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+      });
+    }
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        select(next); next.focus();
+      });
+    });
+  })();
+</script>
+{% else %}
 <style>
   .month-category-controls {
     display: flex;
@@ -519,4 +671,5 @@
     })();
 </script>
 </div>
+{% endif %}
 {% endblock %}

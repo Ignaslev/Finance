@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.core.mail import send_mail, mail_admins
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.utils.translation import gettext as _, ngettext
+from django.utils.translation import gettext as _, ngettext, get_language
 
 from finance.models import (
     Transaction,
@@ -635,6 +635,9 @@ def upload(request):
         if blocked:
             return blocked
 
+        # Errors go back to where the upload started (e.g. the first-run screen on the overview).
+        fail_url = _safe_next_url(request, request.POST.get("next"), None) or reverse("upload")
+
         # --- quotas: block abusive importing ---
         MAX_IMPORTS_PER_DAY = getattr(settings, "MAX_IMPORTS_PER_DAY", 20)
 
@@ -649,7 +652,7 @@ def upload(request):
                 request,
                 _("Daily import limit reached (%(limit)s). Try again tomorrow.") % {"limit": MAX_IMPORTS_PER_DAY},
             )
-            return redirect("upload")
+            return redirect(fail_url)
 
         import_src_id = request.POST.get("import_src")
         try:
@@ -672,23 +675,30 @@ def upload(request):
             MAX_UPLOAD_BYTES = getattr(settings, "MAX_UPLOAD_BYTES", 20 * 1024 * 1024)
             if len(raw) > MAX_UPLOAD_BYTES:
                 messages.error(request, _("File is too large to import."))
-                return redirect("upload")
+                return redirect(fail_url)
 
             # ---- CSV import via bank importers ----
             if name_lower.endswith(".csv"):
                 if bank == "auto":
                     importer, sniff = _pick_best_importer(raw, filename)
                     if not importer or not sniff or not sniff.ok:
-                        messages.error(
-                            request,
-                            _("Could not detect CSV format. Please choose the bank and try again.")
-                        )
-                        return redirect("upload")
+                        if (get_language() or "").startswith("lt"):
+                            detect_msg = (
+                                "Šio failo neatpažinome. Kol kas palaikome Swedbank, SEB ir Revolut išrašus. "
+                                "Parašyk mums, kokį banką naudoji, ir pridėsime jį."
+                            )
+                        else:
+                            detect_msg = (
+                                "We couldn't recognise this file. Right now we support Swedbank, SEB and Revolut "
+                                "statements. Tell us which bank you use and we'll add it."
+                            )
+                        messages.error(request, detect_msg)
+                        return redirect(fail_url)
                 else:
                     importer = IMPORTERS.get(bank)
                     if not importer:
                         messages.error(request, _("Unknown bank format selected."))
-                        return redirect("upload")
+                        return redirect(fail_url)
 
                     sniff = importer.sniff(raw=raw, filename=filename)
                     if not sniff.ok:
@@ -706,7 +716,7 @@ def upload(request):
                                 _("This file does not look like %(bank)s. Please choose the correct bank and try again.")
                                 % {"bank": importer.label},
                             )
-                        return redirect("upload")
+                        return redirect(fail_url)
 
                 parsed = importer.parse_raw(raw=raw, filename=filename)
 
@@ -780,7 +790,7 @@ def upload(request):
                     _("This file has %(count)s rows, which exceeds the per-import limit (%(limit)s).")
                     % {"count": len(rows), "limit": MAX_ROWS_PER_IMPORT},
                 )
-                return redirect("upload")
+                return redirect(fail_url)
 
             # ---------------- DB-only dedupe using fingerprint v2 ----------------
             existing_fps = set(
@@ -879,42 +889,50 @@ def upload(request):
                     batch.dup_count = db_dups
                     batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
 
-            msg = _(
-                "Imported into: %(account)s. Parsed %(parsed)s, skipped %(skipped)s. Added %(added)s new transactions. (DB duplicates: %(dups)s, blocked by deleted: %(blocked)s.)"
-            ) % {
-                "account": import_src.name,
-                "parsed": parsed_count,
-                "skipped": skipped_count,
-                "added": added,
-                "dups": db_dups,
-                "blocked": blocked_deleted,
-            }
+            # Plain-language result; the technical counters stay available in ImportBatch.
+            already_there = db_dups + blocked_deleted
+            if (get_language() or "").startswith("lt"):
+                msg = f"Įkelta naujų operacijų: {added} ({import_src.name})."
+                if already_there:
+                    msg += f" Jau buvo įkeltos anksčiau: {already_there}."
+                if skipped_count:
+                    msg += f" Nepavyko nuskaityti eilučių: {skipped_count}."
+            else:
+                msg = f"New transactions added: {added} ({import_src.name})."
+                if already_there:
+                    msg += f" Already imported before: {already_there}."
+                if skipped_count:
+                    msg += f" Rows we couldn't read: {skipped_count}."
             if added > 0:
                 messages.success(request, msg, extra_tags="safe")
             else:
                 messages.info(request, msg, extra_tags="safe")
 
             # ---- enqueue auto-categorize if eligible ----
-            TEACH_AI_UNLOCK = getattr(settings, "TEACH_AI_UNLOCK", 20)
-            try:
-                state = request.user.onboarding_state
-            except OnboardingState.DoesNotExist:
-                state = None
+            state, _state_created = OnboardingState.objects.get_or_create(user=request.user)
 
-            if state and state.categories_done:
-                labeled = Transaction.objects.filter(
-                    user=request.user,
-                    category_source="user",
-                    is_internal_transfer=False,
-                ).count()
-                has_uncat = Transaction.objects.filter(
-                    user=request.user,
-                    is_deleted=False,
-                    is_internal_transfer=False,
-                    category_fk__isnull=True,
-                ).exists()
-                if labeled >= TEACH_AI_UNLOCK and has_uncat:
-                    AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
+            # Upload is the first onboarding step now; reviewing categories is optional,
+            # so a successful import must not leave auto-categorization switched off.
+            if added > 0 and not state.categories_done:
+                state.categories_done = True
+                state.save(update_fields=["categories_done", "updated_at"])
+
+            # The AI categorizes from the first upload; corrections the user makes later are fed
+            # back to it as examples, so no hand-labelling is required up front.
+            has_uncat = Transaction.objects.filter(
+                user=request.user,
+                is_deleted=False,
+                is_internal_transfer=False,
+                category_fk__isnull=True,
+            ).exists()
+            already_queued = AiRun.objects.filter(user=request.user, status="queued").exists()
+            if added > 0 and has_uncat and not already_queued:
+                AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
+
+            # The first-run upload on the overview sends people back there to see their numbers.
+            next_url = _safe_next_url(request, request.POST.get("next"), None)
+            if next_url:
+                return redirect(next_url)
 
             # Redirect (preserve filters)
             qs_params = []
@@ -926,11 +944,11 @@ def upload(request):
                 qs_params.append(f"stype={stype}")
             if qs_params:
                 return redirect(f"/app/?{'&'.join(qs_params)}")
-            return redirect("upload")
+            return redirect(fail_url)
 
         except Exception as e:
             messages.error(request, _("Failed to import file: %(error)s") % {"error": e})
-            return redirect("upload")
+            return redirect(fail_url)
 
     # -------------------- LIST (GET) --------------------
     qs = (
@@ -1034,7 +1052,7 @@ def upload(request):
     except OnboardingState.DoesNotExist:
         cats_done = False
 
-    MIN_USER_LABELS = getattr(settings, "MIN_USER_LABELS", 30)
+    MIN_USER_LABELS = 0  # no hand-labelling gate any more
     has_any_tx = Transaction.objects.filter(user=request.user, is_deleted=False).exists()
     user_labels_count = Transaction.objects.filter(
         user=request.user,
@@ -1042,7 +1060,7 @@ def upload(request):
         is_internal_transfer=False,
         category_source="user",
     ).count()
-    ai_locked = (has_any_tx and user_labels_count < MIN_USER_LABELS)
+    ai_locked = False
 
     bank_choices = [("auto", "Auto-detect")] + [(k, imp.label) for k, imp in IMPORTERS.items()]
 

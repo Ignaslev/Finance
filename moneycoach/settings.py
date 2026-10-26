@@ -187,7 +187,9 @@ DEFAULT_CATEGORIES = [
     "Other", "Subscriptions", "Transportation",
 ]
 
-TEACH_AI_UNLOCK = 20
+# Transaction categorisation. Change the model without a deploy via env vars.
+OPENAI_CATEGORIZE_MODEL = env("OPENAI_CATEGORIZE_MODEL", "gpt-6.1-sol")
+OPENAI_CATEGORIZE_REASONING_EFFORT = env("OPENAI_CATEGORIZE_REASONING_EFFORT", "low")
 AI_AUTOCAT_COOLDOWN_MIN = 10
 
 AUTH_USER_MODEL = "accounts.User"

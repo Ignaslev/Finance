@@ -23,38 +23,34 @@ def _fake_request_for_user(user):
     req.session = store
     return req
 
-def _eligible_for_autocategorize(user, min_labels: int) -> bool:
-    try:
-        state = user.onboarding_state
-    except OnboardingState.DoesNotExist:
-        return False
-    if not state.categories_done:
-        return False
-    labeled = Transaction.objects.filter(
-        user=user,
-        category_source="user",
-        is_internal_transfer=False,
-    ).count()
-    if labeled < min_labels:
-        return False
+def _eligible_for_autocategorize(user, min_labels: int = 0) -> bool:
+    # min_labels is kept for old callers; auto-categorization no longer waits for hand labels.
     has_uncat = Transaction.objects.filter(
         user=user, is_deleted=False, is_internal_transfer=False
     ).filter(
-        category_fk__isnull=True
-    ).exists()
+        category_fk__isnull=True,
+        ai_suggested_fk__isnull=True,  # not yet seen by the AI
+    ).exclude(category_source="user").exists()
     return has_uncat
 
-def run_ai_for_user(user, *, kind: str, mode: str = "uncat") -> AiRun:
+def run_ai_for_user(user, *, kind: str, mode: str = "uncat", run: AiRun | None = None) -> AiRun:
     """
     kind: 'autocategorize' or 'recheck'
     mode: 'uncat'|'ai'|'all' for your ai_full_categorize view
+    run:  an existing queued AiRun to execute (otherwise a new one is created)
     Returns the AiRun with items populated.
     """
-    run = AiRun.objects.create(user=user, kind=kind, mode=mode, status="running", locked_at=timezone.now())
+    if run is None:
+        run = AiRun.objects.create(user=user, kind=kind, mode=mode, status="running", locked_at=timezone.now())
+    else:
+        run.status = "running"
+        run.locked_at = timezone.now()
+        run.save(update_fields=["status", "locked_at"])
     started = timezone.now()
 
     # capture pre-state to diff later
-    before = Transaction.objects.filter(user=user).values_list("id", "category_fk", "category_source")
+    # list() so the snapshot is taken now, not lazily after the AI has already changed the rows
+    before = list(Transaction.objects.filter(user=user).values_list("id", "category_fk", "category_source"))
 
     # call your existing categorize view with a fake request
     try:
