@@ -6,7 +6,7 @@ import time
 
 from django.contrib.auth import get_user_model
 
-from finance.models import Transaction, AiRun
+from finance.models import Transaction, AiRun, PdfImportJob
 from finance.ai_jobs import run_ai_for_user, _eligible_for_autocategorize
 
 AI_AUTOCAT_COOLDOWN_MIN = getattr(settings, "AI_AUTOCAT_COOLDOWN_MIN", 10)
@@ -43,6 +43,11 @@ class Command(BaseCommand):
         now = timezone.now()
         cooldown_ago = now - timedelta(minutes=AI_AUTOCAT_COOLDOWN_MIN)
         processed = 0
+
+        # PDF statements: OpenAI drops background data after ~10 min, so a read still "reading"
+        # after 30 min will never finish; and parsed rows nobody confirmed within a day are deleted.
+        PdfImportJob.objects.filter(status=PdfImportJob.STATUS_READING, created_at__lt=now - timedelta(minutes=30))             .update(status=PdfImportJob.STATUS_FAILED, error="expired")
+        PdfImportJob.objects.filter(result__isnull=False, updated_at__lt=now - timedelta(days=1)).update(result=None)
 
         # 1) FIRST consume any queued runs (e.g., created by upload hook)
         queued = (AiRun.objects

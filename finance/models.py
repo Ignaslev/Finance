@@ -572,6 +572,44 @@ class ImportBatch(models.Model):
     def __str__(self):
         return f"{self.user_id} {self.bank_key} {self.created_at:%Y-%m-%d %H:%M}"
 
+class PdfImportJob(models.Model):
+    """A PDF statement being read by the AI in the background, then previewed before import.
+
+    The OpenAI response runs in background mode with store=False (OpenAI drops it after ~10 min);
+    once read, the parsed rows live here until the user confirms or cancels.
+    """
+    STATUS_READING = "reading"
+    STATUS_READY = "ready"
+    STATUS_FAILED = "failed"
+    STATUS_IMPORTED = "imported"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [
+        (STATUS_READING, "Reading"),
+        (STATUS_READY, "Ready for preview"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_IMPORTED, "Imported"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pdf_import_jobs")
+    money_source = models.ForeignKey("MoneySource", on_delete=models.CASCADE, related_name="pdf_import_jobs")
+    filename = models.CharField(max_length=255, blank=True)
+    next_url = models.CharField(max_length=255, blank=True)
+    model_name = models.CharField(max_length=64, blank=True)
+    response_id = models.CharField(max_length=128, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_READING)
+    error = models.CharField(max_length=500, blank=True)
+    result = models.JSONField(null=True, blank=True)  # {"opening_balance", "closing_balance", "currency", "rows": [...]}
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "created_at"])]
+
+    def __str__(self):
+        return f"PdfImportJob<{self.user_id}:{self.filename}:{self.status}>"
+
+
 class PendingDataDeletion(models.Model):
     SCOPE_TRANSACTIONS = "transactions"
     SCOPE_CHOICES = [

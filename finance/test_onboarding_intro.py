@@ -87,7 +87,7 @@ class OnboardingIntroTests(TestCase):
 
         self.assertEqual(response.redirect_chain[-1][0], reverse("overview"))
         self.assertContains(response, 'id="firstrun-upload"')
-        self.assertContains(response, "Swedbank, SEB")
+        self.assertContains(response, "PDF")
         self.assertFalse(Transaction.objects.filter(user=self.user).exists())
 
     def test_upload_ignores_offsite_next_url(self):

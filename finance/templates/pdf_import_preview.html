@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if is_lt %}Patikrink išrašą{% else %}Check your statement{% endif %} · MoneyCompass{% endblock %}
+{% block content %}
+<style>
+  .pdf-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .pdf-stat { padding: 1rem 1.1rem; border-radius: 14px; background: #f7fafc; }
+  .pdf-stat-label { color: var(--text-medium); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pdf-stat-value { margin-top: 0.3rem; color: var(--text-dark); font-size: 1.35rem; font-weight: 800; }
+  .pdf-check { display: flex; gap: 0.75rem; align-items: flex-start; margin-top: 1.25rem; padding: 1rem 1.1rem; border-radius: 14px;
+    border: 1px solid; font-size: 0.92rem; line-height: 1.5; }
+  .pdf-check i { font-size: 1.35rem; margin-top: 1px; }
+  .pdf-check.ok { background: #e9fbf4; border-color: #bcebdc; color: #076447; }
+  .pdf-check.mismatch { background: #fff2f2; border-color: #f5caca; color: #9e3232; }
+  .pdf-check.missing { background: #fff9e9; border-color: #f2dfa5; color: #695115; }
+  .pdf-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .pdf-actions .btn-cancel { background: #edf2f7; color: var(--text-medium); }
+  .pdf-amount-out { color: var(--text-dark); font-weight: 700; white-space: nowrap; text-align: right; }
+  .pdf-amount-in { color: #2e7d32; font-weight: 700; white-space: nowrap; text-align: right; }
+  .pdf-more { margin: 0.75rem 0 0; color: var(--text-medium); font-size: 0.88rem; }
+</style>
+
+<div class="page-title-row flex justify-between items-center mb-4" style="margin-top:2rem;">
+  <h2 class="text-dark" style="margin:0;">{% if is_lt %}Patikrink prieš įkeliant{% else %}Check before importing{% endif %}</h2>
+  <div class="text-medium" style="font-size:0.9rem;">{{ job.filename }}</div>
+</div>
+
+<div class="card">
+  {% if p.row_count == 0 %}
+    <div class="card-title">{% if is_lt %}Šiame PDF neradome operacijų{% else %}We found no transactions in this PDF{% endif %}</div>
+    <p class="text-medium" style="margin:0;">{% if is_lt %}Gal tai ne banko išrašas, arba jis apsaugotas slaptažodžiu. Pabandyk kitą failą arba CSV.{% else %}It may not be a bank statement, or it may be password protected. Try another file or a CSV.{% endif %}</p>
+  {% else %}
+    <div class="card-title">
+      {% if is_lt %}Radome operacijų: {{ p.row_count }}{% else %}We found {{ p.row_count }} transactions{% endif %}
+      <span class="text-medium" style="font-weight:500; font-size:0.9rem;">· {{ p.period_start|date:"Y-m-d" }} – {{ p.period_end|date:"Y-m-d" }} · {{ job.money_source.name }}</span>
+    </div>
+
+    <div class="pdf-summary">
+      <div class="pdf-stat">
+        <div class="pdf-stat-label">{% if is_lt %}Bus įkelta{% else %}Will be added{% endif %}</div>
+        <div class="pdf-stat-value">{{ p.new_count }}</div>
+      </div>
+      <div class="pdf-stat">
+        <div class="pdf-stat-label">{% if is_lt %}Jau įkeltos{% else %}Already imported{% endif %}</div>
+        <div class="pdf-stat-value">{{ p.duplicate_count }}</div>
+      </div>
+      <div class="pdf-stat">
+        <div class="pdf-stat-label">{% if is_lt %}Gauta{% else %}Money in{% endif %}</div>
+        <div class="pdf-stat-value">{{ p.total_in|floatformat:2 }} <span style="font-size:0.85rem;">{{ p.currency }}</span></div>
+      </div>
+      <div class="pdf-stat">
+        <div class="pdf-stat-label">{% if is_lt %}Išleista{% else %}Money out{% endif %}</div>
+        <div class="pdf-stat-value">{{ p.total_out|floatformat:2 }} <span style="font-size:0.85rem;">{{ p.currency }}</span></div>
+      </div>
+    </div>
+
+    {% if p.balance_check == "ok" %}
+      <div class="pdf-check ok"><i class="ph ph-check-circle" aria-hidden="true"></i>
+        <span>{% if is_lt %}Sumos sutampa su išrašo likučiais ({{ p.opening|floatformat:2 }} → {{ p.closing|floatformat:2 }} {{ p.currency }}), vadinasi, nuskaitėme visas operacijas.{% else %}The totals match the statement balances ({{ p.opening|floatformat:2 }} → {{ p.closing|floatformat:2 }} {{ p.currency }}), so every transaction was read.{% endif %}</span>
+      </div>
+    {% elif p.balance_check == "mismatch" %}
+      <div class="pdf-check mismatch"><i class="ph ph-warning" aria-hidden="true"></i>
+        <span>{% if is_lt %}Sumos nesutampa su išrašo likučiais (skirtumas {{ p.difference|floatformat:2 }} {{ p.currency }}). Gali būti, kad kelių operacijų neperskaitėme. Geriau atšauk ir įkelk CSV, arba įkelk, jei sutinki su skirtumu.{% else %}The totals don't match the statement balances (difference {{ p.difference|floatformat:2 }} {{ p.currency }}). Some transactions may have been missed. Cancel and upload a CSV, or import anyway if you accept the difference.{% endif %}</span>
+      </div>
+    {% else %}
+      <div class="pdf-check missing"><i class="ph ph-info" aria-hidden="true"></i>
+        <span>{% if is_lt %}Išraše neradome pradžios ir pabaigos likučių, todėl negalime patikrinti, ar perskaitėme viską. Peržiūrėk operacijas žemiau.{% else %}The statement doesn't show opening and closing balances, so we can't confirm everything was read. Please look over the rows below.{% endif %}</span>
+      </div>
+    {% endif %}
+
+    {% if p.unreadable_count %}
+      <p class="pdf-more">{% if is_lt %}Neperskaitytų eilučių: {{ p.unreadable_count }} (jos nebus įkeltos).{% else %}Rows we couldn't read: {{ p.unreadable_count }} (they won't be imported).{% endif %}</p>
+    {% endif %}
+  {% endif %}
+
+  <form method="post" class="pdf-actions">
+    {% csrf_token %}
+    {% if p.row_count %}
+      <button type="submit" name="action" value="import" class="btn btn-primary">
+        {% if p.balance_check == "mismatch" %}
+          {% if is_lt %}Vis tiek įkelti{% else %}Import anyway{% endif %}
+        {% elif p.new_count %}
+          {% if is_lt %}Įkelti operacijas ({{ p.new_count }}){% else %}Import {{ p.new_count }} transactions{% endif %}
+        {% else %}
+          {% if is_lt %}Gerai{% else %}OK{% endif %}
+        {% endif %}
+      </button>
+    {% endif %}
+    <button type="submit" name="action" value="cancel" class="btn btn-cancel">{% if is_lt %}Atšaukti{% else %}Cancel{% endif %}</button>
+  </form>
+</div>
+
+{% if p.row_count %}
+<div class="card">
+  <div class="card-title">{% if is_lt %}Pirmosios operacijos{% else %}First transactions{% endif %}</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Merchant" %}</th><th style="text-align:right;">{% trans "Amount" %}</th></tr></thead>
+      <tbody>
+        {% for r in sample_rows %}
+          <tr>
+            <td style="white-space:nowrap;">{{ r.date|date:"Y-m-d" }}</td>
+            <td>{{ r.merchant }}</td>
+            <td class="{% if r.in_out == 'in' %}pdf-amount-in{% else %}pdf-amount-out{% endif %}">{% if r.in_out == 'in' %}+{% else %}-{% endif %}{{ r.amount|floatformat:2 }} {{ r.currency }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if more_rows %}
+    <p class="pdf-more">{% if is_lt %}…ir dar {{ more_rows }}.{% else %}…and {{ more_rows }} more.{% endif %}</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

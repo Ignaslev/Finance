@@ -57,8 +57,8 @@
         <label class="firstrun-drop" for="firstrun-file">
             <i class="ph ph-file-arrow-up" aria-hidden="true"></i>
             <span class="firstrun-drop-title" data-empty="{% if is_lt %}Pasirink išrašo failą{% else %}Choose your statement file{% endif %}">{% if is_lt %}Pasirink išrašo failą{% else %}Choose your statement file{% endif %}</span>
-            <span class="firstrun-drop-hint">{% if is_lt %}arba nutempk jį čia · Swedbank, SEB, Revolut{% else %}or drop it here · Swedbank, SEB, Revolut{% endif %}</span>
-            <input id="firstrun-file" name="file" type="file" accept=".csv,.xlsx,.xls" required>
+            <span class="firstrun-drop-hint">{% if is_lt %}arba nutempk jį čia · PDF iš bet kurio banko arba CSV{% else %}or drop it here · PDF from any bank, or CSV{% endif %}</span>
+            <input id="firstrun-file" name="file" type="file" accept=".pdf,.csv,.xlsx,.xls" required>
         </label>
         <button type="submit" class="btn btn-primary firstrun-submit" id="firstrun-submit" disabled>
             {% if is_lt %}Įkelti ir peržiūrėti{% else %}Upload and see my money{% endif %}
@@ -85,26 +85,26 @@
         <ol class="onboarding-intro-steps export-steps">
             <li><strong>{% if is_lt %}Prisijunk prie Swedbank interneto banko{% else %}Log in to Swedbank internet banking{% endif %}</strong><span>{% if is_lt %}Patogiausia kompiuteryje.{% else %}Easiest on a computer.{% endif %}</span></li>
             <li><strong>{% if is_lt %}Atidaryk sąskaitos išrašą{% else %}Open the account statement{% endif %}</strong><span>{% if is_lt %}Pasirink laikotarpį, pvz. paskutinius 3 mėnesius.{% else %}Pick a period, for example the last 3 months.{% endif %}</span></li>
-            <li><strong>{% if is_lt %}Atsisiųsk CSV formatu{% else %}Download it as CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk PDF arba CSV{% else %}Download it as PDF or CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
         </ol>
     </div>
     <div class="export-panel" role="tabpanel" id="export-seb" aria-labelledby="tab-seb" hidden>
         <ol class="onboarding-intro-steps export-steps">
             <li><strong>{% if is_lt %}Prisijunk prie SEB interneto banko{% else %}Log in to SEB internet banking{% endif %}</strong><span>{% if is_lt %}Patogiausia kompiuteryje.{% else %}Easiest on a computer.{% endif %}</span></li>
             <li><strong>{% if is_lt %}Atidaryk sąskaitos išrašą{% else %}Open the account statement{% endif %}</strong><span>{% if is_lt %}Pasirink laikotarpį, pvz. paskutinius 3 mėnesius.{% else %}Pick a period, for example the last 3 months.{% endif %}</span></li>
-            <li><strong>{% if is_lt %}Atsisiųsk CSV formatu{% else %}Download it as CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk PDF arba CSV{% else %}Download it as PDF or CSV{% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
         </ol>
     </div>
     <div class="export-panel" role="tabpanel" id="export-revolut" aria-labelledby="tab-revolut" hidden>
         <ol class="onboarding-intro-steps export-steps">
             <li><strong>{% if is_lt %}Atidaryk Revolut programėlę{% else %}Open the Revolut app{% endif %}</strong><span>{% if is_lt %}Pasirink sąskaitą, kurios išrašo reikia.{% else %}Choose the account you want.{% endif %}</span></li>
             <li><strong>{% if is_lt %}Pasirink „Išrašas“ (Statement){% else %}Choose “Statement”{% endif %}</strong><span>{% if is_lt %}Nustatyk laikotarpį.{% else %}Set the period.{% endif %}</span></li>
-            <li><strong>{% if is_lt %}Atsisiųsk išrašą (ne PDF){% else %}Download the statement (not PDF){% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
+            <li><strong>{% if is_lt %}Atsisiųsk išrašą (PDF arba CSV){% else %}Download the statement (PDF or CSV){% endif %}</strong><span>{% if is_lt %}Tada įkelk failą aukščiau.{% else %}Then upload the file above.{% endif %}</span></li>
         </ol>
     </div>
     <div class="export-panel" role="tabpanel" id="export-other" aria-labelledby="tab-other" hidden>
-        <p class="export-note">{% if is_lt %}Kol kas atpažįstame Swedbank, SEB ir Revolut išrašus. Netrukus pridėsime daugiau bankų.{% else %}Right now we recognise Swedbank, SEB and Revolut statements. More banks are coming soon.{% endif %}</p>
-        <p class="export-note">{% if is_lt %}<a href="{% url 'feedback' %}" class="text-teal">Parašyk, kokį banką naudoji</a>, ir pirmiausia pridėsime jį.{% else %}<a href="{% url 'feedback' %}" class="text-teal">Tell us which bank you use</a> and we'll add it first.{% endif %}</p>
+        <p class="export-note">{% if is_lt %}Atsisiųsk sąskaitos išrašą <strong>PDF</strong> formatu iš savo interneto banko ir įkelk jį aukščiau. PDF išrašus perskaitome iš bet kurio banko (Luminor, Artea, Citadele, Paysera ir kt.).{% else %}Download your account statement as a <strong>PDF</strong> from your internet bank and upload it above. We can read PDF statements from any bank (Luminor, Artea, Citadele, Paysera and others).{% endif %}</p>
+        <p class="export-note">{% if is_lt %}Nepavyko? <a href="{% url 'feedback' %}" class="text-teal">Parašyk mums</a>, kokį banką naudoji.{% else %}Didn't work? <a href="{% url 'feedback' %}" class="text-teal">Tell us</a> which bank you use.{% endif %}</p>
     </div>
 </div>
 

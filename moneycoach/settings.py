@@ -190,6 +190,11 @@ DEFAULT_CATEGORIES = [
 # Transaction categorisation. Change the model without a deploy via env vars.
 OPENAI_CATEGORIZE_MODEL = env("OPENAI_CATEGORIZE_MODEL", "gpt-6.1-sol")
 OPENAI_CATEGORIZE_REASONING_EFFORT = env("OPENAI_CATEGORIZE_REASONING_EFFORT", "low")
+# PDF statement reading (background OpenAI response). gpt-5.6-luna is ~8x cheaper with the same
+# accuracy on test statements; Sol is the safer default for messy real-world PDFs.
+OPENAI_PDF_MODEL = env("OPENAI_PDF_MODEL", "gpt-6.1-sol")
+OPENAI_PDF_REASONING_EFFORT = env("OPENAI_PDF_REASONING_EFFORT", "low")
+PDF_READS_PER_DAY = int(env("PDF_READS_PER_DAY", "10"))  # each read costs money; the app is free
 AI_AUTOCAT_COOLDOWN_MIN = 10
 
 AUTH_USER_MODEL = "accounts.User"

@@ -567,6 +567,152 @@ def cancel_data_delete_transactions(request):
     messages.success(request, _("Transactions deletion canceled."))
     return redirect("upload")
 
+
+def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_count=0):
+    """Store parsed statement rows: dedupe, ImportBatch (for undo), user message, AI queue.
+
+    Shared by CSV/Excel uploads and confirmed PDF imports. Returns the number of rows added.
+    """
+    # ---------------- DB-only dedupe using fingerprint v2 ----------------
+    existing_fps = set(
+        Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
+    )
+
+    db_dups = 0
+    blocked_deleted = 0
+    to_create = []
+
+    for r in rows:
+        try:
+            date_iso = r["date"].strftime("%Y-%m-%d")
+        except Exception:
+            skipped_count += 1
+            continue
+
+        fp = build_fingerprint_v2(
+            date_iso=date_iso,
+            time_str=(r.get("time") or "").strip(),
+            merchant=r.get("merchant") or "",
+            amount=r.get("amount"),
+            currency=(r.get("currency") or "EUR").strip() or "EUR",
+            in_out=r.get("in_out"),
+            money_source_id=import_src.id,
+            description=r.get("description") or r.get("notes") or r.get("merchant") or "",
+        )
+
+        # 1) Fingerprint-based dedupe
+        if fp in existing_fps:
+            db_dups += 1
+            continue
+
+        # 2) Signature-based safety dedupe
+        merchant_norm = (r.get("merchant") or "").strip()
+        cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
+
+        sig_exists = Transaction.objects.filter(
+            user=request.user,
+            money_source=import_src,
+            date=r["date"],
+            amount=r["amount"],
+            currency=cur_norm,
+            in_out=r.get("in_out"),
+            merchant__iexact=merchant_norm,
+            is_deleted=False,
+        ).exists()
+
+        if sig_exists:
+            db_dups += 1
+            continue
+
+        to_create.append(Transaction(
+            user=request.user,
+            money_source=import_src,
+            date=r["date"],
+            merchant=merchant_norm,
+            amount=r["amount"],
+            currency=cur_norm,
+            in_out=r.get("in_out"),
+            notes=r.get("notes") or "",
+            user_note="",
+            category_fk=None,
+            category=None,
+            category_source="import",
+            fingerprint=fp,
+        ))
+
+    with db_transaction.atomic():
+        batch = ImportBatch.objects.create(
+            user=request.user,
+            money_source=import_src,
+            filename=filename,
+            bank_key=bank_key,
+        )
+
+        for pending_transaction in to_create:
+            pending_transaction.import_batch = batch
+
+        added = 0
+        if to_create:
+            Transaction.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
+            created_fps = set(
+                Transaction.objects
+                .filter(user=request.user, fingerprint__in=[t.fingerprint for t in to_create])
+                .values_list("fingerprint", flat=True)
+            )
+            added = len(created_fps)
+
+        # Keep "Undo last upload" meaningful: duplicate-only uploads should not create an empty batch.
+        if added == 0 and not Transaction.objects.filter(import_batch=batch).exists():
+            batch.delete()
+        else:
+            batch.added_count = added
+            batch.skipped_count = skipped_count
+            batch.dup_count = db_dups
+            batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
+
+    # Plain-language result; the technical counters stay available in ImportBatch.
+    already_there = db_dups + blocked_deleted
+    if (get_language() or "").startswith("lt"):
+        msg = f"Įkelta naujų operacijų: {added} ({import_src.name})."
+        if already_there:
+            msg += f" Jau buvo įkeltos anksčiau: {already_there}."
+        if skipped_count:
+            msg += f" Nepavyko nuskaityti eilučių: {skipped_count}."
+    else:
+        msg = f"New transactions added: {added} ({import_src.name})."
+        if already_there:
+            msg += f" Already imported before: {already_there}."
+        if skipped_count:
+            msg += f" Rows we couldn't read: {skipped_count}."
+    if added > 0:
+        messages.success(request, msg, extra_tags="safe")
+    else:
+        messages.info(request, msg, extra_tags="safe")
+
+    # ---- enqueue auto-categorize if eligible ----
+    state, _state_created = OnboardingState.objects.get_or_create(user=request.user)
+
+    # Upload is the first onboarding step now; reviewing categories is optional,
+    # so a successful import must not leave auto-categorization switched off.
+    if added > 0 and not state.categories_done:
+        state.categories_done = True
+        state.save(update_fields=["categories_done", "updated_at"])
+
+    # The AI categorizes from the first upload; corrections the user makes later are fed
+    # back to it as examples, so no hand-labelling is required up front.
+    has_uncat = Transaction.objects.filter(
+        user=request.user,
+        is_deleted=False,
+        is_internal_transfer=False,
+        category_fk__isnull=True,
+    ).exists()
+    already_queued = AiRun.objects.filter(user=request.user, status="queued").exists()
+    if added > 0 and has_uncat and not already_queued:
+        AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
+
+    return added
+
+
 @login_required
 def upload(request):
     sources = list(MoneySource.objects.filter(user=request.user, is_active=True).order_by("name"))
@@ -677,6 +823,14 @@ def upload(request):
                 messages.error(request, _("File is too large to import."))
                 return redirect(fail_url)
 
+            # ---- PDF statements: read by the AI in the background, previewed before import ----
+            if name_lower.endswith(".pdf"):
+                from finance.views.pdf_import import start_pdf_import
+                return start_pdf_import(
+                    request, raw=raw, filename=filename, import_src=import_src,
+                    next_url=_safe_next_url(request, request.POST.get("next"), None), fail_url=fail_url,
+                )
+
             # ---- CSV import via bank importers ----
             if name_lower.endswith(".csv"):
                 if bank == "auto":
@@ -684,13 +838,13 @@ def upload(request):
                     if not importer or not sniff or not sniff.ok:
                         if (get_language() or "").startswith("lt"):
                             detect_msg = (
-                                "Šio failo neatpažinome. Kol kas palaikome Swedbank, SEB ir Revolut išrašus. "
-                                "Parašyk mums, kokį banką naudoji, ir pridėsime jį."
+                                "Šio CSV failo neatpažinome. Įkelk tą patį išrašą PDF formatu: "
+                                "PDF išrašus perskaitome iš bet kurio banko."
                             )
                         else:
                             detect_msg = (
-                                "We couldn't recognise this file. Right now we support Swedbank, SEB and Revolut "
-                                "statements. Tell us which bank you use and we'll add it."
+                                "We couldn't recognise this CSV file. Upload the same statement as a PDF instead: "
+                                "we can read PDF statements from any bank."
                             )
                         messages.error(request, detect_msg)
                         return redirect(fail_url)
@@ -792,142 +946,10 @@ def upload(request):
                 )
                 return redirect(fail_url)
 
-            # ---------------- DB-only dedupe using fingerprint v2 ----------------
-            existing_fps = set(
-                Transaction.objects.filter(user=request.user).values_list("fingerprint", flat=True)
+            _save_import_rows(
+                request, rows=rows, import_src=import_src, filename=filename,
+                bank_key=bank, skipped_count=skipped_count,
             )
-
-            db_dups = 0
-            blocked_deleted = 0
-            to_create = []
-
-            for r in rows:
-                try:
-                    date_iso = r["date"].strftime("%Y-%m-%d")
-                except Exception:
-                    skipped_count += 1
-                    continue
-
-                fp = build_fingerprint_v2(
-                    date_iso=date_iso,
-                    time_str=(r.get("time") or "").strip(),
-                    merchant=r.get("merchant") or "",
-                    amount=r.get("amount"),
-                    currency=(r.get("currency") or "EUR").strip() or "EUR",
-                    in_out=r.get("in_out"),
-                    money_source_id=import_src.id,
-                    description=r.get("description") or r.get("notes") or r.get("merchant") or "",
-                )
-
-                # 1) Fingerprint-based dedupe
-                if fp in existing_fps:
-                    db_dups += 1
-                    continue
-
-                # 2) Signature-based safety dedupe
-                merchant_norm = (r.get("merchant") or "").strip()
-                cur_norm = (r.get("currency") or "EUR").strip() or "EUR"
-
-                sig_exists = Transaction.objects.filter(
-                    user=request.user,
-                    money_source=import_src,
-                    date=r["date"],
-                    amount=r["amount"],
-                    currency=cur_norm,
-                    in_out=r.get("in_out"),
-                    merchant__iexact=merchant_norm,
-                    is_deleted=False,
-                ).exists()
-
-                if sig_exists:
-                    db_dups += 1
-                    continue
-
-                to_create.append(Transaction(
-                    user=request.user,
-                    money_source=import_src,
-                    date=r["date"],
-                    merchant=merchant_norm,
-                    amount=r["amount"],
-                    currency=cur_norm,
-                    in_out=r.get("in_out"),
-                    notes=r.get("notes") or "",
-                    user_note="",
-                    category_fk=None,
-                    category=None,
-                    category_source="import",
-                    fingerprint=fp,
-                ))
-
-            with db_transaction.atomic():
-                batch = ImportBatch.objects.create(
-                    user=request.user,
-                    money_source=import_src,
-                    filename=filename,
-                    bank_key=bank,
-                )
-
-                for pending_transaction in to_create:
-                    pending_transaction.import_batch = batch
-
-                added = 0
-                if to_create:
-                    Transaction.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
-                    created_fps = set(
-                        Transaction.objects
-                        .filter(user=request.user, fingerprint__in=[t.fingerprint for t in to_create])
-                        .values_list("fingerprint", flat=True)
-                    )
-                    added = len(created_fps)
-
-                # Keep "Undo last upload" meaningful: duplicate-only uploads should not create an empty batch.
-                if added == 0 and not Transaction.objects.filter(import_batch=batch).exists():
-                    batch.delete()
-                else:
-                    batch.added_count = added
-                    batch.skipped_count = skipped_count
-                    batch.dup_count = db_dups
-                    batch.save(update_fields=["added_count", "skipped_count", "dup_count"])
-
-            # Plain-language result; the technical counters stay available in ImportBatch.
-            already_there = db_dups + blocked_deleted
-            if (get_language() or "").startswith("lt"):
-                msg = f"Įkelta naujų operacijų: {added} ({import_src.name})."
-                if already_there:
-                    msg += f" Jau buvo įkeltos anksčiau: {already_there}."
-                if skipped_count:
-                    msg += f" Nepavyko nuskaityti eilučių: {skipped_count}."
-            else:
-                msg = f"New transactions added: {added} ({import_src.name})."
-                if already_there:
-                    msg += f" Already imported before: {already_there}."
-                if skipped_count:
-                    msg += f" Rows we couldn't read: {skipped_count}."
-            if added > 0:
-                messages.success(request, msg, extra_tags="safe")
-            else:
-                messages.info(request, msg, extra_tags="safe")
-
-            # ---- enqueue auto-categorize if eligible ----
-            state, _state_created = OnboardingState.objects.get_or_create(user=request.user)
-
-            # Upload is the first onboarding step now; reviewing categories is optional,
-            # so a successful import must not leave auto-categorization switched off.
-            if added > 0 and not state.categories_done:
-                state.categories_done = True
-                state.save(update_fields=["categories_done", "updated_at"])
-
-            # The AI categorizes from the first upload; corrections the user makes later are fed
-            # back to it as examples, so no hand-labelling is required up front.
-            has_uncat = Transaction.objects.filter(
-                user=request.user,
-                is_deleted=False,
-                is_internal_transfer=False,
-                category_fk__isnull=True,
-            ).exists()
-            already_queued = AiRun.objects.filter(user=request.user, status="queued").exists()
-            if added > 0 and has_uncat and not already_queued:
-                AiRun.objects.create(user=request.user, kind="autocategorize", mode="uncat", status="queued")
 
             # The first-run upload on the overview sends people back there to see their numbers.
             next_url = _safe_next_url(request, request.POST.get("next"), None)

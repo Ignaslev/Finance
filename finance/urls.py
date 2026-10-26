@@ -3,6 +3,7 @@ from . import views as f
 from .views import transactions
 from .views import settings as settings_views
 from .views import billing
+from .views import pdf_import
 
 urlpatterns = [
     path("app/", f.upload, name="upload"),
@@ -17,6 +18,8 @@ urlpatterns = [
     path("tx/<int:pk>/edit/", f.tx_edit, name="tx_edit"),
     path("tx/add/", f.tx_add, name="tx_add"),
     path("undo-last-import/", transactions.undo_last_import, name="undo_last_import"),
+    path("import/pdf/<int:job_id>/", pdf_import.pdf_import_status, name="pdf_import_status"),
+    path("import/pdf/<int:job_id>/preview/", pdf_import.pdf_import_preview, name="pdf_import_preview"),
     path("data/delete-transactions/", transactions.data_delete_transactions, name="data_delete_transactions"),
     path("data/cancel-delete-transactions/", transactions.cancel_data_delete_transactions,
          name="cancel_data_delete_transactions"),

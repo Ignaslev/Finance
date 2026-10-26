@@ -77,7 +77,7 @@
     <label class="upload-dropzone">
       <span class="upload-dropzone-icon"><i class="ph ph-file-arrow-up"></i></span>
       <strong>{% trans "File (CSV/Excel)" %}</strong>
-      <span>Revolut · SEB · Swedbank</span>
+      <span>Revolut · SEB · Swedbank · {% if LANGUAGE_CODE == "lt" %}PDF iš bet kurio banko{% else %}PDF from any bank{% endif %}</span>
       <input type="file" name="file" required class="upload-control" {% if not subscription_access.has_access %}disabled{% endif %} />
     </label>
   </div>

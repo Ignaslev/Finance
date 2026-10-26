@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% if is_lt %}Skaitome išrašą{% else %}Reading statement{% endif %} · MoneyCompass{% endblock %}
+{% block content %}
+<style>
+  .pdf-wait-card { max-width: 620px; margin: 2rem auto 0; padding: 2.5rem 2rem; text-align: center; }
+  .pdf-wait-card img { width: 84px; height: auto; display: block; margin: 0 auto 1rem; }
+  .pdf-wait-title { margin: 0; color: var(--text-dark); font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  .pdf-wait-text { margin: 0.6rem auto 1.5rem; max-width: 42ch; color: var(--text-medium); line-height: 1.55; }
+  .pdf-wait-file { display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 12px; border-radius: 9px;
+    background: var(--mc-teal-pale); color: var(--text-dark); font-size: 0.85rem; font-weight: 600; word-break: break-all; }
+  .pdf-wait-bar { height: 6px; margin: 1.5rem auto 0; max-width: 320px; border-radius: 999px; background: #edf2f7; overflow: hidden; }
+  .pdf-wait-bar span { display: block; height: 100%; width: 35%; border-radius: inherit; background: var(--primary-teal);
+    animation: pdf-wait 1.6s ease-in-out infinite; }
+  @keyframes pdf-wait { 0% { transform: translateX(-100%); } 100% { transform: translateX(290%); } }
+  @media (prefers-reduced-motion: reduce) { .pdf-wait-bar span { animation: none; width: 100%; opacity: 0.4; } }
+  .pdf-wait-actions { margin-top: 1.75rem; }
+  .pdf-wait-actions .btn { background: #edf2f7; color: var(--text-medium); }
+</style>
+
+<div class="card pdf-wait-card">
+  <img src="{% static 'img/mascot.png' %}" alt="">
+  {% if job.status == "reading" %}
+    <h1 class="pdf-wait-title">{% if is_lt %}Skaitome tavo išrašą…{% else %}Reading your statement…{% endif %}</h1>
+    <p class="pdf-wait-text">
+      {% if is_lt %}Paprastai tai užtrunka 1–2 minutes. Kai baigsime, parodysime, ką radome, ir tik tada įkelsime.{% else %}This usually takes 1–2 minutes. When we're done we'll show you what we found before importing anything.{% endif %}
+    </p>
+    <span class="pdf-wait-file"><i class="ph ph-file-pdf" aria-hidden="true"></i>{{ job.filename }}</span>
+    <div class="pdf-wait-bar" aria-hidden="true"><span></span></div>
+  {% else %}
+    <h1 class="pdf-wait-title">{% if is_lt %}Nepavyko perskaityti šio PDF{% else %}We couldn't read this PDF{% endif %}</h1>
+    <p class="pdf-wait-text">
+      {% if job.error == "incomplete" %}
+        {% if is_lt %}Išrašas per ilgas vienam kartui. Įkelk trumpesnį laikotarpį, pvz. 3 mėnesius.{% else %}The statement is too long for one go. Upload a shorter period, for example 3 months.{% endif %}
+      {% elif job.status == "cancelled" %}
+        {% if is_lt %}Importavimas atšauktas.{% else %}The import was cancelled.{% endif %}
+      {% else %}
+        {% if is_lt %}Pabandyk dar kartą arba įkelk išrašą CSV formatu. Jei kartojasi, parašyk mums.{% else %}Please try again or upload the statement as CSV. If it keeps happening, let us know.{% endif %}
+      {% endif %}
+    </p>
+    <a href="{{ back_url }}" class="btn btn-primary">{% if is_lt %}Grįžti{% else %}Go back{% endif %}</a>
+  {% endif %}
+
+  {% if job.status == "reading" %}
+  <form method="post" action="{% url 'pdf_import_preview' job.pk %}" class="pdf-wait-actions">
+    {% csrf_token %}
+    <button type="submit" name="action" value="cancel" class="btn">{% if is_lt %}Atšaukti{% else %}Cancel{% endif %}</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if job.status == "reading" %}
+<script>
+  (function () {
+    const url = "{% url 'pdf_import_status' job.pk %}?format=json";
+    const started = Date.now();
+    function check() {
+      fetch(url, { headers: { "Accept": "application/json" } })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === "ready") { window.location = data.preview_url; return; }
+          if (data.status !== "reading") { window.location.reload(); return; }
+          if (Date.now() - started > 9 * 60 * 1000) { window.location.reload(); return; }
+          setTimeout(check, 3000);
+        })
+        .catch(() => setTimeout(check, 5000));
+    }
+    setTimeout(check, 3000);
+  })();
+</script>
+{% endif %}
+{% endblock %}
