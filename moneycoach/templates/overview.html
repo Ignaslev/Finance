@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n static guide_links %}
-{% block title %}{% trans "Overview" %} · MoneyCoach{% endblock %}
+{% load i18n static guide_links money %}
+{% block title %}{% trans "Overview" %} · MoneyCompass{% endblock %}
 {% block content %}
 {% get_current_language as LANGUAGE_CODE %}
 {% if not has_transactions %}
@@ -228,7 +228,7 @@
         {% guide_icon "dashboard_net_worth" %}
     </div>
     <div style="text-align:center; font-size:2.8rem; font-weight:800; color:var(--text-dark); margin-bottom:2.5rem; letter-spacing: -0.02em;">
-        {{ total_net_worth|floatformat:2 }} <span style="font-size:1.2rem; color:var(--text-medium); font-weight:500;">EUR</span>
+        {{ total_net_worth|money }}
     </div>
 
     {% if composition_bar %}
@@ -236,7 +236,7 @@
         <div style="display:flex; height:14px; width:100%; background:#edf2f7; border-radius:7px; overflow:hidden;">
             {% for seg in composition_bar %}
                 <div style="width:{{ seg.pct|stringformat:'f' }}%; background:{{ seg.color }}; transition: width 1s ease-in-out;"
-                    title="{{ seg.label }}: {{ seg.value|floatformat:0 }} EUR"></div>
+                    title="{{ seg.label }}: {{ seg.value|money:0 }}"></div>
             {% endfor %}
         </div>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; margin-top:1.2rem;">
@@ -278,7 +278,7 @@
                             <span style="background:#edf2f7; color:#4a5568; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">{% trans "Savings" %}</span>
                         {% endif %}
                     </td>
-                    <td style="text-align:right; font-weight:700;">{{ acc.effective_balance|floatformat:2 }} EUR</td>
+                    <td style="text-align:right; font-weight:700;">{{ acc.effective_balance|money }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="3" style="text-align:center; opacity:0.6; padding:2rem;">{% trans "No accounts found." %}</td></tr>
@@ -300,9 +300,13 @@
             {% if LANGUAGE_CODE|slice:":2" == "lt" %}Dienos reikšmės · paskutinės 90 dienų{% else %}Daily values · last 90 days{% endif %}
         </div>
     </div>
+    {% if net_worth_history_ready %}
     <div style="height:320px; width:100%;">
         <canvas id="netWorthChart"></canvas>
     </div>
+    {% else %}
+    <p style="opacity:0.7; padding:1rem 0 0;">{% if is_lt %}Grafikas atsiras, kai turėsime bent dviejų dienų duomenis – įkelk banko išrašą arba nustatyk sąskaitų likučius.{% else %}The chart appears once there are at least two days of data – upload a bank statement or set your account balances.{% endif %}</p>
+    {% endif %}
 </div>
 
 <div class="card dashboard-month-category-card" id="monthly-category-spending">
@@ -338,7 +342,11 @@
       <div id="monthCategoryTransactionsWrap"></div>
     </div>
   {% else %}
+    {% if ai_pending %}
+    <p style="opacity:0.7; padding:1rem 0 0;">{% if is_lt %}Operacijas dabar skirstome į kategorijas – tai užtrunka kelias minutes. Atnaujink puslapį šiek tiek vėliau.{% else %}We are sorting your transactions into categories – this takes a few minutes. Refresh the page in a moment.{% endif %}</p>
+    {% else %}
     <p style="opacity:0.7; padding:1rem 0 0;">{% trans "No spending in the selected period." %}</p>
+    {% endif %}
   {% endif %}
 </div>
 
@@ -358,7 +366,7 @@
           <div style="font-weight:600; color:#2e7d32;">{{ g.name }}</div>
         </div>
         <div style="margin-bottom:0.5rem; font-size:.95em; color:#333;">
-          {{ g.current|floatformat:2 }} / {{ g.target|floatformat:2 }} EUR
+          {{ g.current|money }} / {{ g.target|money }}
         </div>
         <div style="height:8px; background:#eef6ee; border-radius:999px; overflow:hidden; margin-bottom:0.5rem;">
           <div style="height:100%; width:{% if g.pct > 100 %}100{% else %}{{ g.pct|stringformat:'f' }}{% endif %}%; background:#2e7d32;"></div>
@@ -395,8 +403,8 @@
         <tr>
           <td>{{ r.month }}</td>
           <td>
-            {% if r.net >= 0 %}<span style="color:#2e7d32; font-weight:600;">+{{ r.net|floatformat:2 }}</span>
-            {% else %}<span style="color:#e53e3e; font-weight:600;">{{ r.net|floatformat:2 }}</span>{% endif %}
+            {% if r.net >= 0 %}<span style="color:#2e7d32; font-weight:600;">+{{ r.net|money }}</span>
+            {% else %}<span style="color:#e53e3e; font-weight:600;">{{ r.net|money }}</span>{% endif %}
           </td>
         </tr>
       {% endfor %}
@@ -457,14 +465,27 @@
       <div id="catMonthTableWrap"></div>
     </div>
   {% else %}
+    {% if ai_pending %}
+    <p style="opacity:0.7; padding:1rem 0 0;">{% if is_lt %}Operacijas dabar skirstome į kategorijas – tai užtrunka kelias minutes. Atnaujink puslapį šiek tiek vėliau.{% else %}We are sorting your transactions into categories – this takes a few minutes. Refresh the page in a moment.{% endif %}</p>
+    {% else %}
     <p style="opacity:0.7; padding:1rem 0 0;">{% trans "No spending in the selected period." %}</p>
+    {% endif %}
   {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // One money format for the whole app (same as the |money template filter).
+    function formatMoney(value, currency) {
+        const code = (currency || 'EUR').toUpperCase();
+        try {
+            return new Intl.NumberFormat(document.documentElement.lang || 'en', {style: 'currency', currency: code}).format(Number(value) || 0);
+        } catch (e) {
+            return (Number(value) || 0).toFixed(2) + ' ' + code;
+        }
+    }
     // 1. NET WORTH CHART
-    {% if balance_labels_json and balance_values_json %}
+    {% if net_worth_history_ready %}
     const ctxNW = document.getElementById('netWorthChart').getContext('2d');
     const gradNW = ctxNW.createLinearGradient(0, 0, 0, 400);
     gradNW.addColorStop(0, 'rgba(0, 206, 166, 0.25)');
@@ -580,8 +601,8 @@
                 const toDate = `${currentMonth}-${String(lastDay).padStart(2, '0')}`;
 
                 html += `<tr><td>${escapeHtml(r.merchant)}</td>
-                <td>${r.total.toFixed(2)}</td>
-                <td>${r.count}</td><td>${r.avg.toFixed(2)}</td>
+                <td>${formatMoney(r.total)}</td>
+                <td>${r.count}</td><td>${formatMoney(r.avg)}</td>
                 <td><a href="{% url 'upload' %}?q=${encodeURIComponent(r.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
             });
             html += '</tbody></table></div>';
@@ -676,7 +697,7 @@
 
           let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Date" %}</th><th>{% trans "Merchant" %}</th><th>{% trans "Account" %}</th><th style="text-align:right;">{% trans "Amount" %}</th></tr></thead><tbody>';
           rows.forEach(row => {
-            html += `<tr><td style="white-space:nowrap;">${escapeHtml(row.date)}</td><td>${escapeHtml(row.merchant)}</td><td>${escapeHtml(row.account || '-')}</td><td style="text-align:right; white-space:nowrap; font-weight:600;">${Number(row.amount).toFixed(2)} ${escapeHtml(row.currency)}</td></tr>`;
+            html += `<tr><td style="white-space:nowrap;">${escapeHtml(row.date)}</td><td>${escapeHtml(row.merchant)}</td><td>${escapeHtml(row.account || '-')}</td><td style="text-align:right; white-space:nowrap; font-weight:600;">${escapeHtml(formatMoney(row.amount, row.currency))}</td></tr>`;
           });
           html += '</tbody></table></div>';
           transactionsWrap.innerHTML = html;

@@ -68,6 +68,19 @@ class InsightsTests(TestCase):
         self.assertTrue(any("CAFFEINE ROASTERS: 7 kartai" in t for t in s["tips"]))
         self.assertTrue(any(t.startswith("Liko 1") for t in s["tips"]))
 
+    def test_frequent_spend_tip_groups_a_chains_shops(self):
+        for day, shop in ((2, "MAXIMA LT, X-646"), (3, "MAXIMA LT, X-925"), (4, "MAXIMA LT, X-646"),
+                          (5, "MAXIMA LT, X-925"), (6, "MAXIMA LT, X-646"), (7, "MAXIMA LT, X587")):
+            self._tx(date(2026, 8, day), "5", self.groceries, merchant=shop)
+        tips = insights.monthly_summary(self.user, date(2026, 8, 1), lt=True)["tips"]
+        self.assertTrue(any(t.startswith("Maxima: 6 kartai") for t in tips), tips)
+
+    def test_self_transfers_are_not_income_or_spending(self):
+        from finance.utils import is_self_transfer
+        self.assertTrue(is_self_transfer("IGNAS LEVINSKAS", "Pinigų pervedimas sau, dok. nr. 3306541949"))
+        self.assertTrue(is_self_transfer("Jonas Jonaitis", "", "Jonas", "Jonaitis"))
+        self.assertFalse(is_self_transfer("Petras Petraitis", "už vakarienę", "Jonas", "Jonaitis"))
+
     def test_partial_month_is_never_compared(self):
         s = insights.monthly_summary(self.user, date(2026, 10, 1), lt=True)
 
@@ -120,6 +133,14 @@ class InsightsTests(TestCase):
         self.assertContains(page, "CAFFEINE ROASTERS: 7 kartai")
         self.assertContains(page, 'id="week-overview"')
 
+    def test_overview_says_categorizing_while_the_ai_job_waits(self):
+        from finance.models import AiRun
+        AiRun.objects.create(user=self.user, kind="autocategorize", mode="new", status="queued")
+        Transaction.objects.filter(user=self.user).update(category_fk=None, category=None)
+        self.client.force_login(self.user)
+        page = self.client.get(reverse("overview"))
+        self.assertContains(page, "Operacijas dabar skirstome į kategorijas")
+
     def test_reports_page_shows_sample_data(self):
         Transaction.objects.filter(user=self.user).delete()
         add_sample_data(self.user)
@@ -151,3 +172,26 @@ class InsightsTests(TestCase):
         with patch("finance.views.reports._advisor_call_model", return_value={}) as call:
             self.client.post(reverse("reports_generate"), {"type": "monthly", "start": "2026-09-01"})
         call.assert_not_called()
+
+
+@override_settings(ALLOWED_HOSTS=["testserver"])
+class MoneyFormatTests(TestCase):
+    def test_one_format_in_both_languages(self):
+        from django.template import Context, Template
+        from django.utils import translation
+
+        tpl = Template("{% load money %}{{ a|money }}|{{ a|money:0 }}|{{ b|money }}|{{ c|money:'USD' }}")
+        ctx = Context({"a": Decimal("1240.5"), "b": -12.345, "c": 3})
+        with translation.override("lt"):
+            self.assertEqual(tpl.render(ctx), f"1{NBSP}240,50{NBSP}€|1{NBSP}241{NBSP}€|−12,35{NBSP}€|3,00{NBSP}USD")
+        with translation.override("en"):
+            self.assertEqual(tpl.render(ctx), f"€1,240.50|€1,241|−€12.35|3.00{NBSP}USD")
+        self.assertEqual(insights.money(1240.5, True), f"1{NBSP}241{NBSP}€")
+
+    def test_new_account_sees_a_hint_instead_of_an_empty_net_worth_chart(self):
+        user = get_user_model().objects.create_user(username="nw@example.test", email="nw@example.test",
+                                                    password="StrongPass123!")
+        self.client.force_login(user)
+        response = self.client.get(reverse("overview"))
+        self.assertFalse(response.context["net_worth_history_ready"])
+        self.assertNotContains(response, 'id="netWorthChart"')

@@ -80,7 +80,8 @@ class CategoryCashFlowTests(TestCase):
         self.assertEqual(json.loads(response.context["chart_spending_json"]), [400.0])
         self.assertNotIn("chart_balance_json", response.context)
         self.assertNotContains(response, "type: 'line'")
-        self.assertEqual(response.context["runway_months"], 22.5)
+        # 400 spent within the user's first month of data -> ~400/month, not 400 spread over 3 months.
+        self.assertAlmostEqual(response.context["runway_months"], 3000 / (400 * 30.44 / 30), places=2)
         self.assertNotContains(response, "Balance by category")
         self.assertNotContains(response, "Category transactions")
         self.assertNotContains(response, "Customer payment")
@@ -88,6 +89,13 @@ class CategoryCashFlowTests(TestCase):
         self.assertNotContains(response, "Own transfer")
         self.assertContains(response, 'class="ph ph-magnifying-glass"')
         self.assertNotContains(response, 'class="ph ph-toolbox"')
+
+    def test_runway_ignores_days_after_the_last_upload(self):
+        Transaction.objects.filter(user=self.user).update(date=timezone.localdate() - timedelta(days=50))
+        baseline = self.client.get(reverse("tools")).context["avg_monthly_burn"]
+        Transaction.objects.filter(user=self.user).update(date=timezone.localdate() - timedelta(days=10))
+        # Same rows, uploaded 40 days earlier: the empty days since then must not dilute the average.
+        self.assertAlmostEqual(self.client.get(reverse("tools")).context["avg_monthly_burn"], baseline, places=2)
 
     def test_runway_custom_view_is_scoped_to_the_users_own_choices(self):
         self._transaction(
@@ -117,7 +125,7 @@ class CategoryCashFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["is_simulated"])
-        self.assertEqual(response.context["runway_months"], 30.0)
+        self.assertAlmostEqual(response.context["runway_months"], 3000 / (300 * 30.44 / 30), places=2)
         self.assertNotContains(response, "Other account")
 
     def test_tools_does_not_accept_another_users_category(self):

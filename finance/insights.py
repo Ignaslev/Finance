@@ -25,13 +25,24 @@ MONTH_SLACK = 3                # days of slack when deciding if data covers a wh
 WEEK_SLACK = 1
 
 
-def money(amount, lt):
-    """Whole euros: '1 240 €' in Lithuanian, '€1,240' in English."""
-    n = int(Decimal(amount or 0).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-    sign = "−" if n < 0 else ""
+def format_money(amount, lt, decimals=2, currency="EUR"):
+    """The one money format of the app: '1 240,50 €' in Lithuanian, '€1,240.50' in English.
+
+    Other currencies keep their code ('12,00 USD' / '12.00 USD'). Negative amounts get a real minus sign.
+    """
+    value = Decimal(str(amount or 0)).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
+    sign = "\u2212" if value < 0 else ""
+    digits = f"{abs(value):,.{decimals}f}"
+    currency = (currency or "EUR").upper()
     if lt:
-        return f"{sign}{abs(n):,}".replace(",", "\u00a0") + "\u00a0€"
-    return f"{sign}€{abs(n):,}"
+        digits = digits.replace(",", "\u00a0").replace(".", ",")
+        return f"{sign}{digits}\u00a0{'€' if currency == 'EUR' else currency}"
+    return f"{sign}€{digits}" if currency == "EUR" else f"{sign}{digits}\u00a0{currency}"
+
+
+def money(amount, lt):
+    """Whole euros, for summaries: '1 240 €' in Lithuanian, '€1,240' in English."""
+    return format_money(amount, lt, decimals=0)
 
 
 def pct(value, lt):
@@ -171,25 +182,30 @@ def _change_text(change_pct, kind, prev_start, lt):
 
 
 def _frequent_small_spend(out, min_count):
-    """The merchant paid most often in small amounts, e.g. the daily coffee."""
-    groups = defaultdict(lambda: {"count": 0, "total": Decimal("0"), "label": ""})
+    """The merchant paid most often in small amounts, e.g. the daily coffee.
+
+    Grouped by brand, so a chain's shops ("MAXIMA LT, X-646", "MAXIMA LT, X-925") count together.
+    """
+    groups = defaultdict(lambda: {"count": 0, "total": Decimal("0"), "label": "", "shops": set()})
     for merchant, amount in out.values_list("merchant", "amount"):
-        key = _merchant_key(merchant)[0]
-        if not key:
+        full, brand = _merchant_key(merchant)
+        if not brand:
             continue
-        g = groups[key]
+        g = groups[brand]
         g["count"] += 1
         g["total"] += amount or Decimal("0")
+        g["shops"].add(full)
         label = (merchant or "").strip()
         if not g["label"] or len(label) < len(g["label"]):
             g["label"] = label
-        g["key"] = key
+        g["key"] = brand
     best = None
     for g in groups.values():
         if g["count"] >= min_count and g["total"] / g["count"] <= Decimal("15") and g["total"] >= Decimal("20"):
             if best is None or g["count"] > best["count"]:
                 best = g
-    if best and len(best["label"]) > 40:  # raw bank text with card masks etc.
+    # Several shops of one chain, or raw bank text with card masks: name the brand instead.
+    if best and (len(best["shops"]) > 1 or len(best["label"]) > 40):
         best["label"] = best["key"].title()
     return best
 

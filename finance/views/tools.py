@@ -4,7 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max, Min, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import render
 from django.utils import timezone
@@ -143,12 +143,24 @@ def tools(request):
         total_net_worth += balance
 
     today = timezone.localdate()
+    # The 90-day window covers the data the user actually has: it ends at their latest transaction
+    # (a statement uploaded 40 days ago must not have 40 empty days averaged in) and starts no earlier
+    # than their first one (one uploaded month must not be spread over three).
+    user_dates = Transaction.objects.filter(user=request.user, is_deleted=False).aggregate(
+        first=Min("date"), last=Max("date"))
+    window_end = min(today, user_dates["last"]) if user_dates["last"] else today
+    window_start = window_end - timedelta(days=89)
+    if user_dates["first"]:
+        window_start = max(window_start, user_dates["first"])
+    covered_days = min(90, max(30, (window_end - window_start).days + 1))
+    runway_window_months = Decimal(covered_days) / Decimal("30.44")
     spend_qs = Transaction.objects.filter(
         user=request.user,
         is_deleted=False,
         is_internal_transfer=False,
         in_out=Transaction.OUT,
-        date__gte=today - timedelta(days=90),
+        date__gte=window_end - timedelta(days=89),
+        date__lte=window_end,
     )
     excluded_category_ids = {
         category.id for category in all_categories
@@ -158,7 +170,7 @@ def tools(request):
         spend_qs = spend_qs.exclude(category_fk__isnull=True)
 
     recent_spend = spend_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    average_monthly_burn = recent_spend / Decimal("3.0")
+    average_monthly_burn = recent_spend / runway_window_months
     runway_months = (
         total_net_worth / average_monthly_burn
         if average_monthly_burn > 0
@@ -195,6 +207,7 @@ def tools(request):
         "chart_spending_json": json.dumps(month_spending),
         "runway_months": float(runway_months),
         "avg_monthly_burn": float(average_monthly_burn),
+        "runway_window_months": round(float(runway_window_months)),
         "mom_diff": float(this_month_spend - last_month_spend),
         "all_sources_sim": runway_sources,
         "all_cats_sim": all_categories,

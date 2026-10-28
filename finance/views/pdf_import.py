@@ -14,8 +14,9 @@ from django.utils.translation import get_language
 from django.views.decorators.http import require_POST
 from openai import APIError
 
-from finance.models import PdfImportJob
-from finance.pdf_import import build_preview, cancel_job, refresh_job, start_pdf_read
+from finance.models import MoneySource, PdfImportJob, Transaction
+from finance.pdf_import import build_preview, cancel_job, refresh_job, start_pdf_read, statement_bank
+from finance.sample_data import sample_source_ids
 from finance.tracking import queue_ga_event, track_upload
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,16 @@ def pdf_import_preview(request, job_id):
             messages.info(request, "Importavimas atšauktas." if _lt() else "Import cancelled.")
             return redirect(back_url)
         if action == "import" and job.status == PdfImportJob.STATUS_READY:
+            target = _import_target(request, job, request.POST.get("target"))
+            if target is False:
+                bank = statement_bank(job)
+                target = MoneySource.objects.create(
+                    user=request.user, type="bank",
+                    name=bank or ("Nauja sąskaita" if _lt() else "New account"),
+                )
+            if target != job.money_source:
+                job.money_source = target
+                job.save(update_fields=["money_source", "updated_at"])
             return _confirm_import(request, job, back_url)
         return redirect("pdf_import_status", job_id=job.pk)
 
@@ -122,7 +133,8 @@ def pdf_import_preview(request, job_id):
     if job.status != PdfImportJob.STATUS_READY:
         return redirect(back_url)
 
-    preview = build_preview(job)
+    target = _import_target(request, job, request.GET.get("target"))
+    preview = build_preview(job, money_source=target)
     return render(request, "pdf_import_preview.html", {
         "job": job,
         "p": preview,
@@ -130,7 +142,37 @@ def pdf_import_preview(request, job_id):
         "more_rows": max(0, preview["row_count"] - PREVIEW_ROWS),
         "is_lt": _lt(),
         "back_url": back_url,
+        "accounts": _accounts(request.user),
+        "target": "new" if target is False else target.pk,
+        "bank": statement_bank(job),
     })
+
+
+def _accounts(user):
+    return MoneySource.objects.filter(user=user, is_active=True).exclude(id__in=sample_source_ids(user)).order_by("name")
+
+
+def _import_target(request, job, choice):
+    """The account to import into: the user's choice, else a sensible default (False = new account).
+
+    A statement from a bank none of the user's accounts is named after, while the chosen account
+    already holds another statement's data, most likely belongs in its own account: SEB and
+    Swedbank rows mixed in one account would make its balance wrong.
+    """
+    if choice == "new":
+        return False
+    if choice and str(choice).isdigit():
+        chosen = _accounts(request.user).filter(pk=int(choice)).first()
+        if chosen:
+            return chosen
+    bank = statement_bank(job).casefold()
+    if bank:
+        named = [a for a in _accounts(request.user) if bank in a.name.casefold()]
+        if named:
+            return named[0]
+        if Transaction.objects.filter(user=request.user, money_source=job.money_source, is_deleted=False).exists():
+            return False
+    return job.money_source
 
 
 def _confirm_import(request, job, back_url):

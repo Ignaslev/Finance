@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Low-confidence review" %} · MoneyCoach{% endblock %}
+{% load i18n money %}
+{% block title %}{% trans "Low-confidence review" %} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -48,7 +48,7 @@
                                        aria-label="{% if LANG == 'lt' %}Išsaugoti šią eilutę{% else %}Save this row{% endif %}"></td>
                             <td>{{ t.date|date:"Y-m-d" }}</td>
                             <td>{{ t.merchant }}</td>
-                            <td>{{ t.amount }} {{ t.currency }}</td>
+                            <td>{{ t.amount|money:t.currency }}</td>
                             <td>{{ t.in_out }}</td>
                             <td>{{ t.notes }}</td>
                             <td>

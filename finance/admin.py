@@ -46,7 +46,6 @@ class UserProfileAdmin(admin.ModelAdmin):
         "acquisition_content",
     )
     readonly_fields = (
-        "android_webhook_secret",
         "stripe_customer_id",
         "stripe_subscription_id",
         "stripe_price_id",
@@ -65,7 +64,8 @@ class UserProfileAdmin(admin.ModelAdmin):
         "acquisition_referrer",
     )
     fieldsets = (
-        (None, {"fields": ("user", "preferred_language", "default_import_source")}),
+        # No default_import_source here: its dropdown would list every user's bank accounts.
+        (None, {"fields": ("user", "preferred_language")}),
         ("Access", {
             "fields": (
                 "subscription_status",
@@ -92,7 +92,7 @@ class UserProfileAdmin(admin.ModelAdmin):
                 "subscription_updated_at",
             )
         }),
-        ("Preferences", {"fields": ("exclude_investment_tax", "android_webhook_secret")}),
+        ("Preferences", {"fields": ("exclude_investment_tax",)}),
         ("First-touch acquisition", {
             "fields": (
                 "acquisition_source",

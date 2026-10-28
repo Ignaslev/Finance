@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Uncategorized" %} · Money Compass{% endblock %}
+{% load i18n money %}
+{% block title %}{% trans "Uncategorized" %} · MoneyCompass{% endblock %}
 {% block content %}
 
 <div class="flex justify-between items-center mb-4" style="margin-top:2rem;">
@@ -24,7 +24,7 @@
             <tr>
                 <td>{{ t.date }}</td>
                 <td>{{ t.merchant }}</td>
-                <td>{{ t.amount }} {{ t.currency }}</td>
+                <td>{{ t.amount|money:t.currency }}</td>
                 <td><a href="/tx/{{ t.id }}/edit/?next={{ request.get_full_path }}" class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.8rem;">{% trans "Categorize" %}</a></td>
             </tr>
         {% endfor %}

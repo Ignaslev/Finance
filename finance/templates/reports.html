@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
-{% block title %}{% trans "Reports" %} · Money Compass{% endblock %}
+{% load i18n guide_links money %}
+{% block title %}{% trans "Reports" %} · MoneyCompass{% endblock %}
 {% block content %}
 <div class="reports-page">
 
@@ -144,7 +144,7 @@
              <div style="margin-top:1rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem;">
                 <div style="background:white; padding:1rem; border-radius:8px; border:1px solid #edf2f7;">
                     <div class="text-medium" style="font-size:0.85rem;">{% trans "Net Savings" %}</div>
-                    <div class="text-teal font-bold" style="font-size:1.1rem;">{{ r.key_metrics.net|floatformat:2 }} EUR</div>
+                    <div class="text-teal font-bold" style="font-size:1.1rem;">{{ r.key_metrics.net|money }}</div>
                 </div>
              </div>
           {% endif %}
@@ -210,20 +210,20 @@
                    {{ row.snapshot1_date|date:"M d" }} → {{ row.snapshot2_date|date:"M d" }}
                  </div>
               </td>
-              <td>{{ row.app_calculated_end|floatformat:2 }}</td>
-              <td><strong>{{ row.snapshot2_amount|floatformat:2 }}</strong></td>
+              <td>{{ row.app_calculated_end|money }}</td>
+              <td><strong>{{ row.snapshot2_amount|money }}</strong></td>
               <td>
                 {% if row.diff < 0 %}
-                   <span style="color:#e53e3e; font-weight:bold;">{{ row.diff|floatformat:2 }}</span>
+                   <span style="color:#e53e3e; font-weight:bold;">{{ row.diff|money }}</span>
                 {% else %}
-                   <span style="color:var(--primary-teal); font-weight:bold;">+{{ row.diff|floatformat:2 }}</span>
+                   <span style="color:var(--primary-teal); font-weight:bold;">+{{ row.diff|money }}</span>
                 {% endif %}
               </td>
               <td style="max-width:250px; color:var(--text-medium);">
                   {{ row.note }}
                   {% if row.largest_out.amount > 0 %}
                     <div style="font-size:0.8em; margin-top:0.2rem;">
-                      {% trans "Biggest spend:" %} {{ row.largest_out.merchant }} ({{ row.largest_out.amount }})
+                      {% trans "Biggest spend:" %} {{ row.largest_out.merchant }} ({{ row.largest_out.amount|money }})
                     </div>
                   {% endif %}
               </td>

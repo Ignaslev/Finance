@@ -13,7 +13,7 @@ import json, os
 from finance.category_analytics import build_spending_category_analytics
 from finance.investments import current_investment_balance
 from django.contrib.admin.views.decorators import staff_member_required
-from finance.models import MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, SavingsGoal, UserProfile
+from finance.models import AiRun, MoneySource, Transaction, BalanceSnapshot, PortfolioSnapshot, SavingsGoal, UserProfile
 
 
 @staff_member_required
@@ -162,6 +162,8 @@ def overview(request):
                 graph_dates.append(d.strftime("%b %d"))
                 graph_values.append(float(day_total))
 
+    # A single point draws an empty chart; the template shows a hint until there are two days.
+    net_worth_history_ready = len(graph_values) >= 2
     if not graph_values:
         graph_dates = ["Now"]
         graph_values = [float(total_net_worth)]
@@ -235,6 +237,7 @@ def overview(request):
         "composition_bar": composition_bar,
         "balance_labels_json": json.dumps(graph_dates),
         "balance_values_json": json.dumps(graph_values),
+        "net_worth_history_ready": net_worth_history_ready,
 
         "accounts_with_balances": accounts,
         "total_accounts_balance": float(total_net_worth),
@@ -258,6 +261,8 @@ def overview(request):
         # Empty accounts get the first-run upload screen instead of empty charts.
         "is_lt": (get_language() or "").startswith("lt"),
         "has_transactions": has_transactions,
+        # Right after an upload the AI job is still waiting/running: say so instead of "no spending".
+        "ai_pending": AiRun.objects.filter(user=request.user, status__in=("queued", "running")).exists(),
         "hide_onboarding_banner": not has_transactions,
 
         "now_val": timezone.now(),

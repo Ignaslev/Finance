@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Untracked income sources" %} · Money Compass{% endblock %}
+{% load i18n money %}
+{% block title %}{% trans "Untracked income sources" %} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -29,7 +29,7 @@
                     <tr>
                         <td class="font-bold">{{ row.name }}</td>
                         <td>{{ row.count }}</td>
-                        <td>{{ row.total_earned|floatformat:2 }}</td>
+                        <td>{{ row.total_earned|money }}</td>
                         <td>{{ row.months_active }}</td>
                         <td>{{ row.first_received|date:"Y-m-d" }}</td>
                         <td>{{ row.last_received|date:"Y-m-d" }}</td>

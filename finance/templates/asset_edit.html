@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Edit Asset" %} · Money Compass{% endblock %}
+{% load i18n money %}
+{% block title %}{% trans "Edit Asset" %} · MoneyCompass{% endblock %}
 {% block content %}
 
 <h2 style="margin-top:2rem;">{% trans "Edit Asset" %}</h2>
@@ -13,7 +13,7 @@
         </div>
         <div style="text-align:right;">
             <div class="text-medium" style="font-size:0.8rem;">{% trans "Current Price" %}</div>
-            <div style="font-weight:600;">{{ holding.asset.current_price_eur|floatformat:2 }} EUR</div>
+            <div style="font-weight:600;">{{ holding.asset.current_price_eur|money }}</div>
         </div>
     </div>
 

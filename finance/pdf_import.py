@@ -8,6 +8,7 @@ import helper.
 import base64
 import json
 import os
+import re
 from collections import Counter
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -23,8 +24,9 @@ MAX_OUTPUT_TOKENS = 64000  # enough for roughly a year of rows
 STATEMENT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["opening_balance", "closing_balance", "currency", "rows"],
+    "required": ["bank", "opening_balance", "closing_balance", "currency", "rows"],
     "properties": {
+        "bank": {"type": ["string", "null"], "description": "the bank's name, e.g. Swedbank, SEB, Luminor"},
         "opening_balance": {"type": ["number", "null"]},
         "closing_balance": {"type": ["number", "null"]},
         "currency": {"type": "string"},
@@ -53,12 +55,15 @@ INSTRUCTIONS = (
     "opening/closing balance ('Likutis pradžiai/pabaigai'), turnover ('Apyvarta') and page totals.\n"
     "- date: the booking/operation date as YYYY-MM-DD.\n"
     "- merchant: only the shop or counterparty name, without card numbers, dates, 'PIRKINYS', "
-    "'Kortelės operacija' or terminal ids (e.g. 'MAXIMA X, VILNIUS').\n"
+    "'Kortelės operacija' or terminal ids (e.g. 'MAXIMA X, VILNIUS'). Rows without a counterparty (bank fees, "
+    "cash withdrawals, interest) get a short label such as 'Banko mokestis' or 'Grynieji pinigai' - never the "
+    "row number, reference numbers or amount.\n"
     "- description: the full row text as printed.\n"
     "- amount: positive number; direction 'out' for money leaving the account (debit, minus sign, D), "
     "'in' for money received (credit, K, C).\n"
     "- currency: the row's currency (usually EUR).\n"
-    "Also return the statement's opening and closing balance for this account if printed, otherwise null. "
+    "Also return the bank's name and the statement's opening and closing balance for this account if "
+    "printed, otherwise null. "
     "Never invent rows or balances."
 )
 
@@ -162,6 +167,31 @@ def _money(value):
         return None
 
 
+# A printed statement line, e.g. "2 2026-08-01 MP banko mokestis 2026080100497342 -0.41 TT".
+_RAW_LINE_START = re.compile(r"^\d{1,4}\s+\d{4}-\d{2}-\d{2}\s")
+_LABEL_NOISE = [
+    re.compile(r"^\d{1,4}\s+\d{4}-\d{2}-\d{2}\s+"),          # row number + date
+    re.compile(r"\b\d{4,6}\*{4,}\d{4}\b"),                    # card mask 516793******3619
+    re.compile(r"\b\d{2}\.\d{2}\.\d{2,4}\b|\b\d{1,2}:\d{2}\b"),  # 06.08.26 19:52
+    re.compile(r"-?\d+[.,]\d{2}\s*(?:EUR|USD|GBP)?"),         # amounts
+    re.compile(r"\(\d+\)|\b\d{10,}\b"),                       # (511732), reference numbers
+    re.compile(r"\s+[A-Z]{1,2}$"),                            # trailing type code (TT, M, K)
+]
+
+
+def _short_label(text: str) -> str:
+    """Readable merchant for rows the model gave no counterparty for (fees, cash withdrawals)."""
+    label = text or ""
+    for pattern in _LABEL_NOISE:
+        label = pattern.sub(" ", label)
+    label = re.sub(r"\s{2,}", " ", label).strip(" ,;-")
+    return label[:60].strip()
+
+
+def statement_bank(job: PdfImportJob) -> str:
+    return str((job.result or {}).get("bank") or "").strip()[:60]
+
+
 def parsed_rows(job: PdfImportJob) -> tuple[list[dict], int]:
     """Strictly parse stored rows. Returns (rows, unreadable_count). Never guesses a date."""
     data = job.result or {}
@@ -180,7 +210,9 @@ def parsed_rows(job: PdfImportJob) -> tuple[list[dict], int]:
             unreadable += 1
             continue
         description = str(r.get("description") or "").strip()
-        merchant = str(r.get("merchant") or "").strip() or description
+        merchant = str(r.get("merchant") or "").strip()
+        if not merchant or merchant == description or _RAW_LINE_START.match(merchant):
+            merchant = _short_label(merchant or description) or description
         # Identical rows (two coffees, same day) would share one import fingerprint and the second
         # would be dropped; number repeats within this file. Deterministic, so re-imports still dedupe.
         seen[(day, amount, direction, description)] += 1
@@ -198,16 +230,18 @@ def parsed_rows(job: PdfImportJob) -> tuple[list[dict], int]:
     return rows, unreadable
 
 
-def _split_duplicates(job: PdfImportJob, rows: list[dict]) -> tuple[list[dict], int]:
-    """Skip rows already stored for this account, counting identical rows.
+def _split_duplicates(job: PdfImportJob, rows: list[dict], money_source=None) -> tuple[list[dict], int]:
+    """Skip rows already stored for the target account, counting identical rows.
 
     A PDF and a CSV of the same month describe rows differently, so match on date, amount,
     currency and direction. Two identical coffees on one day are both real: only as many PDF rows
-    are skipped as the account already has.
+    are skipped as the account already has. money_source=False means a new, empty account.
     """
+    if money_source is False:
+        return list(rows), 0
     stored = (
         Transaction.objects
-        .filter(user=job.user, money_source=job.money_source, is_deleted=False)
+        .filter(user=job.user, money_source=money_source or job.money_source, is_deleted=False)
         .values_list("date", "amount", "currency", "in_out")
     )
     existing = Counter((d, _money(a), (c or "EUR"), io) for d, a, c, io in stored)
@@ -222,9 +256,10 @@ def _split_duplicates(job: PdfImportJob, rows: list[dict]) -> tuple[list[dict], 
     return fresh, duplicates
 
 
-def build_preview(job: PdfImportJob) -> dict:
+def build_preview(job: PdfImportJob, money_source=None) -> dict:
+    """money_source: the account to import into (default the job's; False = a new account)."""
     rows, unreadable = parsed_rows(job)
-    fresh, duplicates = _split_duplicates(job, rows)
+    fresh, duplicates = _split_duplicates(job, rows, money_source)
     data = job.result or {}
     total_in = sum((r["amount"] for r in rows if r["in_out"] == "in"), Decimal("0"))
     total_out = sum((r["amount"] for r in rows if r["in_out"] == "out"), Decimal("0"))

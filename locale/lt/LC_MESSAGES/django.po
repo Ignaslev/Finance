@@ -16,7 +16,7 @@ msgstr ""
 # --- Onboarding banner ---
 #: finance/context_processors.py:71
 msgid "Welcome! Let’s get you set up. First, check your categories, edit or add what you need."
-msgstr "Sveiki! Pradekime nuo paruosimo. Pirmiausia perziurekite kategorijas, pakoreguokite arba pridekite, ko reikia."
+msgstr "Sveiki! Pradėkime nuo paruošimo. Pirmiausia peržiūrėkite kategorijas, pakoreguokite arba pridėkite, ko reikia."
 
 #: finance/context_processors.py:72
 msgid "Open Categories"
@@ -32,7 +32,7 @@ msgstr "Eiti į įkėlimą"
 
 #: finance/context_processors.py:95
 msgid "Now set a manual balance snapshot so we have a reference point for balances."
-msgstr "Dabar nustatykite rankini likucio momentini irasa, kad turetume atskaitos taska likuciams."
+msgstr "Dabar nustatykite rankinį likučio momentinį įrašą, kad turėtume atskaitos tašką likučiams."
 
 msgid "Now enter the current balance in your account so the app can perform calculations."
 msgstr "Dabar įrašykite esamą balansą jūsų sąskaitoje, kad aplikacija galėtų atlikti skaičiavimus."
@@ -57,7 +57,7 @@ msgstr "Mokyti AI"
 
 #: finance/context_processors.py:121
 msgid "You're ready to auto-categorize. Keep an eye on AI results and correct anything — it will keep improving!"
-msgstr "Viskas paruosta automatiniam kategorizavimui. Stebekite AI rezultatus ir prireikus pakoreguokite - taip jis vis geres!"
+msgstr "Viskas paruošta automatiniam kategorizavimui. Stebėkite AI rezultatus ir prireikus pakoreguokite – taip jis vis gerės!"
 
 #: finance/models.py:407 moneycoach/settings.py:134
 msgid "Lithuanian"
@@ -798,7 +798,7 @@ msgstr "Kalba"
 
 #: finance/templates/profile.html:425
 msgid "Choose your default app language. Reports will be generated in this language too."
-msgstr "Pasirinkite numatytaja programos kalba. Ataskaitos taip pat bus generuojamos sia kalba."
+msgstr "Pasirinkite numatytąją programos kalbą. Ataskaitos taip pat bus generuojamos šia kalba."
 
 #: finance/templates/register.html:7
 #: moneycoach/templates/accounts/register.html:123
@@ -1045,7 +1045,7 @@ msgstr "Rasti pajamų šaltiniai"
 
 #: finance/templates/review_income_sources.html:10
 msgid "These are income sources seen in only one month so far. Review and decide which ones to track."
-msgstr "Tai pajamu saltiniai, kol kas matyti tik viena menesi. Perziurekite ir nuspreskite, kuriuos sekti."
+msgstr "Tai pajamų šaltiniai, kol kas matyti tik vieną mėnesį. Peržiūrėkite ir nuspręskite, kuriuos sekti."
 
 #: finance/templates/review_income_sources.html:15
 #: finance/templates/review_low.html:11
@@ -1253,7 +1253,7 @@ msgstr "pakeista"
 
 #: finance/templates/review_low.html:215
 msgid "No changes selected."
-msgstr "Nepasirinkta jokiu pakeitimu."
+msgstr "Nepasirinkta jokių pakeitimų."
 
 #: finance/templates/review_low.html:227
 msgid "Clear all saved selections?"
@@ -1271,7 +1271,7 @@ msgstr "Rastos prenumeratos"
 
 #: finance/templates/review_subscriptions.html:10
 msgid "These are likely subscriptions detected from recurring outgoing transactions. Review and decide which ones to track."
-msgstr "Tai galimos prenumeratos, aptiktos pagal pasikartojancias iseinancias operacijas. Perziurekite ir nuspreskite, kurias sekti."
+msgstr "Tai galimos prenumeratos, aptiktos pagal pasikartojančias išeinančias operacijas. Peržiūrėkite ir nuspręskite, kurias sekti."
 
 #: finance/templates/review_subscriptions.html:29
 #: finance/templates/statistics.html:250 finance/templates/statistics.html:307
@@ -1567,7 +1567,7 @@ msgstr "Išgyvenimo Simuliatorius"
 
 #: finance/templates/statistics.html:551
 msgid "Select which assets (Net Worth) and which expenses (Burn Rate) to include in the calculation."
-msgstr "Pasirinkite, koki turta (grynaja verte) ir kokias islaidas (islaidu tempa) itraukti i skaiciavima."
+msgstr "Pasirinkite, kokį turtą (grynąją vertę) ir kokias išlaidas (išlaidų tempą) įtraukti į skaičiavimą."
 
 #: finance/templates/statistics.html:559
 msgid "Include Assets"
@@ -1615,7 +1615,7 @@ msgstr "Grįžti į žemo patikimumo"
 
 #: finance/templates/teach_ai.html:9
 msgid "Pick a category per merchant. This applies to all matching uncategorized transactions."
-msgstr "Pasirinkite kategorija kiekvienam gavejui. Ji bus pritaikyta visoms atitinkancioms nekategorizuotoms operacijoms."
+msgstr "Pasirinkite kategoriją kiekvienam gavėjui. Ji bus pritaikyta visoms atitinkančioms nekategorizuotoms operacijoms."
 
 #: finance/templates/teach_ai.html:19 finance/templates/tx_add.html:73
 #: finance/templates/upload.html:137
@@ -1691,7 +1691,7 @@ msgstr "Ištrinti operaciją"
 
 #: finance/templates/tx_edit.html:64
 msgid "Deleting hides it from lists and charts, and prevents re-importing the same row. You can restore it later from"
-msgstr "Istrynus operacija paslepiama sarasuose ir grafikuose, taip pat neleidziama is naujo importuoti tos pacios eilutes. Veliau ja galite atkurti is"
+msgstr "Ištrynus operacija paslepiama sąrašuose ir grafikuose, taip pat neleidžiama iš naujo importuoti tos pačios eilutės. Vėliau ją galite atkurti iš"
 
 #: finance/templates/tx_edit.html:70
 msgid "Delete this transaction?"
@@ -1715,7 +1715,7 @@ msgstr "Viskas sutvarkyta! Nėra nekategorizuotų operacijų."
 
 #: finance/templates/untracked_income_sources.html:10
 msgid "These income sources were removed from tracking in the Income Sources statistic. You can track them again anytime."
-msgstr "Sie pajamu saltiniai pasalinti is Pajamu saltiniu statistikos. Galite juos vel sekti bet kada."
+msgstr "Šie pajamų šaltiniai pašalinti iš Pajamų šaltinių statistikos. Galite juos vėl sekti bet kada."
 
 #: finance/templates/untracked_income_sources.html:42
 #: finance/templates/untracked_subscriptions.html:46
@@ -1729,7 +1729,7 @@ msgstr "Nesekamų pajamų šaltinių nėra."
 
 #: finance/templates/untracked_subscriptions.html:14
 msgid "These subscriptions were removed from tracking. You can track them again anytime."
-msgstr "Sios prenumeratos pasalintos is sekimo. Galite jas vel sekti bet kada."
+msgstr "Šios prenumeratos pašalintos iš sekimo. Galite jas vėl sekti bet kada."
 
 #: finance/templates/untracked_subscriptions.html:70
 msgid "No untracked subscriptions."
@@ -2029,16 +2029,16 @@ msgstr "Rankinis likutis išvalytas."
 
 #: finance/views/settings.py:275
 msgid "Manual balance saved and an initial snapshot was recorded."
-msgstr "Rankinis likutis išsaugotas ir įrašytas pradinis „snapshot“."
+msgstr "Likutis išsaugotas."
 
 #: finance/views/settings.py:281
 #, python-format
 msgid "Manual balance saved. Anomaly recorded: snapshot vs. transactions differ by %(diff)s EUR."
-msgstr "Rankinis likutis issaugotas. Uzfiksuota anomalija: momentinis likutis nuo operaciju skiriasi %(diff)s EUR."
+msgstr "Rankinis likutis išsaugotas. Užfiksuota anomalija: momentinis likutis nuo operacijų skiriasi %(diff)s EUR."
 
 #: finance/views/settings.py:285
 msgid "Manual balance saved and a global snapshot was recorded."
-msgstr "Rankinis likutis išsaugotas ir įrašytas globalus „snapshot“."
+msgstr "Likutis išsaugotas."
 
 #: finance/views/settings.py:287
 msgid "Enter a valid number."
@@ -2229,7 +2229,7 @@ msgstr "Uždaryti"
 
 #: moneycoach/templates/overview.html:3
 msgid "Overview"
-msgstr "Apzvalga"
+msgstr "Apžvalga"
 
 #: moneycoach/templates/overview.html:40
 msgid "Accounts & Assets"
@@ -2416,7 +2416,7 @@ msgstr "Investicija"
 
 # Added by Codex i18n sweep
 msgid "Based on average spending across %(start)s to %(end)s."
-msgstr "Remiantis vidutinemis islaidomis nuo %(start)s iki %(end)s."
+msgstr "Remiantis vidutinėmis išlaidomis nuo %(start)s iki %(end)s."
 
 # Added by Codex i18n sweep
 msgid "Choose a valid type (bug or idea)."
@@ -2456,7 +2456,7 @@ msgstr "Sąskaita nerasta arba neaktyvi."
 
 # Added by Codex i18n sweep
 msgid "You can have at most %(count)s categories."
-msgstr "Galite tureti daugiausia %(count)s kategoriju."
+msgstr "Galite turėti daugiausia %(count)s kategorijų."
 
 # Added by Codex i18n sweep
 msgid "You can have at most %(count)s accounts."
@@ -2464,7 +2464,7 @@ msgstr "Galite turėti daugiausia %(count)s sąskaitų."
 
 # Added by Codex i18n sweep
 msgid "You can have at most %(count)s goals."
-msgstr "Galite tureti daugiausia %(count)s tikslu."
+msgstr "Galite turėti daugiausia %(count)s tikslų."
 
 # Added by Codex i18n sweep
 msgid "\"Other\" cannot be deleted."
@@ -2472,7 +2472,7 @@ msgstr "Kategorijos „Kita“ ištrinti negalima."
 
 # Added by Codex i18n sweep
 msgid "Another account named \"%(name)s\" already exists."
-msgstr "Saskaita pavadinimu \"%(name)s\" jau yra."
+msgstr "Sąskaita pavadinimu \"%(name)s\" jau yra."
 
 # Added by Codex i18n sweep
 msgid "%(status)s \"%(name)s\"."
@@ -2488,7 +2488,7 @@ msgstr "Nuimtas limitas kategorijai \"%(name)s\"."
 
 # Added by Codex i18n sweep
 msgid "Saved cap for \"%(name)s\"."
-msgstr "Issaugotas limitas kategorijai \"%(name)s\"."
+msgstr "Išsaugotas limitas kategorijai \"%(name)s\"."
 
 # Added by Codex i18n sweep
 msgid "Saved."
@@ -2544,15 +2544,15 @@ msgstr "Netinkamas užklausos metodas."
 
 # Added by Codex i18n sweep
 msgid "No eligible uncategorized transactions to categorize."
-msgstr "Nera tinkamu nekategorizuotu operaciju kategorizavimui."
+msgstr "Nėra tinkamų nekategorizuotų operacijų kategorizavimui."
 
 # Added by Codex i18n sweep
 msgid "No eligible transactions to recheck (excluding user-labeled)."
-msgstr "Nera tinkamu operaciju pakartotiniam tikrinimui (isskyrus naudotojo pazymetas)."
+msgstr "Nėra tinkamų operacijų pakartotiniam tikrinimui (išskyrus naudotojo pažymėtas)."
 
 # Added by Codex i18n sweep
 msgid "No AI-labeled transactions to recheck."
-msgstr "Nera AI pazymetu operaciju pakartotiniam tikrinimui."
+msgstr "Nėra AI pažymėtų operacijų pakartotiniam tikrinimui."
 
 # Added by Codex i18n sweep
 msgid "Select categories for at least one merchant."
@@ -2624,11 +2624,11 @@ msgstr "Išlaidos (EUR)"
 
 # Added by Codex i18n sweep
 msgid "Exclude 15% tax from investments"
-msgstr "Is investiciju atimti 15% mokesti"
+msgstr "Iš investicijų atimti 15% mokestį"
 
 # Added by Codex i18n sweep
 msgid "If enabled, the app will show your investment values after subtracting 15% (flat estimate) in Overview and Statistics. The Portfolio page will always show full value."
-msgstr "Ijungus sia parinkti, Apzvalgoje ir Statistikoje investiciju vertes bus rodomos atemus 15% (paprastas ivertis). Portfelio puslapyje visada bus rodoma visa verte."
+msgstr "Įjungus šią parinktį, Apžvalgoje ir Statistikoje investicijų vertės bus rodomos atėmus 15% (paprastas įvertis). Portfelio puslapyje visada bus rodoma visa vertė."
 
 # Added by Codex i18n sweep
 msgid "Daily import limit reached (%(limit)s). Try again tomorrow."
@@ -2640,23 +2640,23 @@ msgstr "Failas per didelis importuoti."
 
 # Added by Codex i18n sweep
 msgid "Could not detect CSV format. Please choose the bank and try again."
-msgstr "Nepavyko atpazinti CSV formato. Pasirinkite banka ir bandykite dar karta."
+msgstr "Nepavyko atpažinti CSV formato. Pasirinkite banką ir bandykite dar kartą."
 
 # Added by Codex i18n sweep
 msgid "Unknown bank format selected."
-msgstr "Pasirinktas nezinomas banko formatas."
+msgstr "Pasirinktas nežinomas banko formatas."
 
 # Added by Codex i18n sweep
 msgid "This file does not look like %(bank)s. It looks like: %(suggestion)s. Please choose the correct bank and try again."
-msgstr "Sis failas nepanasus i %(bank)s. Atrodo, kad tai: %(suggestion)s. Pasirinkite tinkama banka ir bandykite dar karta."
+msgstr "Šis failas nepanašus į %(bank)s. Atrodo, kad tai: %(suggestion)s. Pasirinkite tinkamą banką ir bandykite dar kartą."
 
 # Added by Codex i18n sweep
 msgid "This file does not look like %(bank)s. Please choose the correct bank and try again."
-msgstr "Sis failas nepanasus i %(bank)s. Pasirinkite tinkama banka ir bandykite dar karta."
+msgstr "Šis failas nepanašus į %(bank)s. Pasirinkite tinkamą banką ir bandykite dar kartą."
 
 # Added by Codex i18n sweep
 msgid "This file has %(count)s rows, which exceeds the per-import limit (%(limit)s)."
-msgstr "Siame faile yra %(count)s eiluciu, tai virsija vieno importo limita (%(limit)s)."
+msgstr "Šiame faile yra %(count)s eilučių, tai viršija vieno importo limitą (%(limit)s)."
 
 # Added by Codex i18n sweep
 msgid "Failed to import file: %(error)s"

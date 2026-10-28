@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n l10n guide_links %}
-{% block title %}{% trans "Profile" %} · Money Compass{% endblock %}
+{% load i18n l10n guide_links money %}
+{% block title %}{% trans "Profile" %} · MoneyCompass{% endblock %}
 {% block content %}
 <div class="profile-page">
 
@@ -71,11 +71,11 @@
         {% else %}
           <form method="post" action="{% url 'billing_checkout' 'monthly' %}" style="margin:0;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary">{% trans "Monthly" %} · 4.99 EUR</button>
+            <button type="submit" class="btn btn-primary">{% trans "Monthly" %} · {{ "4.99"|money }}</button>
           </form>
           <form method="post" action="{% url 'billing_checkout' 'yearly' %}" style="margin:0;">
             {% csrf_token %}
-            <button type="submit" class="btn" style="background:#f8fafc; border:1px solid #e2e8f0;">{% trans "Yearly" %} · 49.99 EUR</button>
+            <button type="submit" class="btn" style="background:#f8fafc; border:1px solid #e2e8f0;">{% trans "Yearly" %} · {{ "49.99"|money }}</button>
           </form>
         {% endif %}
       {% else %}
@@ -160,7 +160,7 @@
               {% csrf_token %}
               <input type="hidden" name="action" value="setbalance">
               <input type="hidden" name="id" value="{{ a.id }}">
-              <input type="number" step="0.01" name="amount"
+              <input type="number" step="0.01" name="amount" inputmode="decimal" {% if forloop.first %}id="set-balance"{% endif %}
                    value="{% if a.manual_balance is not None %}{{ a.manual_balance|unlocalize }}{% endif %}"
                    placeholder="0.00"
                    style="width:7rem; padding:0.3rem; border:1px solid #e2e8f0; border-radius:6px;">
@@ -402,7 +402,7 @@
             <td>
               <div>
                 <div style="font-size:.85em; color:var(--text-medium); margin-bottom:.25rem; display:flex; justify-content:space-between;">
-                  <span>{{ g.current|floatformat:2 }} EUR</span>
+                  <span>{{ g.current|money }}</span>
                   <strong>{{ g.progress_pct }}%</strong>
                 </div>
                 <div style="height:8px; background:#edf2f7; border-radius:999px; overflow:hidden;">
@@ -410,7 +410,7 @@
                 </div>
               </div>
             </td>
-            <td>{{ g.obj.target_amount|floatformat:2 }} EUR</td>
+            <td>{{ g.obj.target_amount|money }}</td>
             <td>
               {% if g.eta_months %}
                 <span style="color:var(--text-medium);">~{{ g.eta_months }} {% trans "mo" %}</span>
@@ -551,7 +551,17 @@
 </div>
 {% load i18n %}
 
-
+<script>
+  // Onboarding "Set a balance" lands here: bring the field into view (it sits in a wide table
+  // that scrolls sideways on phones) and put the cursor in it.
+  if (location.hash === "#set-balance") {
+    var balanceInput = document.getElementById("set-balance");
+    if (balanceInput) {
+      balanceInput.scrollIntoView({ block: "center", inline: "center" });
+      balanceInput.focus({ preventScroll: true });
+    }
+  }
+</script>
 
 </div>
 {% endblock %}

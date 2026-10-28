@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
-{% block title %}{% trans "Statistics" %} · Money Compass{% endblock %}
+{% load i18n guide_links money %}
+{% block title %}{% trans "Statistics" %} · MoneyCompass{% endblock %}
 {% block content %}
 <div class="statistics-page">
 
@@ -19,27 +19,27 @@
 <div class="statistics-summary-grid" style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; margin: 2rem 0;">
   <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
     <div class="text-medium" style="font-size:.9em;">{% trans "All-time earned" %}</div>
-    <div class="text-teal" style="font-weight:700; font-size:1.4em;">{{ total_in|floatformat:2 }} EUR</div>
+    <div class="text-teal" style="font-weight:700; font-size:1.4em;">{{ total_in|money }}</div>
   </div>
   <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
     <div class="text-medium" style="font-size:.9em;">{% trans "All-time spent" %}</div>
-    <div style="font-weight:700; font-size:1.4em; color:#e53e3e;">{{ total_out|floatformat:2 }} EUR</div>
+    <div style="font-weight:700; font-size:1.4em; color:#e53e3e;">{{ total_out|money }}</div>
   </div>
   <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
     <div class="text-medium" style="font-size:.9em;">{% trans "Lifetime net" %}</div>
     <div style="font-weight:700; font-size:1.4em;">
       {% if lifetime_net >= 0 %}
-        <span class="text-teal">+{{ lifetime_net|floatformat:2 }} EUR</span>
+        <span class="text-teal">+{{ lifetime_net|money }}</span>
       {% else %}
-        <span style="color:#e53e3e;">{{ lifetime_net|floatformat:2 }} EUR</span>
+        <span style="color:#e53e3e;">{{ lifetime_net|money }}</span>
       {% endif %}
     </div>
   </div>
   <div class="card" style="margin-bottom:0;">
     <div class="text-medium" style="font-size:.9em;">{% trans "Avg / month (In)" %}</div>
-    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_in|floatformat:2 }}</div>
+    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_in|money }}</div>
     <div class="text-medium" style="font-size:.9em; margin-top:0.5rem;">{% trans "Avg / month (Out)" %}</div>
-    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_out|floatformat:2 }}</div>
+    <div style="font-weight:700; font-size:1.1em;">{{ avg_month_out|money }}</div>
   </div>
   <div class="card" style="margin-bottom:0;">
     <div class="text-medium" style="font-size:.9em;">{% trans "Transactions" %}</div>
@@ -103,7 +103,7 @@
 
     <div class="card" style="margin-bottom:0;">
       <div class="text-medium" style="font-size:.9em;">{% trans "Total earned" %}</div>
-      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.total_income|floatformat:2 }} EUR</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.total_income|money }}</div>
     </div>
 
     <div class="card" style="margin-bottom:0;">
@@ -111,14 +111,14 @@
       <div style="font-weight:700; font-size:1.1em;">{{ income_sources_summary.top_source_name|default:"—" }}</div>
       {% if income_sources_summary.top_source_name %}
         <div class="text-medium" style="font-size:.85em; margin-top:0.25rem;">
-          {{ income_sources_summary.top_source_total|floatformat:2 }} EUR
+          {{ income_sources_summary.top_source_total|money }}
         </div>
       {% endif %}
     </div>
 
     <div class="card" style="margin-bottom:0;">
       <div class="text-medium" style="font-size:.9em;">{% trans "Average payment" %}</div>
-      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.avg_payment|floatformat:2 }} EUR</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ income_sources_summary.avg_payment|money }}</div>
     </div>
   </div>
 
@@ -149,8 +149,8 @@
               <tr>
                 <td class="font-bold">{{ row.name }}</td>
                 <td>{{ row.count }}</td>
-                <td>{{ row.total_earned|floatformat:2 }}</td>
-                <td>{{ row.avg_payment|floatformat:2 }}</td>
+                <td>{{ row.total_earned|money }}</td>
+                <td>{{ row.avg_payment|money }}</td>
                 <td>{{ row.months_active }}</td>
                 <td>{{ row.first_received|date:"Y-m-d" }}</td>
                 <td>{{ row.last_received|date:"Y-m-d" }}</td>
@@ -236,17 +236,17 @@
 
     <div class="card" style="margin-bottom:0;">
       <div class="text-medium" style="font-size:.9em;">{% trans "Estimated / month" %}</div>
-      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.monthly_total|floatformat:2 }} EUR</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.monthly_total|money }}</div>
     </div>
 
     <div class="card" style="margin-bottom:0;">
       <div class="text-medium" style="font-size:.9em;">{% trans "Active total spent" %}</div>
-      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.active_total_spent|floatformat:2 }} EUR</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.active_total_spent|money }}</div>
     </div>
 
     <div class="card" style="margin-bottom:0;">
       <div class="text-medium" style="font-size:.9em;">{% trans "Past total spent" %}</div>
-      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.past_total_spent|floatformat:2 }} EUR</div>
+      <div style="font-weight:700; font-size:1.4em;">{{ subscriptions_summary.past_total_spent|money }}</div>
     </div>
   </div>
 
@@ -274,11 +274,11 @@
             {% for row in active_subscriptions %}
               <tr>
                 <td class="font-bold">{{ row.name }}</td>
-                <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                <td>{{ row.monthly_cost|money }}</td>
                 <td>{{ row.months_subscribed }}</td>
                 <td>{{ row.first_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
-                <td>{{ row.total_spent|floatformat:2 }}</td>
+                <td>{{ row.total_spent|money }}</td>
                 <td>
                   <div style="display:flex; gap:12px 24px; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
@@ -344,11 +344,11 @@
             {% for row in past_subscriptions %}
               <tr>
                 <td class="font-bold">{{ row.name }}</td>
-                <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                <td>{{ row.monthly_cost|money }}</td>
                 <td>{{ row.months_subscribed }}</td>
                 <td>{{ row.first_paid|date:"Y-m-d" }}</td>
                 <td>{{ row.last_paid|date:"Y-m-d" }}</td>
-                <td>{{ row.total_spent|floatformat:2 }}</td>
+                <td>{{ row.total_spent|money }}</td>
                 <td>
                   <div style="display:flex; gap:12px 24px; align-items:center; flex-wrap:wrap;">
                     <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
@@ -477,12 +477,12 @@
         {% for row in cat_summary_rows %}
           <tr>
             <td class="font-bold">{{ row.cat_name }}</td>
-            <td>{{ row.total|floatformat:2 }}</td>
+            <td>{{ row.total|money }}</td>
             <td>{{ row.count }}</td>
-            <td>{{ row.avg|floatformat:2 }}</td>
+            <td>{{ row.avg|money }}</td>
             <td>
               {% if row.has_cap %}
-                {{ row.cap_total|floatformat:2 }}
+                {{ row.cap_total|money }}
               {% else %}
                 <span style="opacity:0.3">—</span>
               {% endif %}
@@ -490,15 +490,15 @@
             <td>
               {% if row.has_cap %}
                 {% if row.delta >= 0 %}
-                  <span title="{% trans 'Remaining' %}" class="text-teal">+{{ row.delta|floatformat:2 }}</span>
+                  <span title="{% trans 'Remaining' %}" class="text-teal">+{{ row.delta|money }}</span>
                 {% else %}
-                  <span title="{% trans 'Overspent' %}" style="color:#e53e3e;">{{ row.delta|floatformat:2 }}</span>
+                  <span title="{% trans 'Overspent' %}" style="color:#e53e3e;">{{ row.delta|money }}</span>
                 {% endif %}
               {% else %}
                 <span style="opacity:0.3">—</span>
               {% endif %}
             </td>
-            <td>{{ row.avg_month|floatformat:2 }}</td>
+            <td>{{ row.avg_month|money }}</td>
             <td><a href="/upload/?cat={{ row.cat_id }}&from={{ start_date }}&to={{ end_date }}" class="text-teal" style="text-decoration:none; font-weight:600;">{% trans "View" %}</a></td>
           </tr>
         {% endfor %}
@@ -762,6 +762,15 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // One money format for the whole app (same as the |money template filter).
+    function formatMoney(value, currency) {
+        const code = (currency || 'EUR').toUpperCase();
+        try {
+            return new Intl.NumberFormat(document.documentElement.lang || 'en', {style: 'currency', currency: code}).format(Number(value) || 0);
+        } catch (e) {
+            return (Number(value) || 0).toFixed(2) + ' ' + code;
+        }
+    }
   {% if cat_labels_json and cat_labels_json != "[]" %}
     const catLabels = JSON.parse('{{ cat_labels_json|escapejs }}');
     const catValues = JSON.parse('{{ cat_values_json|escapejs }}');
@@ -873,7 +882,7 @@
       const toDate = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
       let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Merchant" %}</th><th>{% trans "Total" %}</th><th>{% trans "#Tx" %}</th><th>{% trans "Avg" %}</th><th>{% trans "Action" %}</th></tr></thead><tbody>';
       rows.forEach(row => {
-        html += `<tr><td>${escapeHtml(row.merchant)}</td><td>${row.total.toFixed(2)}</td><td>${row.count}</td><td>${row.avg.toFixed(2)}</td><td><a href="{% url 'upload' %}?q=${encodeURIComponent(row.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
+        html += `<tr><td>${escapeHtml(row.merchant)}</td><td>${formatMoney(row.total)}</td><td>${row.count}</td><td>${formatMoney(row.avg)}</td><td><a href="{% url 'upload' %}?q=${encodeURIComponent(row.merchant)}&flow=out&from=${fromDate}&to=${toDate}" class="text-teal">{% trans "Open" %}</a></td></tr>`;
       });
       tableWrap.innerHTML = html + '</tbody></table></div>';
     }
@@ -1049,7 +1058,7 @@
 
       let html = '<div style="overflow-x:auto;"><table style="font-size:0.9em; margin-top:0.5rem;"><thead><tr><th>{% trans "Date" %}</th><th>{% trans "Merchant" %}</th><th>{% trans "Account" %}</th><th style="text-align:right;">{% trans "Amount" %}</th></tr></thead><tbody>';
       rows.forEach(row => {
-        html += `<tr><td style="white-space:nowrap;">${escapeHtml(row.date)}</td><td>${escapeHtml(row.merchant)}</td><td>${escapeHtml(row.account || '-')}</td><td style="text-align:right; white-space:nowrap; font-weight:600;">${Number(row.amount).toFixed(2)} ${escapeHtml(row.currency)}</td></tr>`;
+        html += `<tr><td style="white-space:nowrap;">${escapeHtml(row.date)}</td><td>${escapeHtml(row.merchant)}</td><td>${escapeHtml(row.account || '-')}</td><td style="text-align:right; white-space:nowrap; font-weight:600;">${escapeHtml(formatMoney(row.amount, row.currency))}</td></tr>`;
       });
       transactionsWrap.innerHTML = html + '</tbody></table></div>';
     }

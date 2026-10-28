@@ -436,6 +436,8 @@
 
 .public-guide-content {
     display: grid;
+    /* minmax(0, ...) lets the column shrink below its widest table on phones */
+    grid-template-columns: minmax(0, 1fr);
     gap: 18px;
 }
 
@@ -541,7 +543,7 @@
     }
 
     .public-guide-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .public-guide-toc {
@@ -572,7 +574,9 @@
 
     .seo-product-hero h1,
     .public-guide-hero h1 {
-        font-size: clamp(2.15rem, 12vw, 3.25rem);
+        /* "MoneyCompass" is one long word: at 12vw it was wider than a 375 px phone's heading box */
+        font-size: clamp(1.9rem, 9.5vw, 3.25rem);
+        overflow-wrap: anywhere;
     }
 
     .seo-direct-answer,

@@ -86,7 +86,7 @@ def onboarding(request):
                     if is_lt else "Enter today's account balance so totals match your bank."
                 ),
                 "cta_text": _("Set a Balance"),
-                "cta_href": reverse("profile"),
+                "cta_href": reverse("profile") + "#set-balance",
                 "code": "balance",
                 "step_number": 2,
                 "step_total": 2,

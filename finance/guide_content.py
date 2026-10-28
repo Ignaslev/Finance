@@ -18,13 +18,13 @@ GUIDE_CONTENT = {
                 image(
                     "en",
                     "mascot.png",
-                    "Money Compass mascot",
-                    "Money Compass — personal finance tracker.",
+                    "MoneyCompass mascot",
+                    "MoneyCompass — personal finance tracker.",
                     variant="mascot",
                 ),
                 {
                     "type": "paragraph",
-                    "text": "Money Compass is a web app for tracking personal finances. You export bank statements from your bank and import them into Money Compass — no direct bank connection is required.",
+                    "text": "MoneyCompass is a web app for tracking personal finances. You export bank statements from your bank and import them into MoneyCompass — no direct bank connection is required.",
                 },
                 {
                     "type": "paragraph",
@@ -32,14 +32,14 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "Money Compass does not connect to your bank directly. You stay in control by exporting and uploading your own statement files.",
+                    "text": "MoneyCompass does not connect to your bank directly. You stay in control by exporting and uploading your own statement files.",
                 },
             ],
         },
         {
             "id": "app-overview",
             "title": "App Overview",
-            "subtitle": "Main areas of Money Compass",
+            "subtitle": "Main areas of MoneyCompass",
             "body": [
                 image(
                     "en",
@@ -61,10 +61,10 @@ GUIDE_CONTENT = {
                         ["Dashboard", "View total net worth, income vs spending, category breakdown, savings goals, and monthly net balance."],
                         ["Statistics", "Review all-time totals, income sources, subscriptions, merchants, and categorization coverage."],
                         ["Tools", "Open category cash-flow analysis, Financial Runway, and other financial tools."],
-                        ["Reports", "Review balance anomaly history. Monthly and weekly AI reports are currently available only to administrators."],
+                        ["Reports", "See a monthly and weekly overview of your spending with tips, and review balance anomaly history."],
                         ["Portfolio", "Track crypto and stock / ETF holdings with live prices and total value."],
                         ["Transactions", "Upload bank statements, browse, filter, categorize, hide, and restore transactions."],
-                        ["Profile / Settings", "Manage accounts, categories, savings goals, language preference, and data deletion."],
+                        ["Profile / Settings", "Manage accounts, categories, savings goals, email reminders, language preference, and data deletion."],
                     ],
                 },
                 {
@@ -73,7 +73,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
-                    "text": "What Money Compass is not",
+                    "text": "What MoneyCompass is not",
                 },
                 {
                     "type": "list",
@@ -112,20 +112,45 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
-                    "text": "Onboarding — 5 steps",
+                    "text": "Onboarding",
                 },
                 {
                     "type": "table",
                     "headers": ["Step", "What to do"],
                     "rows": [
-                        ["1. Upload", "Upload your first bank statement (Swedbank, SEB or Revolut)."],
-                        ["2. Set Balance", "Go to Profile and set the current balance for each financial account."],
+                        ["1. Upload", "Upload your first bank statement: a PDF from any bank, or a CSV from Swedbank, SEB or Revolut."],
+                        ["2. Set balance", "Enter today's balance for the account so the totals match your bank. The onboarding button takes you straight to the field."],
                         ["3. Ready", "AI categorizes your transactions automatically. Fix anything that is wrong and it learns from your corrections."],
                     ],
                 },
                 {
                     "type": "note",
                     "text": "No manual labelling is needed. Categories can be edited any time, and the AI follows the categories you set.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Try it with sample data",
+                    "anchor": "sample-data",
+                },
+                image(
+                    "en",
+                    "first-run.png",
+                    "First screen of a new account",
+                    "A new account starts here: upload a statement, or try the app with sample data.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "No statement at hand? Click Try it with sample data to explore the app with about three months of example transactions. A yellow bar at the top reminds you that you are looking at sample data.",
+                },
+                image(
+                    "en",
+                    "sample-data.png",
+                    "Sample data bar with the remove button",
+                    "Remove the sample data with one click, or upload your own statement.",
+                ),
+                {
+                    "type": "note",
+                    "text": "Sample data is kept in its own account and removed in one click with Remove sample data. It also disappears automatically when you upload your first real statement, so the two never mix.",
                 },
                 {
                     "type": "heading",
@@ -143,7 +168,7 @@ GUIDE_CONTENT = {
                         "Open Profile from the avatar menu, or on mobile open Menu → Settings.",
                         "Add each account you use, for example Revolut, SEB, Cash Wallet, Savings, or Investment.",
                         "Choose the correct type: Bank, Cash, Savings, or Investment.",
-                        "After your first CSV upload, enter the current balance for each account and save it.",
+                        "After your first statement upload, enter the current balance for each account and save it.",
                     ],
                 },
             ],
@@ -155,7 +180,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Transactions are the core of Money Compass. You export a file from your bank and upload it into the app. Money Compass parses the file, skips duplicates, and adds new rows to your transaction history.",
+                    "text": "Transactions are the core of MoneyCompass. You export a file from your bank and upload it into the app. MoneyCompass parses the file, skips duplicates, and adds new rows to your transaction history.",
                 },
                 {
                     "type": "heading",
@@ -164,6 +189,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "list",
                     "items": [
+                        "PDF statements from any bank – read automatically in 1–2 minutes",
                         "CSV exports from SEB Bank, Swedbank, and Revolut",
                         "XLSX / Excel files with recognizable date, merchant, amount, and optional currency columns",
                     ],
@@ -177,21 +203,52 @@ GUIDE_CONTENT = {
                     "en",
                     "upload-statement.png",
                     "Upload statement form",
-                    "Upload statement card.",
+                    "Upload statement card: PDF or CSV.",
                 ),
                 {
                     "type": "list",
                     "items": [
                         "Open the Transactions page.",
                         "Choose the target account.",
-                        "Choose the bank format.",
-                        "Select the CSV or Excel file.",
+                        "Choose the bank format (only for CSV; Auto-detect works for most files).",
+                        "Select the PDF or CSV file.",
                         "Click Upload and review the import summary.",
                     ],
                 },
                 {
                     "type": "note",
-                    "text": "Re-uploading the same file is safe. Existing rows are detected as duplicates and skipped.",
+                    "text": "Re-uploading is safe, even a whole year's statement: transactions already in MoneyCompass are skipped and only new ones are added. The same PDF is never read twice.",
+                },
+                {
+                    "type": "heading",
+                    "text": "PDF statements",
+                    "anchor": "pdf-import",
+                },
+                image(
+                    "en",
+                    "pdf-reading.png",
+                    "Reading a PDF statement",
+                    "The PDF is read in the background; this usually takes 1–2 minutes.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "PDF statements from any bank are read automatically. Nothing is imported yet: when the reading is done you see a preview first.",
+                },
+                image(
+                    "en",
+                    "pdf-preview.png",
+                    "PDF statement preview before import",
+                    "Check what was found, choose the account and import.",
+                ),
+                {
+                    "type": "list",
+                    "items": [
+                        "How many transactions were found and for which period.",
+                        "How many will be added and how many are already in MoneyCompass.",
+                        "A balance check: when the statement shows opening and closing balances, the totals are compared with them, so you know every row was read.",
+                        "Which account to import into. A statement from a different bank goes to a new account named after that bank by default, so balances never mix.",
+                        "Import adds the transactions; Cancel discards the reading.",
+                    ],
                 },
                 {
                     "type": "heading",
@@ -232,7 +289,7 @@ GUIDE_CONTENT = {
                     "headers": ["Link", "What it does"],
                     "rows": [
                         ["AI-categorized", "Shows transactions that AI has categorized."],
-                        ["Low-confidence", "Shows AI suggestions that need your review."],
+                        ["Low-confidence", "Shows AI suggestions that need your review. Only rows you change or tick ✓ are saved."],
                         ["Uncategorized", "Shows transactions without a proper category."],
                         ["Deleted", "Shows soft-deleted transactions that can be restored."],
                     ],
@@ -290,6 +347,15 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
+                    "text": "Transfers between your own accounts",
+                    "anchor": "internal-transfers",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Money moved between your own accounts is neither income nor spending. When a statement says so (for example Pinigų pervedimas sau) or the other side is you, the transaction is marked as an internal transfer during import and left out of income, spending and category totals. Anything it misses can be marked on the transaction's Edit page with Internal transfer.",
+                },
+                {
+                    "type": "heading",
                     "text": "Refund detection",
                     "anchor": "refund-detection",
                 },
@@ -301,7 +367,7 @@ GUIDE_CONTENT = {
                 ),
                 {
                     "type": "paragraph",
-                    "text": "Money Compass detects potential refunds by matching one outgoing and one incoming transaction with the exact same amount, same currency, and a date difference of up to 10 days. You can delete both transactions from charts or ignore the suggestion.",
+                    "text": "MoneyCompass detects potential refunds by matching one outgoing and one incoming transaction with the exact same amount, same currency, and a date difference of up to 10 days. You can delete both transactions from charts or ignore the suggestion.",
                 },
             ],
         },
@@ -385,11 +451,15 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Money Compass uses AI to suggest categories for transactions. This helps reduce manual work after large imports.",
+                    "text": "MoneyCompass uses AI to suggest categories for transactions. This helps reduce manual work after large imports.",
                 },
                 {
                     "type": "note",
                     "text": "AI starts categorizing right after your first upload. When you change a category, the AI uses your choice for that merchant next time. User-set categories are always protected from automatic changes.",
+                },
+                {
+                    "type": "note",
+                    "text": "Before anything is sent to the AI, personal codes, account numbers (IBANs), email addresses and phone numbers in transaction descriptions are masked. Shop and counterparty names stay, because they decide the category.",
                 },
                 {
                     "type": "table",
@@ -405,7 +475,7 @@ GUIDE_CONTENT = {
                     "en",
                     "ai-review.png",
                     "Low-confidence AI category review",
-                    "Review AI suggestions that need your decision.",
+                    "Change a category or tick ✓ to accept the suggestion. Only ticked rows are saved; the rest wait for later.",
                 ),
                 {
                     "type": "paragraph",
@@ -531,7 +601,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass detects income sources from incoming transactions. You can review, track, untrack, or retrack income sources.",
+                    "text": "MoneyCompass detects income sources from incoming transactions. You can review, track, untrack, or retrack income sources.",
                 },
                 image(
                     "en",
@@ -546,7 +616,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass detects recurring outgoing payments as possible subscriptions. Mark an active subscription as Canceled to move it to Past subscriptions immediately. Remove stops tracking it completely, while Restore returns a past subscription to active tracking.",
+                    "text": "MoneyCompass detects recurring outgoing payments as possible subscriptions. Mark an active subscription as Canceled to move it to Past subscriptions immediately. Remove stops tracking it completely, while Restore returns a past subscription to active tracking.",
                 },
                 image(
                     "en",
@@ -561,7 +631,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Financial Runway estimates how many months your selected assets could cover your recent spending. The default burn rate uses outgoing transactions from the last 90 days. Configure Scenario lets you include or exclude specific accounts, categories, and uncategorized spending.",
+                    "text": "Financial Runway estimates how many months your selected assets could cover your recent spending. The burn rate averages your outgoing transactions over the period your data covers – up to 90 days, ending at your most recent transaction – so one uploaded month is not spread over three. Configure Scenario lets you include or exclude specific accounts, categories, and uncategorized spending.",
                 },
                 image(
                     "en",
@@ -600,11 +670,41 @@ GUIDE_CONTENT = {
         {
             "id": "reports",
             "title": "Reports",
-            "subtitle": "Balance checks and anomaly history",
+            "subtitle": "Monthly and weekly overview, tips and balance checks",
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Regular users see Balance Anomaly History on this page. Monthly and weekly AI reports are currently available only to administrators.",
+                    "text": "Reports gives you a monthly and a weekly overview: how much you spent and received, what was left, where the money went by category, and how it compares with the previous period. A few tips point out what stands out: the biggest change, how much you kept, frequent small purchases and uncategorized spending.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Monthly overview",
+                    "anchor": "monthly-overview",
+                },
+                image(
+                    "en",
+                    "reports-month-overview.png",
+                    "Monthly overview with categories and tips",
+                    "Monthly overview: totals, categories with the change from last month, and tips.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Pick a month at the top of the page. A comparison with the previous month is only shown when both months are fully uploaded, so a half-uploaded month never looks like a big drop. The same summary opens the monthly reminder email.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Weekly overview",
+                    "anchor": "weekly-overview",
+                },
+                image(
+                    "en",
+                    "reports-week-overview.png",
+                    "Weekly overview",
+                    "Weekly overview: spending compared with the week before.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Choose a week of the selected month to see what you spent that week, compared with the week before.",
                 },
                 {
                     "type": "heading",
@@ -672,7 +772,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Profile controls your accounts, categories, savings goals, language preference, balance snapshots, and data deletion settings.",
+                    "text": "Profile controls your accounts, categories, savings goals, email reminders, language preference, balance snapshots, and data deletion settings.",
                 },
                 {
                     "type": "heading",
@@ -712,12 +812,21 @@ GUIDE_CONTENT = {
                 image(
                     "en",
                     "profile-preferences.png",
-                    "Investment tax display preference",
-                    "Optionally show investment account values after a flat 15% estimate on Dashboard and Statistics.",
+                    "Investment display and email reminder preferences",
+                    "Investment display estimate and email reminders.",
                 ),
                 {
                     "type": "note",
                     "text": "This is only a display estimate. It does not change stored balances, transactions, or the full values shown on the Portfolio page.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Email reminders",
+                    "anchor": "profile-reminders",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Once a month MoneyCompass emails a short summary of your last fully uploaded month (how much you spent and what changed) and a reminder to upload the new statement. New accounts that have not uploaded anything get one reminder a few days after sign-up. Turn reminders off in Profile → Email reminders, or with the unsubscribe link in any reminder.",
                 },
                 {
                     "type": "heading",
@@ -754,6 +863,7 @@ GUIDE_CONTENT = {
                         ["Rename account", "Profile → Accounts → Rename"],
                         ["Disable or enable account", "Profile → Accounts → Disable / Enable"],
                         ["Set default import account", "Profile → Accounts → Make default"],
+                        ["Turn email reminders on or off", "Profile → Email reminders → Save"],
                         ["Switch language", "Avatar menu or mobile menu → EN / LT"],
                         ["Delete account", "Profile → Delete account"],
                         ["Delete transaction data", "Transactions → Data deletion section"],
@@ -781,15 +891,17 @@ GUIDE_CONTENT = {
                     "type": "table",
                     "headers": ["I want to...", "Where to go"],
                     "rows": [
+                        ["Try the app without a statement", "Dashboard (new account) → Try it with sample data"],
                         ["See total net worth", "Dashboard → top card"],
                         ["Upload a bank statement", "Transactions → Upload Statement card"],
                         ["Undo a file upload", "Transactions → Undo last upload"],
                         ["Categorize transactions quickly", "Transactions → category dropdowns → Apply Changes"],
                         ["Review uncertain AI suggestions", "Transactions → Low-confidence"],
                         ["Find uncategorized transactions", "Transactions → Uncategorized"],
-                        ["Mark an internal transfer", "Transactions → Edit → Internal transfer"],
+                        ["Mark an internal transfer", "Detected automatically; otherwise Transactions → Edit → Internal transfer"],
                         ["Compare category income and spending", "Tools → choose a category"],
                         ["Restore deleted transaction", "Transactions → Deleted → Restore"],
+                        ["See a monthly or weekly overview", "Reports"],
                         ["Review balance anomalies", "Reports → Balance Anomalies History"],
                         ["Track crypto or stocks", "Portfolio"],
                         ["Create a savings goal", "Profile → Savings Goals"],
@@ -811,8 +923,8 @@ GUIDE_CONTENT = {
                 image(
                     "lt",
                     "mascot.png",
-                    "Money Compass talismanas",
-                    "Money Compass — asmeninių finansų valdymas.",
+                    "MoneyCompass talismanas",
+                    "MoneyCompass — asmeninių finansų valdymas.",
                     variant="mascot",
                 ),
                 {
@@ -825,14 +937,14 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "note",
-                    "text": "Money Compass nesijungia prie jūsų banko tiesiogiai. Jūs patys kontroliuojate duomenis eksportuodami ir įkeldami išrašus rankiniu būdu.",
+                    "text": "MoneyCompass nesijungia prie jūsų banko tiesiogiai. Jūs patys kontroliuojate duomenis eksportuodami ir įkeldami išrašus rankiniu būdu.",
                 },
             ],
         },
         {
             "id": "programos-apzvalga",
             "title": "Programos apžvalga",
-            "subtitle": "Pagrindinės Money Compass sritys",
+            "subtitle": "Pagrindinės MoneyCompass sritys",
             "body": [
                 image(
                     "lt",
@@ -854,10 +966,10 @@ GUIDE_CONTENT = {
                         ["Apžvalga", "Matote bendrą grynąją vertę, pajamas ir išlaidas, kategorijų analizę, taupymo tikslus ir mėnesinį balansą."],
                         ["Statistika", "Peržiūrite viso laikotarpio sumas, pajamų šaltinius, prenumeratas, pardavėjus ir kategorizavimo aprėptį."],
                         ["Įrankiai", "Naudojate kategorijų pinigų srauto analizę, finansinio išgyvenimo skaičiuoklę ir kitus finansinius įrankius."],
-                        ["Ataskaitos", "Peržiūrite likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos šiuo metu skirtos tik administratoriams."],
+                        ["Ataskaitos", "Matote mėnesio ir savaitės išlaidų apžvalgą su pastebėjimais ir likučio anomalijų istoriją."],
                         ["Portfelis", "Sekate kripto ir akcijų / ETF pozicijas su realiomis kainomis ir bendra verte."],
                         ["Operacijos", "Įkeliate banko išrašus, naršote, filtruojate, kategorizuojate, paslepiate ir atkuriate operacijas."],
-                        ["Profilis / Nustatymai", "Valdote sąskaitas, kategorijas, taupymo tikslus, kalbą ir duomenų ištrynimą."],
+                        ["Profilis / Nustatymai", "Valdote sąskaitas, kategorijas, taupymo tikslus, priminimus el. paštu, kalbą ir duomenų ištrynimą."],
                     ],
                 },
                 {
@@ -866,7 +978,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
-                    "text": "Kas Money Compass nėra",
+                    "text": "Kas MoneyCompass nėra",
                 },
                 {
                     "type": "list",
@@ -905,20 +1017,45 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
-                    "text": "Pradinis nustatymas — 5 žingsniai",
+                    "text": "Pradinis nustatymas",
                 },
                 {
                     "type": "table",
                     "headers": ["Žingsnis", "Ką daryti"],
                     "rows": [
-                        ["1. Įkėlimas", "Įkelkite pirmą banko išrašą (Swedbank, SEB arba Revolut)."],
-                        ["2. Nustatyti likutį", "Eikite į Profilį ir nustatykite dabartinį kiekvienos finansinės sąskaitos likutį."],
+                        ["1. Įkėlimas", "Įkelkite pirmą banko išrašą: PDF iš bet kurio banko arba CSV iš Swedbank, SEB ar Revolut."],
+                        ["2. Nustatyti likutį", "Įveskite šiandienos sąskaitos likutį, kad sumos sutaptų su banku. Pradžios mygtukas nuveda tiesiai į laukelį."],
                         ["3. Paruošta", "DI automatiškai suskirsto operacijas. Pataisykite, jei kas neteisinga, ir DI mokysis iš jūsų pataisymų."],
                     ],
                 },
                 {
                     "type": "note",
                     "text": "Rankiniu būdu nieko žymėti nereikia. Kategorijas galite keisti bet kada, o DI vadovaujasi jūsų nustatytomis kategorijomis.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Išbandykite su pavyzdiniais duomenimis",
+                    "anchor": "sample-data",
+                },
+                image(
+                    "lt",
+                    "first-run.png",
+                    "Naujos paskyros pradžios ekranas",
+                    "Nauja paskyra prasideda čia: įkelkite išrašą arba išbandykite programą su pavyzdiniais duomenimis.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Neturite išrašo po ranka? Paspauskite Išbandyk su pavyzdiniais duomenimis ir apžiūrėkite programą su maždaug trijų mėnesių pavyzdinėmis operacijomis. Geltona juosta viršuje primena, kad matote pavyzdinius duomenis.",
+                },
+                image(
+                    "lt",
+                    "sample-data.png",
+                    "Pavyzdinių duomenų juosta su šalinimo mygtuku",
+                    "Pavyzdinius duomenis pašalinsite vienu paspaudimu arba įkelkite savo išrašą.",
+                ),
+                {
+                    "type": "note",
+                    "text": "Pavyzdiniai duomenys laikomi atskiroje sąskaitoje ir pašalinami vienu paspaudimu – Pašalinti pavyzdinius duomenis. Jie dingsta ir automatiškai, kai įkeliate pirmą tikrą išrašą, todėl niekada nesusimaišo su jūsų duomenimis.",
                 },
                 {
                     "type": "heading",
@@ -936,7 +1073,7 @@ GUIDE_CONTENT = {
                         "Atidarykite Profilį per avataro meniu arba telefone per Meniu → Nustatymai.",
                         "Pridėkite kiekvieną naudojamą sąskaitą, pvz. Revolut, SEB, Grynieji, Taupomoji ar Investicinė.",
                         "Pasirinkite tinkamą tipą: Bankas, Grynieji, Taupomoji arba Investicinė.",
-                        "Po pirmojo CSV įkėlimo įveskite dabartinį kiekvienos sąskaitos likutį ir išsaugokite.",
+                        "Po pirmojo išrašo įkėlimo įveskite dabartinį kiekvienos sąskaitos likutį ir išsaugokite.",
                     ],
                 },
             ],
@@ -948,7 +1085,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Operacijos yra Money Compass pagrindas. Eksportuojate failą iš savo banko ir įkeliate jį į programą. Money Compass apdoroja failą, praleidžia dublikatus ir prideda naujas eilutes į operacijų istoriją.",
+                    "text": "Operacijos yra MoneyCompass pagrindas. Eksportuojate failą iš savo banko ir įkeliate jį į programą. MoneyCompass apdoroja failą, praleidžia dublikatus ir prideda naujas eilutes į operacijų istoriją.",
                 },
                 {
                     "type": "heading",
@@ -957,6 +1094,7 @@ GUIDE_CONTENT = {
                 {
                     "type": "list",
                     "items": [
+                        "PDF išrašai iš bet kurio banko – nuskaitomi automatiškai per 1–2 minutes",
                         "SEB, Swedbank ir Revolut CSV išrašai",
                         "XLSX / Excel failai su atpažįstamais datos, pardavėjo, sumos ir pasirinktinai valiutos stulpeliais",
                     ],
@@ -970,21 +1108,52 @@ GUIDE_CONTENT = {
                     "lt",
                     "upload-statement.png",
                     "Banko išrašo įkėlimo forma",
-                    "Išrašo įkėlimo kortelė.",
+                    "Išrašo įkėlimo kortelė: PDF arba CSV.",
                 ),
                 {
                     "type": "list",
                     "items": [
                         "Atidarykite Operacijų puslapį.",
                         "Pasirinkite tikslinę sąskaitą.",
-                        "Pasirinkite banko formatą.",
-                        "Pasirinkite CSV arba Excel failą.",
+                        "Pasirinkite banko formatą (tik CSV; dažniausiai tinka Auto-detect).",
+                        "Pasirinkite PDF arba CSV failą.",
                         "Paspauskite Įkelti ir peržiūrėkite importo suvestinę.",
                     ],
                 },
                 {
                     "type": "note",
-                    "text": "Tą patį failą galima saugiai įkelti pakartotinai. Esamos eilutės aptinkamos kaip dublikatai ir praleidžiamos.",
+                    "text": "Įkelti pakartotinai saugu, net viso metų išrašą: jau esančios operacijos praleidžiamos, pridedamos tik naujos. To paties PDF antrą kartą neskaitome.",
+                },
+                {
+                    "type": "heading",
+                    "text": "PDF išrašai",
+                    "anchor": "pdf-import",
+                },
+                image(
+                    "lt",
+                    "pdf-reading.png",
+                    "PDF išrašo skaitymas",
+                    "PDF skaitomas fone; dažniausiai tai užtrunka 1–2 minutes.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "PDF išrašai iš bet kurio banko nuskaitomi automatiškai. Niekas dar neįkeliama: perskaičius pirmiausia parodoma peržiūra.",
+                },
+                image(
+                    "lt",
+                    "pdf-preview.png",
+                    "PDF išrašo peržiūra prieš įkeliant",
+                    "Patikrinkite, kas rasta, pasirinkite sąskaitą ir įkelkite.",
+                ),
+                {
+                    "type": "list",
+                    "items": [
+                        "Kiek operacijų rasta ir už kokį laikotarpį.",
+                        "Kiek bus įkelta ir kiek jau yra MoneyCompass.",
+                        "Likučių patikra: jei išraše nurodyti pradžios ir pabaigos likučiai, sumos palyginamos su jais – taip žinote, kad perskaitytos visos eilutės.",
+                        "Į kurią sąskaitą įkelti. Kito banko išrašas pagal nutylėjimą keliauja į naują sąskaitą to banko pavadinimu, kad likučiai nesusimaišytų.",
+                        "Įkelti prideda operacijas; Atšaukti atmeta nuskaitymą.",
+                    ],
                 },
                 {
                     "type": "heading",
@@ -1025,7 +1194,7 @@ GUIDE_CONTENT = {
                     "headers": ["Nuoroda", "Ką daro"],
                     "rows": [
                         ["DI kategorizuotos", "Rodo operacijas, kurias sukategorizavo DI."],
-                        ["Mažo pasitikėjimo", "Rodo DI pasiūlymus, kuriuos reikia peržiūrėti rankiniu būdu."],
+                        ["Mažo pasitikėjimo", "Rodo DI pasiūlymus, kuriuos reikia peržiūrėti. Išsaugomos tik pakeistos arba ✓ pažymėtos eilutės."],
                         ["Nekategorizuotos", "Rodo operacijas be tinkamos kategorijos."],
                         ["Ištrintos", "Rodo paslėptas operacijas, kurias galima atkurti."],
                     ],
@@ -1083,6 +1252,15 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "heading",
+                    "text": "Pervedimai tarp savo sąskaitų",
+                    "anchor": "internal-transfers",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Pinigai, perkelti tarp jūsų pačių sąskaitų, nėra nei pajamos, nei išlaidos. Kai išraše taip ir parašyta (pvz. Pinigų pervedimas sau) arba kita pusė esate jūs, įkeliant operacija pažymima kaip vidinis pavedimas ir neįtraukiama į pajamų, išlaidų ir kategorijų sumas. Jei kurio nors pervedimo neatpažinome, operacijos Redagavimo puslapyje pažymėkite Vidinis pavedimas.",
+                },
+                {
+                    "type": "heading",
                     "text": "Grąžinimų aptikimas",
                     "anchor": "refund-detection",
                 },
@@ -1094,7 +1272,7 @@ GUIDE_CONTENT = {
                 ),
                 {
                     "type": "paragraph",
-                    "text": "Money Compass aptinka galimus grąžinimus, kai viena išeinanti ir viena gaunama operacija turi tiksliai tokią pačią sumą, tą pačią valiutą ir ne didesnį kaip 10 dienų skirtumą. Galite abi operacijas pašalinti iš diagramų arba ignoruoti pasiūlymą.",
+                    "text": "MoneyCompass aptinka galimus grąžinimus, kai viena išeinanti ir viena gaunama operacija turi tiksliai tokią pačią sumą, tą pačią valiutą ir ne didesnį kaip 10 dienų skirtumą. Galite abi operacijas pašalinti iš diagramų arba ignoruoti pasiūlymą.",
                 },
             ],
         },
@@ -1178,11 +1356,15 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Money Compass naudoja DI, kad pasiūlytų operacijų kategorijas. Tai sumažina rankinį darbą po didelių importų.",
+                    "text": "MoneyCompass naudoja DI, kad pasiūlytų operacijų kategorijas. Tai sumažina rankinį darbą po didelių importų.",
                 },
                 {
                     "type": "note",
                     "text": "DI pradeda skirstyti operacijas iškart po pirmo įkėlimo. Kai pakeičiate kategoriją, kitą kartą tam pačiam prekybininkui DI naudoja jūsų pasirinkimą. Vartotojo nustatytų kategorijų DI niekada automatiškai nekeičia.",
+                },
+                {
+                    "type": "note",
+                    "text": "Prieš siunčiant ką nors DI, operacijų aprašymuose esantys asmens kodai, sąskaitų numeriai (IBAN), el. pašto adresai ir telefonų numeriai paslepiami. Parduotuvių ir mokėtojų pavadinimai paliekami, nes pagal juos parenkama kategorija.",
                 },
                 {
                     "type": "table",
@@ -1198,7 +1380,7 @@ GUIDE_CONTENT = {
                     "lt",
                     "ai-review.png",
                     "Mažo pasitikėjimo DI pasiūlymų peržiūra",
-                    "Peržiūrėkite DI pasiūlymus, kuriems reikia jūsų sprendimo.",
+                    "Pakeiskite kategoriją arba pažymėkite ✓, jei pasiūlymas tinka. Išsaugomos tik pažymėtos eilutės, kitos lieka vėlesniam laikui.",
                 ),
                 {
                     "type": "paragraph",
@@ -1324,7 +1506,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass aptinka pajamų šaltinius iš gaunamų operacijų. Juos galite peržiūrėti, sekti, nebesekti arba vėl pradėti sekti.",
+                    "text": "MoneyCompass aptinka pajamų šaltinius iš gaunamų operacijų. Juos galite peržiūrėti, sekti, nebesekti arba vėl pradėti sekti.",
                 },
                 image(
                     "lt",
@@ -1339,7 +1521,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Money Compass aptinka pasikartojančius išeinančius mokėjimus kaip galimas prenumeratas. Aktyvią prenumeratą pažymėję „Atšaukta“ iš karto perkelsite ją į buvusias prenumeratas. „Pašalinti“ visiškai sustabdo jos sekimą, o „Atkurti“ grąžina buvusią prenumeratą į aktyvų sekimą.",
+                    "text": "MoneyCompass aptinka pasikartojančius išeinančius mokėjimus kaip galimas prenumeratas. Aktyvią prenumeratą pažymėję „Atšaukta“ iš karto perkelsite ją į buvusias prenumeratas. „Pašalinti“ visiškai sustabdo jos sekimą, o „Atkurti“ grąžina buvusią prenumeratą į aktyvų sekimą.",
                 },
                 image(
                     "lt",
@@ -1354,7 +1536,7 @@ GUIDE_CONTENT = {
                 },
                 {
                     "type": "paragraph",
-                    "text": "Finansinis rezervas apskaičiuoja, kiek mėnesių pasirinktas turtas galėtų padengti dabartines išlaidas. Numatytasis išlaidų tempas skaičiuojamas pagal paskutinių 90 dienų išeinančias operacijas. Scenarijaus nustatymuose galite įtraukti arba atmesti konkrečias sąskaitas, kategorijas ir nekategorizuotas išlaidas.",
+                    "text": "Finansinis rezervas apskaičiuoja, kiek mėnesių pasirinktas turtas galėtų padengti dabartines išlaidas. Išlaidų tempas – tai išeinančių operacijų vidurkis per laikotarpį, kurį apima jūsų duomenys (iki 90 dienų, baigiant naujausia operacija), todėl vienas įkeltas mėnuo neišskirstomas į tris. Scenarijaus nustatymuose galite įtraukti arba atmesti konkrečias sąskaitas, kategorijas ir nekategorizuotas išlaidas.",
                 },
                 image(
                     "lt",
@@ -1393,11 +1575,41 @@ GUIDE_CONTENT = {
         {
             "id": "ataskaitos",
             "title": "Ataskaitos",
-            "subtitle": "Likučių patikra ir anomalijų istorija",
+            "subtitle": "Mėnesio ir savaitės apžvalga, pastebėjimai ir likučių patikra",
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Įprasti naudotojai šiame puslapyje mato Likučio anomalijų istoriją. Mėnesinės ir savaitinės DI ataskaitos šiuo metu prieinamos tik administratoriams.",
+                    "text": "Ataskaitose matote mėnesio ir savaitės apžvalgą: kiek išleidote ir gavote, kiek liko, kur keliavo pinigai pagal kategorijas ir kaip tai atrodo palyginus su ankstesniu laikotarpiu. Keli pastebėjimai parodo, kas išsiskiria: didžiausią pokytį, kiek atsidėjote, dažnus smulkius pirkinius ir nekategorizuotas išlaidas.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Mėnesio apžvalga",
+                    "anchor": "monthly-overview",
+                },
+                image(
+                    "lt",
+                    "reports-month-overview.png",
+                    "Mėnesio apžvalga su kategorijomis ir pastebėjimais",
+                    "Mėnesio apžvalga: sumos, kategorijos su pokyčiu nuo praėjusio mėnesio ir pastebėjimai.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Mėnesį pasirinkite puslapio viršuje. Palyginimas su ankstesniu mėnesiu rodomas tik tada, kai abu mėnesiai įkelti pilnai, todėl iki pusės įkeltas mėnuo niekada neatrodo kaip didelis sumažėjimas. Ta pati suvestinė pradeda ir mėnesinį priminimo laišką.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Savaitės apžvalga",
+                    "anchor": "weekly-overview",
+                },
+                image(
+                    "lt",
+                    "reports-week-overview.png",
+                    "Savaitės apžvalga",
+                    "Savaitės apžvalga: išlaidos palyginus su ankstesne savaite.",
+                ),
+                {
+                    "type": "paragraph",
+                    "text": "Pasirinkite pasirinkto mėnesio savaitę ir pamatysite, kiek tą savaitę išleidote, palyginus su ankstesne savaite.",
                 },
                 {
                     "type": "heading",
@@ -1465,7 +1677,7 @@ GUIDE_CONTENT = {
             "body": [
                 {
                     "type": "paragraph",
-                    "text": "Profilyje valdote sąskaitas, kategorijas, taupymo tikslus, kalbą, likučio momentines reikšmes ir duomenų ištrynimo nustatymus.",
+                    "text": "Profilyje valdote sąskaitas, kategorijas, taupymo tikslus, priminimus el. paštu, kalbą, likučio momentines reikšmes ir duomenų ištrynimo nustatymus.",
                 },
                 {
                     "type": "heading",
@@ -1505,12 +1717,21 @@ GUIDE_CONTENT = {
                 image(
                     "lt",
                     "profile-preferences.png",
-                    "Investicijų mokesčio rodymo nuostata",
-                    "Pasirinktinai Apžvalgoje ir Statistikoje rodykite investicijų vertę atėmus fiksuotą 15% įvertį.",
+                    "Investicijų rodymo ir priminimų el. paštu nuostatos",
+                    "Investicijų vertės įvertis ir priminimai el. paštu.",
                 ),
                 {
                     "type": "note",
                     "text": "Tai tik rodymo įvertis. Jis nekeičia išsaugotų likučių, operacijų ar visos Portfelio puslapyje rodomos vertės.",
+                },
+                {
+                    "type": "heading",
+                    "text": "Priminimai el. paštu",
+                    "anchor": "profile-reminders",
+                },
+                {
+                    "type": "paragraph",
+                    "text": "Kartą per mėnesį MoneyCompass atsiunčia trumpą paskutinio pilnai įkelto mėnesio suvestinę (kiek išleidote ir kas pasikeitė) ir priminimą įkelti naują išrašą. Naujoms paskyroms, kurios dar nieko neįkėlė, praėjus kelioms dienoms po registracijos išsiunčiamas vienas priminimas. Priminimus išjungsite Profilyje → Priminimai el. paštu arba paspaudę atsisakymo nuorodą bet kuriame laiške.",
                 },
                 {
                     "type": "heading",
@@ -1547,6 +1768,7 @@ GUIDE_CONTENT = {
                         ["Pervadinti sąskaitą", "Profilis → Sąskaitos → Pervadinti"],
                         ["Išjungti arba įjungti sąskaitą", "Profilis → Sąskaitos → Išjungti / Įjungti"],
                         ["Nustatyti numatytąją importo sąskaitą", "Profilis → Sąskaitos → Numatyti"],
+                        ["Įjungti arba išjungti priminimus el. paštu", "Profilis → Priminimai el. paštu → Išsaugoti"],
                         ["Pakeisti kalbą", "Avataro meniu arba mobilus meniu → EN / LT"],
                         ["Ištrinti paskyrą", "Profilis → Ištrinti paskyrą"],
                         ["Ištrinti operacijų duomenis", "Operacijos → Duomenų trynimo skiltis"],
@@ -1574,15 +1796,17 @@ GUIDE_CONTENT = {
                     "type": "table",
                     "headers": ["Noriu...", "Kur eiti"],
                     "rows": [
+                        ["Išbandyti programą be išrašo", "Apžvalga (nauja paskyra) → Išbandyk su pavyzdiniais duomenimis"],
                         ["Pamatyti grynąją vertę", "Apžvalga → viršutinė kortelė"],
                         ["Įkelti banko išrašą", "Operacijos → Įkelti išrašą"],
                         ["Atšaukti failo įkėlimą", "Operacijos → Atšaukti paskutinį įkėlimą"],
                         ["Greitai kategorizuoti operacijas", "Operacijos → kategorijų sąrašai → Pritaikyti pakeitimus"],
                         ["Peržiūrėti netikslius DI pasiūlymus", "Operacijos → Mažo pasitikėjimo"],
                         ["Rasti nekategorizuotas operacijas", "Operacijos → Nekategorizuotos"],
-                        ["Pažymėti vidinį pavedimą", "Operacijos → Redaguoti → Vidinis pavedimas"],
+                        ["Pažymėti vidinį pavedimą", "Atpažįstama automatiškai; kitu atveju Operacijos → Redaguoti → Vidinis pavedimas"],
                         ["Palyginti kategorijos pajamas ir išlaidas", "Įrankiai → pasirinkti kategoriją"],
                         ["Atkurti ištrintą operaciją", "Operacijos → Ištrintos → Atkurti"],
+                        ["Pamatyti mėnesio ar savaitės apžvalgą", "Ataskaitos"],
                         ["Peržiūrėti likučio anomalijas", "Ataskaitos → Likučio anomalijų istorija"],
                         ["Sekti kripto arba akcijas", "Portfelis"],
                         ["Sukurti taupymo tikslą", "Profilis → Taupymo tikslai"],

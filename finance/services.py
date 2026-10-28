@@ -125,6 +125,23 @@ _DATE = re.compile(r"\b\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}\b|\b\d{1,2}[.\-/]\d{1,2}[
 _LEGAL = {"UAB", "AB", "MB", "IĮ", "II", "VŠĮ", "VSI", "LT", "LIETUVA", "LIETUVOS", "SIA", "AS", "OU", "LTD", "INC"}
 
 
+_PERSONAL = [
+    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[email]"),
+    (re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b"), "[IBAN]"),
+    (re.compile(r"(?:\+370|\b8)[ -]?6\d{2}[ -]?\d{5}\b"), "[phone]"),
+    (re.compile(r"\b[3-6]\d{10}\b"), "[personal code]"),  # Lithuanian asmens kodas
+    (re.compile(r"\b\d{12,}\b"), "[number]"),
+]
+
+
+def redact_personal(text):
+    """Mask personal identifiers bank descriptions carry (personal codes, IBANs, emails, phones)
+    before text is sent to the AI. Merchant and counterparty names stay: they decide the category."""
+    for pattern, label in _PERSONAL:
+        text = pattern.sub(label, text or "")
+    return text
+
+
 def _merchant_key(raw):
     """Matching key for the AI's memory of past categories.
 
@@ -230,7 +247,7 @@ def _call_openai_rows(user, rows, examples, cats, exclude_ids=()):
 
     history = _merchant_history(user, rows, exclude_ids=exclude_ids)
     example_lines = [
-        f"- {e['text'].split(' | ')[0]} ({e['in_out']}, {e['amount']:.2f}) => {e['category']}"
+        f"- {redact_personal(e['text'].split(' | ')[0])} ({e['in_out']}, {e['amount']:.2f}) => {e['category']}"
         + (" [set by the user]" if e.get("source") == "user" else "")
         for e in examples[:30]
     ]
@@ -258,7 +275,7 @@ def _call_openai_rows(user, rows, examples, cats, exclude_ids=()):
         merchant = r.get("merchant") or (r.get("text") or "").split(" | ")[0]
         line = {
             "id": r["id"],
-            "description": (r.get("text") or merchant)[:240],
+            "description": redact_personal((r.get("text") or merchant)[:240]),
             "direction": r.get("in_out", ""),
             "amount": round(float(r.get("amount") or 0), 2),
         }

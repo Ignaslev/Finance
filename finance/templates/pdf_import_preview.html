@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n money %}
 {% block title %}{% if is_lt %}Patikrink išrašą{% else %}Check your statement{% endif %} · MoneyCompass{% endblock %}
 {% block content %}
 <style>
@@ -14,6 +14,8 @@
   .pdf-check.mismatch { background: #fff2f2; border-color: #f5caca; color: #9e3232; }
   .pdf-check.missing { background: #fff9e9; border-color: #f2dfa5; color: #695115; }
   .pdf-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .pdf-target { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 1rem; max-width: 360px; font-size: 0.9rem; }
+  .pdf-target select { padding: 0.55rem 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
   .pdf-actions .btn-cancel { background: #edf2f7; color: var(--text-medium); }
   .pdf-amount-out { color: var(--text-dark); font-weight: 700; white-space: nowrap; text-align: right; }
   .pdf-amount-in { color: #2e7d32; font-weight: 700; white-space: nowrap; text-align: right; }
@@ -32,8 +34,20 @@
   {% else %}
     <div class="card-title">
       {% if is_lt %}Radome operacijų: {{ p.row_count }}{% else %}We found {{ p.row_count }} transactions{% endif %}
-      <span class="text-medium" style="font-weight:500; font-size:0.9rem;">· {{ p.period_start|date:"Y-m-d" }} – {{ p.period_end|date:"Y-m-d" }} · {{ job.money_source.name }}</span>
+      <span class="text-medium" style="font-weight:500; font-size:0.9rem;">· {{ p.period_start|date:"Y-m-d" }} – {{ p.period_end|date:"Y-m-d" }}{% if bank %} · {{ bank }}{% endif %}</span>
     </div>
+
+    <label class="pdf-target">
+      <span class="text-medium">{% if is_lt %}Įkelti į sąskaitą{% else %}Import into account{% endif %}</span>
+      <select name="target" form="pdf-import-form" onchange="location.search = '?target=' + this.value">
+        {% for a in accounts %}
+          <option value="{{ a.pk }}" {% if target == a.pk %}selected{% endif %}>{{ a.name }}</option>
+        {% endfor %}
+        <option value="new" {% if target == "new" %}selected{% endif %}>
+          + {% if is_lt %}Nauja sąskaita{% else %}New account{% endif %}{% if bank %} „{{ bank }}“{% endif %}
+        </option>
+      </select>
+    </label>
 
     <div class="pdf-summary">
       <div class="pdf-stat">
@@ -46,21 +60,21 @@
       </div>
       <div class="pdf-stat">
         <div class="pdf-stat-label">{% if is_lt %}Gauta{% else %}Money in{% endif %}</div>
-        <div class="pdf-stat-value">{{ p.total_in|floatformat:2 }} <span style="font-size:0.85rem;">{{ p.currency }}</span></div>
+        <div class="pdf-stat-value">{{ p.total_in|money:p.currency }}</div>
       </div>
       <div class="pdf-stat">
         <div class="pdf-stat-label">{% if is_lt %}Išleista{% else %}Money out{% endif %}</div>
-        <div class="pdf-stat-value">{{ p.total_out|floatformat:2 }} <span style="font-size:0.85rem;">{{ p.currency }}</span></div>
+        <div class="pdf-stat-value">{{ p.total_out|money:p.currency }}</div>
       </div>
     </div>
 
     {% if p.balance_check == "ok" %}
       <div class="pdf-check ok"><i class="ph ph-check-circle" aria-hidden="true"></i>
-        <span>{% if is_lt %}Sumos sutampa su išrašo likučiais ({{ p.opening|floatformat:2 }} → {{ p.closing|floatformat:2 }} {{ p.currency }}), vadinasi, nuskaitėme visas operacijas.{% else %}The totals match the statement balances ({{ p.opening|floatformat:2 }} → {{ p.closing|floatformat:2 }} {{ p.currency }}), so every transaction was read.{% endif %}</span>
+        <span>{% if is_lt %}Sumos sutampa su išrašo likučiais ({{ p.opening|money:p.currency }} → {{ p.closing|money:p.currency }}), vadinasi, nuskaitėme visas operacijas.{% else %}The totals match the statement balances ({{ p.opening|money:p.currency }} → {{ p.closing|money:p.currency }}), so every transaction was read.{% endif %}</span>
       </div>
     {% elif p.balance_check == "mismatch" %}
       <div class="pdf-check mismatch"><i class="ph ph-warning" aria-hidden="true"></i>
-        <span>{% if is_lt %}Sumos nesutampa su išrašo likučiais (skirtumas {{ p.difference|floatformat:2 }} {{ p.currency }}). Gali būti, kad kelių operacijų neperskaitėme. Geriau atšauk ir įkelk CSV, arba įkelk, jei sutinki su skirtumu.{% else %}The totals don't match the statement balances (difference {{ p.difference|floatformat:2 }} {{ p.currency }}). Some transactions may have been missed. Cancel and upload a CSV, or import anyway if you accept the difference.{% endif %}</span>
+        <span>{% if is_lt %}Sumos nesutampa su išrašo likučiais (skirtumas {{ p.difference|money:p.currency }}). Gali būti, kad kelių operacijų neperskaitėme. Geriau atšauk ir įkelk CSV, arba įkelk, jei sutinki su skirtumu.{% else %}The totals don't match the statement balances (difference {{ p.difference|money:p.currency }}). Some transactions may have been missed. Cancel and upload a CSV, or import anyway if you accept the difference.{% endif %}</span>
       </div>
     {% else %}
       <div class="pdf-check missing"><i class="ph ph-info" aria-hidden="true"></i>
@@ -73,7 +87,7 @@
     {% endif %}
   {% endif %}
 
-  <form method="post" class="pdf-actions">
+  <form method="post" class="pdf-actions" id="pdf-import-form">
     {% csrf_token %}
     {% if p.row_count %}
       <button type="submit" name="action" value="import" class="btn btn-primary">
@@ -101,7 +115,7 @@
           <tr>
             <td style="white-space:nowrap;">{{ r.date|date:"Y-m-d" }}</td>
             <td>{{ r.merchant }}</td>
-            <td class="{% if r.in_out == 'in' %}pdf-amount-in{% else %}pdf-amount-out{% endif %}">{% if r.in_out == 'in' %}+{% else %}-{% endif %}{{ r.amount|floatformat:2 }} {{ r.currency }}</td>
+            <td class="{% if r.in_out == 'in' %}pdf-amount-in{% else %}pdf-amount-out{% endif %}">{% if r.in_out == 'in' %}+{% else %}-{% endif %}{{ r.amount|money:r.currency }}</td>
           </tr>
         {% endfor %}
       </tbody>

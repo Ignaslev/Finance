@@ -281,6 +281,23 @@ def normalize_name_tokens(s: str) -> list[str]:
     tokens = [t for t in s.split(" ") if t and len(t) > 1]  # drop 1-letter initials
     return tokens
 
+SELF_TRANSFER_PHRASES = (
+    "pervedimas sau", "pervedimas į savo", "tarp savo sąskaitų", "tarp savų sąskaitų",
+    "own account", "between own accounts", "transfer to myself",
+)
+
+
+def is_self_transfer(merchant: str, notes: str, first_name: str = "", last_name: str = "") -> bool:
+    """Money moved between the user's own accounts: neither income nor spending.
+
+    Banks say so in the description ("Pinigų pervedimas sau"), or the counterparty is the user.
+    """
+    text = f"{merchant or ''} {notes or ''}".lower()
+    if any(phrase in text for phrase in SELF_TRANSFER_PHRASES):
+        return True
+    return bool(first_name and last_name) and looks_like_self_transfer(merchant or "", first_name, last_name)
+
+
 def looks_like_self_transfer(merchant: str, first_name: str, last_name: str) -> bool:
     u_tokens = normalize_name_tokens(f"{first_name} {last_name}")
     m_tokens = normalize_name_tokens(merchant)

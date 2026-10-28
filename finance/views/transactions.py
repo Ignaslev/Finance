@@ -32,7 +32,7 @@ from finance.models import (
 from finance.utils import (
     parse_date, parse_amount, parse_in_out, normalize_currency,
     build_fingerprint_v2, ensure_default_categories, parse_date_filter,
-    parse_decimal_filter, default_money_source_name
+    parse_decimal_filter, default_money_source_name, is_self_transfer,
 )
 from finance.subscriptions import access_context, require_paid_access
 from finance.tracking import track_upload
@@ -665,6 +665,10 @@ def _save_import_rows(request, *, rows, import_src, filename, bank_key, skipped_
             category=None,
             category_source="import",
             fingerprint=fp,
+            is_internal_transfer=is_self_transfer(
+                merchant_norm, r.get("notes") or r.get("description") or "",
+                request.user.first_name, request.user.last_name,
+            ),
         ))
 
     with db_transaction.atomic():
@@ -1012,7 +1016,7 @@ def upload(request):
 
         except Exception as e:
             messages.error(request, _("Failed to import file: %(error)s") % {"error": e})
-            track_upload(request, "error", filename=filename, bank=bank, detail=f"{type(e).__name__}: {e}")
+            track_upload(request, "error", filename=filename, bank=bank, detail=type(e).__name__)
             return redirect(fail_url)
 
     # -------------------- LIST (GET) --------------------

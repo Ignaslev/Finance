@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n money %}
 {% block title %}{% if LANGUAGE_CODE|slice:":2" == "lt" %}Įrankiai{% else %}Tools{% endif %} · MoneyCompass{% endblock %}
 
 {% block content %}
@@ -48,16 +48,16 @@
     <div class="tools-summary-grid">
       <div class="tools-summary-item">
         <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Pajamos{% else %}Income{% endif %}</div>
-        <div class="tools-summary-value tools-positive">+{{ selected_summary.income|floatformat:2 }} EUR</div>
+        <div class="tools-summary-value tools-positive">+{{ selected_summary.income|money }}</div>
       </div>
       <div class="tools-summary-item">
         <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Išlaidos{% else %}Spending{% endif %}</div>
-        <div class="tools-summary-value tools-negative">−{{ selected_summary.spending|floatformat:2 }} EUR</div>
+        <div class="tools-summary-value tools-negative">−{{ selected_summary.spending|money }}</div>
       </div>
       <div class="tools-summary-item">
         <div class="tools-summary-label">{% if LANGUAGE_CODE|slice:":2" == "lt" %}Balansas{% else %}Balance{% endif %}</div>
         <div class="tools-summary-value {% if selected_summary.balance >= 0 %}tools-positive{% else %}tools-negative{% endif %}">
-          {{ selected_summary.balance|floatformat:2 }} EUR
+          {{ selected_summary.balance|money }}
         </div>
       </div>
     </div>
@@ -89,7 +89,7 @@
           {{ runway_months|floatformat:1 }} <span style="font-size:1.2rem; font-weight:500; color:var(--text-medium);">{% trans "Months" %}</span>
         </div>
         <div style="font-size:.9rem; color:var(--text-medium); margin-top:.5rem;">
-          {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|floatformat:0 }} {% trans "EUR/month" %}</strong> ({% trans "last 3 months avg" %}).
+          {% trans "Based on a burn rate of" %} <strong>{{ avg_monthly_burn|money:0 }}/{% if LANGUAGE_CODE|slice:":2" == "lt" %}mėn.{% else %}month{% endif %}</strong> ({% get_current_language as LANG %}{% if LANG == "lt" %}paskutinių {{ runway_window_months }} mėn. vidurkis{% else %}last {{ runway_window_months }} months avg{% endif %}).
           <br>
           <button type="button" onclick="openRunwayModal()" style="background:none; border:none; color:var(--primary-teal); padding:0; font-weight:600; cursor:pointer; margin-top:.3rem;">⚙ {% trans "Configure Scenario" %}</button>
         </div>
@@ -98,10 +98,10 @@
         <div class="text-medium" style="font-size:.8rem;">{% trans "vs Last Month" %}</div>
         <div style="font-size:1.5rem; font-weight:700; margin-top:.2rem;">
           {% if mom_diff < 0 %}
-            <span style="color:#38a169;">{{ mom_diff|floatformat:0 }} EUR</span>
+            <span style="color:#38a169;">{{ mom_diff|money:0 }}</span>
             <div style="font-size:.8rem; color:#38a169;">({% trans "Spending Less" %})</div>
           {% else %}
-            <span style="color:#e53e3e;">+{{ mom_diff|floatformat:0 }} EUR</span>
+            <span style="color:#e53e3e;">+{{ mom_diff|money:0 }}</span>
             <div style="font-size:.8rem; color:#e53e3e;">({% trans "Spending More" %})</div>
           {% endif %}
         </div>

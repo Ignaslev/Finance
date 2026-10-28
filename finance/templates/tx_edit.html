@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
-{% block title %}{% trans "Edit transaction" %} · MoneyCoach{% endblock %}
+{% load i18n guide_links money %}
+{% block title %}{% trans "Edit transaction" %} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width: 720px; margin: 1.5rem auto;">
@@ -12,7 +12,7 @@
     <div class="row" style="margin:.75rem 0 1rem 0; font-size:0.95rem;">
         <strong>{{ tx.date|date:"Y-m-d" }}</strong>
         — {{ tx.merchant }}
-        — {{ tx.amount }} {{ tx.currency }}
+        — {{ tx.amount|money:tx.currency }}
         — {{ tx.in_out }}
         {% if tx.notes %}
             <div style="color:#666; margin-top:0.25rem;">

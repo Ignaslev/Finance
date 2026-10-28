@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Found subscriptions" %} · Money Compass{% endblock %}
+{% load i18n money %}
+{% block title %}{% trans "Found subscriptions" %} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -39,11 +39,11 @@
                     {% for row in page_obj.object_list %}
                         <tr data-row="{{ row.normalized_merchant }}">
                             <td class="font-bold">{{ row.name }}</td>
-                            <td>{{ row.monthly_cost|floatformat:2 }}</td>
+                            <td>{{ row.monthly_cost|money }}</td>
                             <td>{{ row.months_subscribed }}</td>
                             <td>{{ row.first_paid|date:"Y-m-d" }}</td>
                             <td>{{ row.last_paid|date:"Y-m-d" }}</td>
-                            <td>{{ row.total_spent|floatformat:2 }}</td>
+                            <td>{{ row.total_spent|money }}</td>
                             <td>
                                 <a href="{% url 'upload' %}?q={{ row.name|urlencode }}&flow=out"
                                    class="text-teal"

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "AI Run" %} {{ run.id }}{% endblock %}
+{% load i18n ai_labels %}
+{% block title %}{% trans "AI Run" %} {{ run.id }} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card">
     <h2 class="card-title" style="margin-bottom:0.25rem;">
-        {% trans "AI Run" %} — {{ run.kind }} — {{ run.started_at|date:"Y-m-d H:i" }}
+        {% trans "AI Run" %} — {{ run.kind|ai_label }} — {{ run.started_at|date:"Y-m-d H:i" }}
     </h2>
 
     <p class="meta" style="margin-top:0; font-size:0.85rem; color:var(--text-light);">
-        {% trans "Status" %}: <strong>{{ run.status }}</strong> |
-        {% trans "Mode" %}: {{ run.mode }} |
+        {% trans "Status" %}: <strong>{{ run.status|ai_label }}</strong> |
+        {% trans "Mode" %}: {{ run.mode|ai_label }} |
         {% trans "Considered" %}: {{ run.considered }},
         {% trans "Applied" %}: {{ run.applied }},
         {% trans "Parked" %}: {{ run.parked }}

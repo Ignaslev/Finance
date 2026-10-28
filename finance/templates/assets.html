@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
-{% block title %}{% trans "Portfolio" %} · Money Compass{% endblock %}
+{% load i18n guide_links money %}
+{% block title %}{% trans "Portfolio" %} · MoneyCompass{% endblock %}
 {% block content %}
 
 <div class="assets-page">
@@ -14,7 +14,7 @@
         <div class="assets-total">
             <div class="text-medium assets-total-label">{% trans "Total Net Worth" %}</div>
             <div class="assets-total-value">
-                {{ total_portfolio|floatformat:2 }} EUR
+                {{ total_portfolio|money }}
             </div>
         </div>
     </div>
@@ -28,7 +28,7 @@
                 <div class="asset-card-head">
                     <div>
                         <div class="card-title asset-card-title asset-card-title--crypto">{% trans "Crypto Assets" %}</div>
-                        <div class="text-medium asset-card-sub">{{ crypto_total|floatformat:2 }} EUR</div>
+                        <div class="text-medium asset-card-sub">{{ crypto_total|money }}</div>
                     </div>
 
                     <button onclick="openModal('modalCrypto')" class="btn asset-add-btn asset-add-btn--crypto">
@@ -55,9 +55,9 @@
                                             <div class="asset-symbol">{{ h.symbol }}</div>
                                             <div class="asset-name">{{ h.name }}</div>
                                         </td>
-                                        <td class="asset-td-right asset-mono">{{ h.price|floatformat:2 }}</td>
+                                        <td class="asset-td-right asset-mono">{{ h.price|money }}</td>
                                         <td class="asset-td-right">{{ h.quantity|floatformat:4 }}</td>
-                                        <td class="asset-td-right asset-strong asset-td-last">{{ h.value|floatformat:2 }}</td>
+                                        <td class="asset-td-right asset-strong asset-td-last">{{ h.value|money }}</td>
                                         <td class="asset-td-right asset-td-action">
                                             <a href="{% url 'asset_edit' h.id %}"
                                                class="icon-action asset-edit-link"
@@ -103,7 +103,7 @@
                 <div class="asset-card-head">
                     <div>
                         <div class="card-title asset-card-title asset-card-title--stock">{% trans "Stocks & ETFs" %}</div>
-                        <div class="text-medium asset-card-sub">{{ stock_total|floatformat:2 }} EUR</div>
+                        <div class="text-medium asset-card-sub">{{ stock_total|money }}</div>
                     </div>
 
                     <button onclick="openModal('modalStock')" class="btn asset-add-btn asset-add-btn--stock">
@@ -130,9 +130,9 @@
                                             <div class="asset-symbol">{{ h.symbol }}</div>
                                             <div class="asset-name">{{ h.name }}</div>
                                         </td>
-                                        <td class="asset-td-right asset-mono">{{ h.price|floatformat:2 }}</td>
+                                        <td class="asset-td-right asset-mono">{{ h.price|money }}</td>
                                         <td class="asset-td-right">{{ h.quantity|floatformat:2 }}</td>
-                                        <td class="asset-td-right asset-strong asset-td-last">{{ h.value|floatformat:2 }}</td>
+                                        <td class="asset-td-right asset-strong asset-td-last">{{ h.value|money }}</td>
                                         <td class="asset-td-right asset-td-action">
                                             <a href="{% url 'asset_edit' h.id %}"
                                                class="icon-action asset-edit-link"

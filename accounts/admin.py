@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -93,6 +94,19 @@ class MoneyCompassUserAdmin(UserAdmin):
             "undone_import_count", "last_import_display",
         ),
     }),)
+
+    # Admins must not be able to take over someone's account (and with it their financial data):
+    # no setting another user's password, no changing their email/username (then "forgot password").
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        if obj is not None and obj.pk != request.user.pk:
+            fields = tuple(fields) + ("username", "email")
+        return fields
+
+    def user_change_password(self, request, id, form_url=""):
+        if str(id) != str(request.user.pk):
+            raise PermissionDenied("Admins cannot set another user's password.")
+        return super().user_change_password(request, id, form_url)
 
     def get_queryset(self, request):
         successful_imports = Q(import_batches__added_count__gt=0)

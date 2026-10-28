@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "AI Runs" %}{% endblock %}
+{% load i18n ai_labels %}
+{% block title %}{% trans "AI Runs" %} · MoneyCompass{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -29,7 +29,7 @@
                     style="padding:0.35rem 0.6rem; border-radius:8px; border:1px solid #e2e8f0;">
                 <option value="">{% trans "All" %}</option>
                 {% for s in statuses %}
-                    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|capfirst }}</option>
+                    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|ai_label }}</option>
                 {% endfor %}
             </select>
         </label>
@@ -57,9 +57,9 @@
                             {{ run.started_at|date:"Y-m-d H:i" }}
                         </a>
                     </td>
-                    <td>{{ run.kind }}</td>
-                    <td>{{ run.status }}</td>
-                    <td>{{ run.mode }}</td>
+                    <td>{{ run.kind|ai_label }}</td>
+                    <td>{{ run.status|ai_label }}</td>
+                    <td>{{ run.mode|ai_label }}</td>
                     <td>
                         {% trans "considered" %} {{ run.considered }},
                         {% trans "applied" %} {{ run.applied }},

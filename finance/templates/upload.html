@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n guide_links %}
+{% load i18n guide_links money %}
 {% get_current_language as LANGUAGE_CODE %}
-{% block title %}{% trans "Upload" %} · Money Compass{% endblock %}
+{% block title %}{% trans "Upload" %} · MoneyCompass{% endblock %}
 {% block content %}
 <div class="transactions-page">
 
@@ -237,9 +237,9 @@
               <td style="font-weight:500;">{{ t.merchant }}</td>
               <td style="text-align:right; font-family:monospace; font-size:1rem;">
                   {% if t.in_out == 'in' %}
-                    <span style="color:#38a169;">+{{ t.amount }}</span>
+                    <span style="color:#38a169;">+{{ t.amount|money:t.currency }}</span>
                   {% else %}
-                    <span style="color:#e53e3e;">-{{ t.amount }}</span>
+                    <span style="color:#e53e3e;">−{{ t.amount|money:t.currency }}</span>
                   {% endif %}
                   <span style="color:#aaa; font-size:0.8em;">{{ t.currency }}</span>
               </td>
@@ -363,16 +363,16 @@
               <td>
                 <div style="font-weight:600;">{{ pair.tx_out.date|date:"Y-m-d" }}</div>
                 <div>{{ pair.tx_out.merchant|default:"—" }}</div>
-                <div style="color:#e53e3e;">-{{ pair.tx_out.amount|floatformat:2 }} {{ pair.tx_out.currency }}</div>
+                <div style="color:#e53e3e;">−{{ pair.tx_out.amount|money:pair.tx_out.currency }}</div>
               </td>
 
               <td>
                 <div style="font-weight:600;">{{ pair.tx_in.date|date:"Y-m-d" }}</div>
                 <div>{{ pair.tx_in.merchant|default:"—" }}</div>
-                <div style="color:#38a169;">+{{ pair.tx_in.amount|floatformat:2 }} {{ pair.tx_in.currency }}</div>
+                <div style="color:#38a169;">+{{ pair.tx_in.amount|money:pair.tx_in.currency }}</div>
               </td>
 
-              <td>{{ pair.amount_diff|floatformat:2 }} {{ pair.tx_out.currency }}</td>
+              <td>{{ pair.amount_diff|money:pair.tx_out.currency }}</td>
               <td>{{ pair.days_apart }}</td>
 
               <td>

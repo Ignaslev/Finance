@@ -161,6 +161,43 @@ class PdfImportFlowTests(TestCase):
         self.client.post(reverse("pdf_import_preview", args=[job.pk]), {"action": "import"})
         self.assertEqual(txs.count(), 4)
 
+    def test_statement_from_another_bank_goes_to_its_own_account(self):
+        Transaction.objects.create(user=self.user, money_source=self.account, date=date(2026, 9, 1), merchant="Rimi",
+                                   amount=Decimal("5"), in_out="out", fingerprint="luminor-row")
+        job = self._job(status="ready", result={**STATEMENT, "bank": "Swedbank"})
+
+        page = self.client.get(reverse("pdf_import_preview", args=[job.pk]))
+        self.assertContains(page, "Nauja sąskaita „Swedbank“")
+        self.assertEqual(page.context["target"], "new")
+
+        self.client.post(reverse("pdf_import_preview", args=[job.pk]), {"action": "import", "target": "new"})
+        swedbank = MoneySource.objects.get(user=self.user, name="Swedbank")
+        self.assertEqual(Transaction.objects.filter(money_source=swedbank).count(), 4)
+        self.assertEqual(Transaction.objects.filter(money_source=self.account).count(), 1)
+
+    def test_statement_goes_to_the_account_named_after_its_bank(self):
+        swedbank = MoneySource.objects.create(user=self.user, name="Swedbank kortelė", type="bank")
+        job = self._job(status="ready", result={**STATEMENT, "bank": "Swedbank"})
+        self.assertEqual(self.client.get(reverse("pdf_import_preview", args=[job.pk])).context["target"], swedbank.pk)
+
+    def test_cannot_import_into_another_users_account(self):
+        other = get_user_model().objects.create_user(username="x@example.test", email="x@example.test", password="Xx-123456!")
+        theirs = MoneySource.objects.create(user=other, name="Theirs", type="bank")
+        job = self._job(status="ready", result=STATEMENT)
+        self.client.post(reverse("pdf_import_preview", args=[job.pk]), {"action": "import", "target": theirs.pk})
+        self.assertFalse(Transaction.objects.filter(money_source=theirs).exists())
+        self.assertEqual(Transaction.objects.filter(money_source=self.account).count(), 4)
+
+    def test_rows_without_a_counterparty_get_a_readable_name(self):
+        job = self._job(status="ready", result={**STATEMENT, "rows": [
+            {"date": "2026-08-01", "merchant": "", "amount": 0.41, "direction": "out", "currency": "EUR",
+             "description": "2 2026-08-01 MP banko mokestis 2026080100497342 -0.41 TT"},
+            {"date": "2026-08-06", "merchant": "8 2026-08-06 GRYNIEJI 516793******3619 06.08.26 19:52 50.00 EUR (511732) SILUTE LT 2026080603645833 -50.00 K",
+             "amount": 50, "direction": "out", "currency": "EUR", "description": "same"},
+        ]})
+        rows, _ = pdf_import.parsed_rows(job)
+        self.assertEqual([r["merchant"] for r in rows], ["MP banko mokestis", "GRYNIEJI SILUTE LT"])
+
     def test_cancel_while_reading_stops_the_remote_read(self):
         job = self._job()
         client = fake_client(status="in_progress")

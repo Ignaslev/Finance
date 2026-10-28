@@ -50,7 +50,8 @@ def run_ai_for_user(user, *, kind: str, mode: str = "uncat", run: AiRun | None =
 
     # capture pre-state to diff later
     # list() so the snapshot is taken now, not lazily after the AI has already changed the rows
-    before = list(Transaction.objects.filter(user=user).values_list("id", "category_fk", "category_source"))
+    before = list(Transaction.objects.filter(user=user).values_list(
+        "id", "category_fk", "category_source", "ai_suggested_fk", "ai_confidence"))
 
     # call your existing categorize view with a fake request
     try:
@@ -69,18 +70,19 @@ def run_ai_for_user(user, *, kind: str, mode: str = "uncat", run: AiRun | None =
     # compute diff
     after = Transaction.objects.filter(user=user).values_list("id", "category_fk", "category_source", "ai_suggested_fk", "ai_confidence", "ai_reason")
 
-    before_map = {tid: (cat, src) for (tid, cat, src) in before}
+    before_map = {tid: (cat, src, sug, conf) for (tid, cat, src, sug, conf) in before}
     applied = parked = skipped = considered = 0
 
     items = []
     for tid, cat_fk, src, sug_fk, conf, reason in after:
-        old_cat, old_src = before_map.get(tid, (None, None))
+        old_cat, old_src, old_sug, old_conf = before_map.get(tid, (None, None, None, None))
         if src == "user":
             continue  # user labels are out of scope for AI actions
-        # Count considered if AI touched fields or if category set from empty/ai/rule/import
-        touched = (sug_fk is not None) or (old_cat != cat_fk) or (old_src != src)
-        if touched:
-            considered += 1
+        # Only what this run changed: a suggestion parked by an earlier run is not this run's work.
+        touched = (old_cat != cat_fk) or (old_src != src) or (sug_fk != old_sug) or (conf != old_conf)
+        if not touched:
+            continue
+        considered += 1
 
         if old_cat != cat_fk and src in ("ai", "rule", "import"):
             # category changed by AI engine (applied)

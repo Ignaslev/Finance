@@ -30,9 +30,11 @@ def client_ip(request):
     forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
 
     if remote_addr and forwarded_for and _ip_matches(remote_addr, trusted_proxies):
-        for part in forwarded_for.split(","):
+        # Read right to left: the left end is whatever the client chose to send (a bot can put a
+        # fresh fake IP there on every request to dodge rate limits); our proxies append on the right.
+        for part in reversed(forwarded_for.split(",")):
             candidate = part.strip()
-            if candidate and _ip_matches(candidate, [candidate]):
+            if candidate and _ip_matches(candidate, [candidate]) and not _ip_matches(candidate, trusted_proxies):
                 return candidate
 
     return remote_addr or "unknown"
